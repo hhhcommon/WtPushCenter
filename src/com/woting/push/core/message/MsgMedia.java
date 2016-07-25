@@ -2,6 +2,8 @@ package com.woting.push.core.message;
 
 import java.util.Arrays;
 
+import com.spiritdata.framework.util.StringUtils;
+
 /**
  * 媒体消息：媒体流数据
  * @author wanghui
@@ -152,10 +154,22 @@ public class MsgMedia extends Message {
         for (; i<8; i++) ret[_offset+i]=_tempBytes[i];
 
         _offset=10;
+        int talkIdLen=8;
+        if (StringUtils.isNullOrEmptyOrSpace(this.talkId)) throw new RuntimeException("媒体消息异常：未设置有效会话id！");
         _tempBytes=this.talkId.getBytes();
-        for (i=0; i<8; i++) ret[_offset+i]=_tempBytes[i];
+        if (_tempBytes.length>=8) {
+            for (i=0; i<8; i++) ret[_offset+i]=_tempBytes[i];
+        } else if (_tempBytes.length==7) {
+            for (i=0; i<7; i++) ret[_offset+i]=_tempBytes[i];
+            ret[_offset+i]='E';
+        } else {
+            talkIdLen=_tempBytes.length+2;
+            for (i=0; i<_tempBytes.length; i++) ret[_offset+i]=_tempBytes[i];
+            ret[_offset+i]=END_FIELD[1];
+            ret[_offset+i+1]=END_FIELD[0];
+        }
 
-        _offset=18;
+        _offset+=talkIdLen;
         _tempBytes=ByteConvert.int2bytes(this.seqNo);
         for (i=0; i<4; i++) ret[_offset+i]=_tempBytes[i];
 
