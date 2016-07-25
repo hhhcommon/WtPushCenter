@@ -1,0 +1,7 @@
+{
+  "push":{
+    "ctlTcpPort":"16789", //控制端配置
+    "dispatchThread":"4", //分发接收消息的线程个数
+    "cleanInterval":"60*1000" //清理内存间隔时间
+  }
+}

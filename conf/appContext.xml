@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:context="http://www.springframework.org/schema/context"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+  <!--读取数据库配置信息 -->
+  <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+    <property name="locations">
+      <list merge="default">
+        <value>/conf/database.properties</value>
+      </list>
+    </property>
+  </bean>
+
+  <!--[BEGIN]用户管理所在的数据库-->
+  <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close" lazy-init="false">
+    <property name="driverClassName" value="${local.mysql.driverClassName}"/>
+    <property name="url" value="${local.mysql.url}"/>
+    <property name="username" value="${local.mysql.username}"/>
+    <property name="password" value="${local.mysql.password}"/>
+    <property name="initialSize" value="30"/>
+    <property name="maxActive" value="0"/>
+    <property name="maxWait" value="600000"/>
+    <property name="poolPreparedStatements" value="true"/>
+    <property name="maxOpenPreparedStatements" value="30"/>
+    <property name="testOnBorrow"><value>false</value></property>
+    <property name="validationQuery"><value>select 1 from dual</value></property>
+  </bean>
+  <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+    <property name="dataSource" ref="dataSource"/>
+  </bean>
+  <bean id="sqlSessionFactory" class="com.spiritdata.framework.ext.spring.mybatis.MySqlSessionFactoryBean">
+    <property name="configLocations">
+      <list merge="default">
+        <value>classpath*:mybatisConfig/frameworkMybatis.xml</value>
+        <value>classpath*:mybatisConfig/*.mappers.cfg.xml</value>
+      </list>
+    </property>
+    <property name="databaseType" value="MySql"/>
+    <property name="dataSource" ref="dataSource"/>
+    <property name="transactionFactory">
+      <bean class="org.apache.ibatis.transaction.managed.ManagedTransactionFactory" />
+    </property>
+  </bean>
+  <bean id="defaultDAO" class="com.spiritdata.framework.core.dao.mybatis.MybatisDAO"  scope="prototype" init-method="initialize">
+    <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
+  </bean>
+  <!--[END]用户管理所在的数据库-->
+
+  <!-- 扫描类包，将标注Spring注解的类自动转化Bean，同时完成Bean的注入 -->
+  <context:component-scan base-package="com.woting.push" use-default-filters="false">
+    <context:include-filter type="regex" expression=".*.*Service"/>
+  </context:component-scan>
+</beans>
