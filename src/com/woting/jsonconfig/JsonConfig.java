@@ -101,11 +101,12 @@ public class JsonConfig {
         mapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true);
         @SuppressWarnings("unchecked")
         Map<String, Object> configMap=(Map<String, Object>)mapper.readValue(jsonStr, Map.class);
-        parse(configMap, null);
+        parseMap(configMap, null);
         isLoaded=true;
     }
-    @SuppressWarnings("unchecked")
-    private void parse(Map<String, Object> configMap, String rootStr) {
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private void parseMap(Map<String, Object> configMap, String rootStr) {
         if (configMap==null||configMap.isEmpty()) return;
         Object value;
         for (String key: configMap.keySet()) {
@@ -113,11 +114,35 @@ public class JsonConfig {
             if (value instanceof String) {
                 configSets.put((StringUtils.isNullOrEmptyOrSpace(rootStr)?"":(rootStr+"."))+key, value+"");
             } else if (value instanceof Map) {
-                parse((Map<String, Object>)value, key);
+                parseMap((Map<String, Object>)value, (StringUtils.isNullOrEmptyOrSpace(rootStr)?"":(rootStr+"."))+key);
             } else if (value instanceof List) {
-                configSets.put((StringUtils.isNullOrEmptyOrSpace(rootStr)?"":(rootStr+"."))+key, "ErrList");
+                if (!((List)value).isEmpty()) {
+                    configSets.put((StringUtils.isNullOrEmptyOrSpace(rootStr)?"":(rootStr+"."))+key+"#size", ((List)value).size()+"");
+                    parseList((List<Object>)value, (StringUtils.isNullOrEmptyOrSpace(rootStr)?"":(rootStr+"."))+key);
+                }
             } else {
                 configSets.put((StringUtils.isNullOrEmptyOrSpace(rootStr)?"":(rootStr+"."))+key, value+"");
+            }
+        }
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private void parseList(List<Object> configList, String rootStr) {
+        if (configList==null||configList.isEmpty()) return;
+        Object value;
+        for (int i=0; i<configList.size(); i++) {
+            value=configList.get(i);
+            if (value instanceof String) {
+                configSets.put((StringUtils.isNullOrEmptyOrSpace(rootStr)?"["+i+"]":(rootStr+"["+i+"]")), value+"");
+            } else if (value instanceof Map) {
+                parseMap((Map<String, Object>)value, (StringUtils.isNullOrEmptyOrSpace(rootStr)?"["+i+"]":(rootStr+"["+i+"]")));
+            } else if (value instanceof List) {
+                if (!((List)value).isEmpty()) {
+                    configSets.put((StringUtils.isNullOrEmptyOrSpace(rootStr)?"["+i+"]":(rootStr+"["+i+"]"))+"#size", ((List)value).size()+"");
+                    parseList((List<Object>)value, (StringUtils.isNullOrEmptyOrSpace(rootStr)?"["+i+"]":(rootStr+"["+i+"]")));
+                }
+            } else {
+                configSets.put((StringUtils.isNullOrEmptyOrSpace(rootStr)?"["+i+"]":(rootStr+"["+i+"]")), value+"");
             }
         }
     }

@@ -9,9 +9,9 @@ public abstract class ConfigLoadUtils {
 
     public static PushConfig getPushConfig(JsonConfig jc) {
         PushConfig pc=new PushConfig();
-        pc.setControlTcpPort((int)fel.eval(jc.getString("push.ctlTcpPort")));
-        pc.setDsispatchThreadCount((int)fel.eval(jc.getString("push.dispatchThread")));
-        pc.setCleanInterval((int)fel.eval(jc.getString("push.cleanInterval")));
+        pc.set_ControlTcpPort((int)fel.eval(jc.getString("push.ctlTcpPort")));
+        pc.set_DsispatchThreadCount((int)fel.eval(jc.getString("push.dispatchThread")));
+        pc.set_CleanInterval((int)fel.eval(jc.getString("push.cleanInterval")));
         return pc;
     }
 }

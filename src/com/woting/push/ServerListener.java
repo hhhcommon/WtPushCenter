@@ -12,7 +12,8 @@ import com.spiritdata.framework.core.cache.SystemCache;
 import com.woting.jsonconfig.JsonConfig;
 import com.woting.push.config.ConfigLoadUtils;
 import com.woting.push.config.PushConfig;
-import com.woting.push.core.monitor.TcpNioSocketServer;
+//import com.woting.push.core.monitor.TcpNioSocketServer;
+import com.woting.push.core.monitor.TcpSocketServer;
 import com.woting.push.core.service.LoadSysCacheService;
 import com.woting.push.ext.SpringShell;
 
@@ -52,7 +53,8 @@ public class ServerListener {
     private Logger logger=null;
     private static int _RUN_STATUS=0;//运行状态，0未启动，1正在启动，2启动成功；3准备停止；4停止
 
-    private TcpNioSocketServer  tcpCtlServer=null; //tcp控制信道监控服务
+//    private TcpNioSocketServer  tcpCtlServer=null; //tcp控制信道监控服务
+    private TcpSocketServer  tcpCtlServer=null; //tcp控制信道监控服务
     
     /**
      * 获得运行状态
@@ -166,6 +168,7 @@ public class ServerListener {
             public void run(){
                 _RUN_STATUS=3;
                 logger.info("正在正在关闭服务... ");
+                stopServers();
                 try{
                     mainT.join();
                     logger.info("服务已关闭");
@@ -179,17 +182,16 @@ public class ServerListener {
 
         //开始运行子进程
         startServers();
-        listenerServers();
-        stopServers();
+        listener();
+        stopServers(); //若listener不结束，不会执行这里的内容
     }
 
     private void startServers() {
         //1-启动{TCP_控制信道}socket监控
-        //2-启动{TCP_控制信道}服务
         startTcpServer();//开启TCP服务，用于控制信息的传送
         _RUN_STATUS=2;//==================启动成功
     }
-    private void listenerServers() {
+    private void listener() {
         while (_RUN_STATUS==2) {
             ;
         }
@@ -208,7 +210,7 @@ public class ServerListener {
     //以下启动具体的服务===========================================================
     //1-tcp控制信道监控服务
     private void startTcpServer() {
-        tcpCtlServer=new TcpNioSocketServer(((CacheEle<PushConfig>)SystemCache.getCache(PushConstants.PUSH_CONF)).getContent());
+        tcpCtlServer=new TcpSocketServer(((CacheEle<PushConfig>)SystemCache.getCache(PushConstants.PUSH_CONF)).getContent());
         tcpCtlServer.setDaemon(true);
         tcpCtlServer.start();
     }

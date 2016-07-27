@@ -92,13 +92,10 @@ public class MsgNormal extends Message {
 
     @Override
     public void fromBytes(byte[] binaryMsg) {
-        // TODO Auto-generated method stub
-        
     }
 
     @Override
     public byte[] toBytes() {
-        // TODO Auto-generated method stub
         return null;
     }
 }

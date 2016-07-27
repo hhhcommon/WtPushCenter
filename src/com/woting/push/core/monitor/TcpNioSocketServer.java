@@ -30,7 +30,7 @@ public class TcpNioSocketServer extends Thread {
      * @param pc 推送参数
      */
     public TcpNioSocketServer(PushConfig pc) {
-        super("推送服务监控进程["+pc.getControlTcpPort()+"]");
+        super("推送服务监控进程["+pc.get_ControlTcpPort()+"]");
         this.pc=pc;
     }
 
@@ -58,7 +58,7 @@ public class TcpNioSocketServer extends Thread {
             serverChannel=ServerSocketChannel.open();
             serverChannel.configureBlocking(false);
             serverChannel.socket().setReuseAddress(true);
-            serverChannel.socket().bind(new InetSocketAddress(pc.getControlTcpPort()));
+            serverChannel.socket().bind(new InetSocketAddress(pc.get_ControlTcpPort()));
             logger.info("NIO TCP Connector nio 供应类: {}", selector.provider().getClass().getCanonicalName());
             serverChannel.register(selector, SelectionKey.OP_ACCEPT);
         } catch (IOException e) {
