@@ -1,37 +1,7 @@
-{
+﻿{
   "push":{
     "ctlTcpPort":"16789", //控制端配置
     "dispatchThread":"4", //分发接收消息的线程个数
     "cleanInterval":"60*1000" //清理内存间隔时间
-  },
-  "test1":{
-    "test11":{
-      "test111":"test111"
-    },
-    "test12":{
-      "test121":"test121"
-    }
-  },
-  "test2":[12,23,423,234],
-  "test3":{
-    "test31":{
-      "test311":"test311",
-      "test312":[
-        {"name":"NAME", "value":3120},
-        {"name":"NAME", "value":3121},
-        {"name":"NAME", "value":3122},
-        {"name":"NAME", "value":3123}
-      ]
-    },
-    "test32":[
-      [12,23,34,56],
-      ["A","B","C","D"],
-      [
-        {"name":"NAME", "value":3230},
-        {"name":"NAME", "value":3231},
-        {"name":"NAME", "value":3232},
-        {"name":"NAME", "value":3233}
-      ]
-    ]
   }
 }

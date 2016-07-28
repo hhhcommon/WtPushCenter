@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import com.spiritdata.framework.core.cache.CacheEle;
 import com.spiritdata.framework.core.cache.SystemCache;
-import com.woting.jsonconfig.JsonConfig;
+import com.spiritdata.framework.jsonconf.JsonConfig;
 import com.woting.push.config.ConfigLoadUtils;
 import com.woting.push.config.PushConfig;
 //import com.woting.push.core.monitor.TcpNioSocketServer;

@@ -10,7 +10,7 @@ package com.woting.push.config;
  * @author wanghui
  *
  */
-public class TcpSocketConfig {
+public class TcpSocketConfig implements Config {
     //以下主控线程控制参数
     private long _ExpireTime=1000*240; //多长时间没有收到信息，若大于此时间没有获得信息，则系统认为Socket已经失效，将关闭相应的处理
     private long _MonitorDelay=1000; //主监控进程监控周期
