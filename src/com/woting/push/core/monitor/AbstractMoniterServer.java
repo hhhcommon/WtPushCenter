@@ -1,5 +1,8 @@
 package com.woting.push.core.monitor;
 
-public class AbstractMoniterServer extends Thread {
+import com.woting.push.config.Config;
 
+public class AbstractMoniterServer extends Thread {
+    protected AbstractMoniterServer(Config conf) {
+    }
 }
