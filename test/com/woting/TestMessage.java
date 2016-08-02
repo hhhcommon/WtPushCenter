@@ -7,6 +7,7 @@ import java.io.UnsupportedEncodingException;
 import com.spiritdata.framework.util.JsonUtils;
 import com.woting.push.core.message.ByteConvert;
 import com.woting.push.core.message.Message;
+import com.woting.push.core.message.MessageUtils;
 import com.woting.push.core.message.MsgMedia;
 
 public class TestMessage {
@@ -70,9 +71,9 @@ public class TestMessage {
      * parse_String(ba, 24, 10, null)=-1::sdaf
          */
         byte[] ba=ssss.getBytes();
-        System.out.println("==="+mm.parse_String(ba, 3, 7, null));
-        System.out.println("==="+mm.parse_String(ba, 15, 10, null));
-        System.out.println("==="+mm.parse_String(ba, 24, 10, null));
+//        System.out.println("==="+MessageUtils.parse_String(ba, 3, 7, null));
+//        System.out.println("==="+mm.parse_String(ba, 15, 10, null));
+//        System.out.println("==="+mm.parse_String(ba, 24, 10, null));
         byte[] t=new byte[1];
         t[0]=-128;
         Byte __b=new Byte(t[0]);

@@ -1,5 +1,6 @@
 package com.woting.push.core.message;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 
 import com.spiritdata.framework.util.StringUtils;
@@ -17,6 +18,15 @@ public class MsgMedia extends Message {
     private int seqNo; //流中包的序列号
     private int returnType; //返回消息类型
     private byte[] mediaData; //包数据
+
+    //以下信息在TCP原消息格式中有意义，在新的消息传输模型中需要删掉（不管是用TCP还是UDP）
+    private String objId; //在组对讲中是组Id,在电话对讲中是电话通话Id
+    public String getObjId() {
+        return objId;
+    }
+    public void setObjId(String objId) {
+        this.objId=objId;
+    }
 
     /**
      * 空构造函数
@@ -36,56 +46,56 @@ public class MsgMedia extends Message {
         return mediaType;
     }
     public void setMediaType(int mediaType) {
-        this.mediaType = mediaType;
+        this.mediaType=mediaType;
     }
 
     public int getBizType() {
         return bizType;
     }
     public void setBizType(int bizType) {
-        this.bizType = bizType;
+        this.bizType=bizType;
     }
 
     public String getTalkId() {
         return talkId;
     }
     public void setTalkId(String talkId) {
-        this.talkId = talkId;
+        this.talkId=talkId;
     }
 
     public int getSeqNo() {
         return seqNo;
     }
     public void setSeqNo(int seqNo) {
-        this.seqNo = seqNo;
+        this.seqNo=seqNo;
     }
 
     public int getReturnType() {
         return returnType;
     }
     public void setReturnType(int returnType) {
-        this.returnType = returnType;
+        this.returnType=returnType;
     }
 
     public byte[] getMediaData() {
         return mediaData;
     }
     public void setMediaData(byte[] mediaData) {
-        this.mediaData = mediaData;
+        this.mediaData=mediaData;
     }
 
     @Override
     public void fromBytes(byte[] binaryMsg) {
         if (binaryMsg.length<COMPACT_LEN) throw new RuntimeException("消息格式异常：长度不足！");
-        if (!parse_EndFlagOk(binaryMsg)) throw new RuntimeException("消息未正确结束！");
+        if (!MessageUtils.parse_EndFlagOk(binaryMsg)) throw new RuntimeException("消息未正确结束！");
 
         int _offset=0;
         byte f1=binaryMsg[_offset++];
         this.setMsgType(((f1&0x80)==0x80)?1:0);
         this.setAffirm(((f1&0x40)==0x40)?1:0);
 
-        if (this.affirm==1&&this.msgType==1) throw new RuntimeException("消息格式异常：回复消息不需要确认！");
-        if (this.msgType==1&&binaryMsg.length!=COMPACT_LEN+1) throw new RuntimeException("消息格式异常：回复消息长度错误！");
+        if (affirm==1&&msgType==1) throw new RuntimeException("消息格式异常：回复消息不需要确认！");
+        if (msgType==1&&binaryMsg.length!=COMPACT_LEN+1) throw new RuntimeException("消息格式异常：回复消息长度错误！");
 
         if (((f1&0x10)==0x10)&&((f1&0x30)==0x10)) this.setFromType(1);//服务器
         else
@@ -95,13 +105,13 @@ public class MsgMedia extends Message {
 
         if (((f1&0x04)==0x04)&&((f1&0x0C)==0x04)) this.setToType(1);//服务器
         else
-        if (((f1&0x08)==0x08)&&((f1&0x0C)==0x04)) this.setFromType(2);//设备
+        if (((f1&0x08)==0x08)&&((f1&0x0C)==0x04)) this.setToType(2);//设备
         else
         throw new RuntimeException("消息to位异常！");
 
         if (((f1&0x01)==0x01)&&((f1&0x03)==0x01)) this.setMediaType(1);//音频
         else
-        if (((f1&0x02)==0x02)&&((f1&0x03)==0x02)) this.setFromType(2);//设备
+        if (((f1&0x02)==0x02)&&((f1&0x03)==0x02)) this.setMediaType(2);//视频
         else
         throw new RuntimeException("消息媒体类型位异常！");
 
@@ -113,7 +123,7 @@ public class MsgMedia extends Message {
         _offset+=8;
         String _tempStr;
         try {
-            _tempStr=this.parse_String(binaryMsg, _offset, 8, null);            
+            _tempStr=MessageUtils.parse_String(binaryMsg, _offset, 8, null);
         } catch(Exception e) {
             throw new RuntimeException("消息会话Id异常！", e);
         }
@@ -127,66 +137,76 @@ public class MsgMedia extends Message {
         this.setSeqNo(ByteConvert.bytes2int(_tempBytes));
 
         _offset+=4;
-        if (this.msgType==1) this.setReturnType(binaryMsg[_offset]);
+        //objId，可能需要删除掉
+        try {
+            _tempStr=MessageUtils.parse_String(binaryMsg, _offset, 8, null);
+        } catch(Exception e) {
+            throw new RuntimeException("对象Id异常！", e);
+        }
+        _sa=_tempStr.split("::");
+        if (_sa.length!=2) throw new RuntimeException("对象Id异常！");
+        if (Integer.parseInt(_sa[0])==-1) throw new RuntimeException("对象Id异常！");
+        _offset=Integer.parseInt(_sa[0]);
+        this.setObjId(_sa[1]);
+        //删除结束
+
+        if (msgType==1) this.setReturnType(binaryMsg[_offset]);
         else {
-            this.mediaData=Arrays.copyOfRange(binaryMsg, _offset, binaryMsg.length-2);
+            mediaData=Arrays.copyOfRange(binaryMsg, _offset, binaryMsg.length-2);
         }
     }
 
     @Override
     public byte[] toBytes() {
         int _offset=0;
-        int _bml=(mediaData==null?0:mediaData.length)+COMPACT_LEN+(this.msgType==1?1:0);
+        int _bml=(mediaData==null?0:mediaData.length)+COMPACT_LEN+(msgType==1?1:0);
         byte[] ret=new byte[_bml];
         byte f1=0;
-        if (this.msgType==1) f1|=0x80;
-        if (this.affirm==1) f1|=0x40;
-        f1|=(this.fromType==1?0x10:0x20);
-        f1|=(this.toType==1?0x04:0x08);
-        f1|=(this.mediaType==1?0x01:0x02);
-        ret[0]=f1;
+        if (msgType==1) f1|=0x80;
+        if (affirm==1) f1|=0x40;
+        f1|=(fromType==1?0x10:0x20);
+        f1|=(toType==1?0x04:0x08);
+        f1|=(mediaType==1?0x01:0x02);
+        ret[_offset++]=f1;
 
-        ret[1]=(byte)this.bizType;
+        ret[_offset++]=(byte)bizType;
 
-        _offset=2;
-        byte[] _tempBytes=ByteConvert.long2bytes(this.sendTime);
+        byte[] _tempBytes=ByteConvert.long2bytes(sendTime);
         int i=0;
-        for (; i<8; i++) ret[_offset+i]=_tempBytes[i];
+        for (; i<8; i++) ret[_offset++]=_tempBytes[i];
 
-        _offset=10;
-        int talkIdLen=8;
-        if (StringUtils.isNullOrEmptyOrSpace(this.talkId)) throw new RuntimeException("媒体消息异常：未设置有效会话id！");
-        _tempBytes=this.talkId.getBytes();
-        if (_tempBytes.length>=8) {
-            for (i=0; i<8; i++) ret[_offset+i]=_tempBytes[i];
-        } else if (_tempBytes.length==7) {
-            for (i=0; i<7; i++) ret[_offset+i]=_tempBytes[i];
-            ret[_offset+i]='E';
-        } else {
-            talkIdLen=_tempBytes.length+2;
-            for (i=0; i<_tempBytes.length; i++) ret[_offset+i]=_tempBytes[i];
-            ret[_offset+i]=END_FIELD[1];
-            ret[_offset+i+1]=END_FIELD[0];
+        if (StringUtils.isNullOrEmptyOrSpace(talkId)) throw new RuntimeException("媒体消息异常：未设置有效会话id！");
+        try {
+            _offset=MessageUtils.set_String(ret, _offset, 8, talkId, null);
+        } catch (UnsupportedEncodingException e) {
         }
 
-        _offset+=talkIdLen;
-        _tempBytes=ByteConvert.int2bytes(this.seqNo);
-        for (i=0; i<4; i++) ret[_offset+i]=_tempBytes[i];
+        _tempBytes=ByteConvert.int2bytes(seqNo);
+        for (i=0; i<4; i++) ret[_offset++]=_tempBytes[i];
 
-        _offset=22;
+        //为objId，要删除掉
+        _tempBytes=objId.getBytes();
+        for (i=0; i<12; i++) ret[_offset++]=_tempBytes[i];
+        //为objId，要删除掉
         i=0;
-        if (this.msgType==1) {
-            ret[_offset]=(byte)this.returnType;
-            _offset++;
+        if (msgType==1) {
+            ret[_offset++]=(byte)returnType;
         } else {
             if (mediaData!=null) {
-                for (; i<mediaData.length; i++) ret[_offset+i]=mediaData[i];
+                for (; i<mediaData.length; i++) ret[_offset++]=mediaData[i];
             }
         }
 
-        ret[_offset+(i++)]=END_MSG[0];
-        ret[_offset+i]=END_MSG[1];
+        ret[_offset++]=END_MSG[1];
+        ret[_offset++]=END_MSG[0];
 
         return ret;
+    }
+
+    /**
+     * 判断是否是应答消息
+     */
+    public boolean isAck() {
+        return affirm==0&&msgType==1;
     }
 }
