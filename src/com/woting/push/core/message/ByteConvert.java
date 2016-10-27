@@ -27,9 +27,10 @@ public abstract class ByteConvert {
      * 字节数组转换为长整型
      * @param bytes 字节数组
      * @return 长整型整数
+     * @throws Exception 
      */
-    public static long bytes2long(byte[] bytes) {
-        if (bytes.length!=8) throw new RuntimeException("字节数组转换为长整型：字节数组长度必须是8!");
+    public static long bytes2long(byte[] bytes) throws Exception {
+        if (bytes.length!=8) throw new Exception("字节数组转换为长整型：字节数组长度必须是8!");
         return
           ((((long)bytes[7])     <<56) |
            (((long)bytes[6]&0xff)<<48) |
@@ -59,9 +60,10 @@ public abstract class ByteConvert {
      * 字节数组转换为整型
      * @param bytes 字节数组
      * @return 整型整数
+     * @throws Exception 
      */
-    public static int bytes2int(byte[] bytes) {
-        if (bytes.length!=4) throw new RuntimeException("字节数组转换为整型：字节数组长度必须是4!");
+    public static int bytes2int(byte[] bytes) throws Exception {
+        if (bytes.length!=4) throw new Exception("字节数组转换为整型：字节数组长度必须是4!");
         return
           ((((int)bytes[3])     <<24) |
            (((int)bytes[2]&0xff)<<16) |

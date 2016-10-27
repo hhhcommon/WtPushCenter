@@ -8,16 +8,14 @@ import java.io.UnsupportedEncodingException;
  */
 public abstract class MessageUtils {
     /**
-     * 判断字节流是否是合法的字节流
-     * @param binaryMsg
-     * @return
+     * 判定消息的类型
+     * @return 消息类型，目前只有0=控制消息(一般消息);1=媒体消息
      */
-    protected static boolean parse_EndFlagOk(byte[] binaryMsg) {
-        if (binaryMsg.length<=2) return false;
-        int _bl=binaryMsg.length;
-        return binaryMsg[_bl-1]==Message.END_MSG[1]&&binaryMsg[_bl-2]==Message.END_MSG[0];
+    public static int decideMsg(byte[] binaryMsg) {
+        if (binaryMsg[0]=='|'&&binaryMsg[1]=='^') return 0;
+        if (binaryMsg[0]=='^'&&binaryMsg[1]=='|') return 1;
+        return 0;
     }
-
     /**
      * 从binaryMsg字节数组的offset开始，取length长度的字符串，并按照encode所指定的编码方式进行编码。
      * <br/>注意:
@@ -139,8 +137,23 @@ public abstract class MessageUtils {
         ret.setSeqNo(orgMsg.getSeqNo());
         ret.setReturnType(returnType);
 
-        ret.setObjId(orgMsg.getObjId());
+        ret.setObjId(orgMsg.getObjId()); //准备删除
 
         return ret;
+    }
+
+    /**
+     * 根据字符串数组创建消息对象
+     * @param binaryMsg
+     * @return
+     * @throws Exception 
+     */
+    public static Message buildMsgByBytes(byte[] binaryMsg) throws Exception {
+        int msgType=decideMsg(binaryMsg);
+        if (msgType==0) return new MsgNormal(binaryMsg);
+        else
+        if (msgType==1) return new MsgMedia(binaryMsg);
+        else
+        return null;
     }
 }

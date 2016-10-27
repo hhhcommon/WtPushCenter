@@ -15,7 +15,7 @@ import com.woting.push.PushConstants;
  * 为Spring所做的壳程序
  * @author wanghui
  */
-public class SpringShell {
+public abstract class SpringShell {
     /**
      * Spring ICO上下文加载
      */

@@ -7,7 +7,6 @@ import java.io.UnsupportedEncodingException;
 import com.spiritdata.framework.util.JsonUtils;
 import com.woting.push.core.message.ByteConvert;
 import com.woting.push.core.message.Message;
-import com.woting.push.core.message.MessageUtils;
 import com.woting.push.core.message.MsgMedia;
 
 public class TestMessage {
@@ -15,7 +14,6 @@ public class TestMessage {
     public static void main(String[] args) throws UnsupportedEncodingException {
         System.out.println((char)Message.END_FIELD[0]+""+(char)Message.END_FIELD[1]);
         System.out.println((char)Message.END_HEAD[0]+""+(char)Message.END_HEAD[1]);
-        System.out.println((char)Message.END_MSG[0]+""+(char)Message.END_MSG[1]);
         byte[] test={'a','b','c','@', '|', '^'};
         System.out.println(new String(test));
         MsgMedia mm=new MsgMedia();
@@ -26,7 +24,7 @@ public class TestMessage {
 //            System.out.print(Integer.toBinaryString(b[i]));
 //        }
         System.out.println();
-        System.out.println(ByteConvert.bytes2long(b));
+//        System.out.println(ByteConvert.bytes2long(b));
         
         int a=-1234;
         b=ByteConvert.int2bytes(a);
@@ -35,7 +33,7 @@ public class TestMessage {
             System.out.print(Integer.toBinaryString(b[i]));
         }
         System.out.println();
-        System.out.println(ByteConvert.bytes2int(b));
+       // System.out.println(ByteConvert.bytes2int(b));
 
         mm.setMsgType(0);
         mm.setAffirm(1);
@@ -49,7 +47,7 @@ public class TestMessage {
         mm.setMediaData(new byte[40]);
 
         System.out.println(JsonUtils.objToJson(mm));
-        byte[] bbb=mm.toBytes();
+        byte[] bbb=null;//mm.toBytes();
         try {
             File f=new File("d:\\bb.obj");
             if (!f.exists()) f.createNewFile();
@@ -80,7 +78,7 @@ public class TestMessage {
         int dddd=t[0];
         System.out.println(dddd);
         System.out.println(Integer.toBinaryString(__b));
-        MsgMedia mm2=new MsgMedia(bbb);
+        MsgMedia mm2=null;//new MsgMedia(bbb);
         System.out.println(JsonUtils.objToJson(mm2));
     }
 }

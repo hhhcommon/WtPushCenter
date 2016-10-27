@@ -95,7 +95,7 @@ public class ServerListener {
                 }
             }
         } else {//class
-            rootPath=rootPath.substring(0, rootPath.length()-"com.woting.crawler".length()-1);
+            rootPath=rootPath.substring(0, rootPath.length()-"com.woting.push".length()-1);
             String[] _s=rootPath.split("/");
             if (_s.length>1) {
                 rootPath="/";
@@ -127,7 +127,7 @@ public class ServerListener {
             logger.info("加载运行目录，用时[{}]毫秒", System.currentTimeMillis()-_begin);
             //读取系统配置
             _begin=System.currentTimeMillis();
-            loadConfig(rootPath+"conf/config.jconf");
+            //loadConfig(rootPath+"conf/config.jconf");
             logger.info("加载系统配置，用时[{}]毫秒", System.currentTimeMillis()-_begin);
             //Spring环境加载
             SpringShell.init();
