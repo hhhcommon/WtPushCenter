@@ -11,9 +11,11 @@ import com.spiritdata.framework.jsonconf.JsonConfig;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.push.config.ConfigLoadUtils;
 import com.woting.push.config.PushConfig;
-//import com.woting.push.core.monitor.TcpNioSocketServer;
-import com.woting.push.core.monitor.TcpSocketServer;
+import com.woting.push.config.SocketHandleConfig;
+import com.woting.push.core.monitor.AbstractMoniterServer;
 import com.woting.push.core.service.LoadSysCacheService;
+import com.woting.push.core.socket.nio.NioServer;
+import com.woting.push.core.socket.oio.OioServer;
 import com.woting.push.ext.SpringShell;
 
 import ch.qos.logback.classic.LoggerContext;
@@ -25,9 +27,14 @@ import ch.qos.logback.core.joran.spi.JoranException;
  * @author wanghui
  */
 public class ServerListener {
+    private int socketType=0; //0=oio；1=nio
+
     public static void main(String[] args) {
+        //处理参数，看是用nio还是用oio
+
         ServerListener sl = ServerListener.getInstance();
         try {
+            Thread.currentThread().setName("推送服务主进程");
             sl.begin();
         } catch(Exception e) {
             e.printStackTrace();
@@ -56,7 +63,7 @@ public class ServerListener {
     private Logger logger=null;
     private static int _RUN_STATUS=0;//运行状态，0未启动，1正在启动，2启动成功；3准备停止；4停止
 
-    private TcpSocketServer  tcpCtlServer=null; //tcp控制信道监控服务
+    private AbstractMoniterServer<PushConfig> tcpCtlServer=null; //tcp控制信道监控服务
     
     /**
      * 获得运行状态
@@ -165,6 +172,8 @@ public class ServerListener {
         JsonConfig jc=new JsonConfig(configFileName);
         PushConfig pc=ConfigLoadUtils.getPushConfig(jc);
         SystemCache.setCache(new CacheEle<PushConfig>(PushConstants.PUSH_CONF, "系统配置", pc));
+        SocketHandleConfig shc=ConfigLoadUtils.getSocketHandleConfig(jc);
+        SystemCache.setCache(new CacheEle<SocketHandleConfig>(PushConstants.SOCKETHANDLE_CONF, "系统配置", shc));
     }
 
     private void begin() {
@@ -195,7 +204,16 @@ public class ServerListener {
 
     private void startServers() {
         //1-启动{TCP_控制信道}socket监控
-        startTcpServer();//开启TCP服务，用于控制信息的传送
+        @SuppressWarnings("unchecked")
+        PushConfig pc=((CacheEle<PushConfig>)SystemCache.getCache(PushConstants.PUSH_CONF)).getContent();
+        if (socketType==0) {
+            tcpCtlServer=new OioServer(pc);
+        } else {
+            tcpCtlServer=new NioServer(pc);
+        }
+        tcpCtlServer.setDaemon(true);
+        tcpCtlServer.start();
+
         _RUN_STATUS=2;//==================启动成功
     }
     private void listener() {
@@ -204,23 +222,15 @@ public class ServerListener {
         }
     }
     private void stopServers() {
-        stopTcpServer();
-        int i=0;
-        while (tcpCtlServer.getRUN_STATUS()!=4&&(i++<10)) {
-            try { Thread.sleep(500); } catch(Exception e) {}
+        //1-停止{TCP_控制信道}socket监控
+        if (tcpCtlServer!=null) {
+            tcpCtlServer.stopServer();
+            int i=0;
+            while (tcpCtlServer.getRUN_STATUS()!=4&&(i++<10)) {
+                try { Thread.sleep(500); } catch(Exception e) {}
+            }
+            tcpCtlServer.stopServer();;
         }
-        tcpCtlServer.stop();
         _RUN_STATUS=4;//==================成功停止
-    }
-
-    //以下启动具体的服务===========================================================
-    //1-tcp控制信道监控服务
-    private void startTcpServer() {
-        tcpCtlServer=new TcpSocketServer(((CacheEle<PushConfig>)SystemCache.getCache(PushConstants.PUSH_CONF)).getContent());
-        tcpCtlServer.setDaemon(true);
-        tcpCtlServer.start();
-    }
-    private void stopTcpServer() {
-        if (tcpCtlServer!=null) tcpCtlServer.stopServer();
     }
 }

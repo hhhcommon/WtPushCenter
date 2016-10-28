@@ -35,7 +35,7 @@ public abstract class AbstractMoniterServer<C extends Config> extends Thread imp
     /**
      * 每一监控周期所执行的过程。
      */
-    public abstract void oneProcess();
+    public abstract void oneProcess() throws Exception;
 
     @Override
     public void setMoniterName(String mname) {

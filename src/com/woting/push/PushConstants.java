@@ -7,4 +7,5 @@ public class PushConstants {
 
     //-缓存/配置信息常量------------------------------------------------------------------------
     public final static String PUSH_CONF="Push-Config";//推送配置
+    public final static String SOCKETHANDLE_CONF="SocketHandle-Config";//推送配置
 }

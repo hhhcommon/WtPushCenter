@@ -146,6 +146,20 @@
                 <include>**</include>
               </includes>
             </fileset>
+            <fileset>
+              <directory>${projectDir}\target\pub</directory>
+              <followSymlinks>false</followSymlinks>
+              <includes>
+                <include>**</include>
+              </includes>
+            </fileset>
+            <fileset>
+              <directory>${projectDir}\target\conf</directory>
+              <followSymlinks>false</followSymlinks>
+              <includes>
+                <include>**</include>
+              </includes>
+            </fileset>
           </filesets>
         </configuration>
       </plugin>

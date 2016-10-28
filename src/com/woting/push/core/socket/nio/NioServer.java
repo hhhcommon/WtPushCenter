@@ -1,4 +1,4 @@
-package com.woting.push.core.monitor;
+package com.woting.push.core.socket.nio;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -14,14 +14,15 @@ import org.slf4j.LoggerFactory;
 
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.push.config.PushConfig;
+import com.woting.push.core.monitor.AbstractMoniterServer;
 
-public class TcpNioSocketServer extends AbstractMoniterServer<PushConfig> {
-    private Logger logger=LoggerFactory.getLogger(TcpNioSocketServer.class);
+public class NioServer extends AbstractMoniterServer<PushConfig> {
+    private Logger logger=LoggerFactory.getLogger(NioServer.class);
 
     private Selector selector;
     private ServerSocketChannel serverChannel=null;
 
-    protected TcpNioSocketServer(PushConfig conf) {
+    public NioServer(PushConfig conf) {
         super(conf);
     }
 
