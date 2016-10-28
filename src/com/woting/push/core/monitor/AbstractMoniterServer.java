@@ -74,12 +74,14 @@ public abstract class AbstractMoniterServer<C extends Config> extends Thread imp
             logger.info("服务[{}]初始化失败", this.getName());
         } else {
             _RUN_STATUS=2;
-
-            moniter();
-
-            _RUN_STATUS=3;
-            destroyServer();
-            _RUN_STATUS=4;
+            try {
+                moniter();
+            } catch (Exception e) {
+            } finally {
+                _RUN_STATUS=3;
+                destroyServer();
+                _RUN_STATUS=4;
+            }
         }
     }
 }

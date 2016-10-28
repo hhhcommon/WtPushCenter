@@ -170,6 +170,7 @@ public class ServerListener {
      */
     private void loadConfig(String configFileName) throws IOException {
         JsonConfig jc=new JsonConfig(configFileName);
+        logger.info("配置文件信息={}", jc.getAllConfInfo());
         PushConfig pc=ConfigLoadUtils.getPushConfig(jc);
         SystemCache.setCache(new CacheEle<PushConfig>(PushConstants.PUSH_CONF, "系统配置", pc));
         SocketHandleConfig shc=ConfigLoadUtils.getSocketHandleConfig(jc);

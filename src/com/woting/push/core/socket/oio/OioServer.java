@@ -18,7 +18,7 @@ public class OioServer extends AbstractMoniterServer<PushConfig> {
 
     public OioServer(PushConfig pc) {
         super(pc);
-        super.setName("TcpSocket监控线程[port:"+pc.get_ControlTcpPort()+"]");
+        super.setName("TcpSocketServer监控线程[port:"+pc.get_ControlTcpPort()+"]");
     }
 
     public boolean initServer() {
@@ -58,7 +58,13 @@ public class OioServer extends AbstractMoniterServer<PushConfig> {
     }
     @Override
     public void destroyServer() {
-        // TODO Auto-generated method stub
-        
+        if (serverSocket!=null) {
+            try {
+                serverSocket.close();
+            } catch (IOException e) {
+            } finally {
+                serverSocket=null;
+            }
+        }
     }
 }
