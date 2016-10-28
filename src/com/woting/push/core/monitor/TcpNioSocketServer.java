@@ -1,8 +1,6 @@
 package com.woting.push.core.monitor;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
@@ -14,6 +12,7 @@ import java.util.Iterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.spiritdata.framework.util.StringUtils;
 import com.woting.push.config.PushConfig;
 
 public class TcpNioSocketServer extends AbstractMoniterServer<PushConfig> {
@@ -27,7 +26,7 @@ public class TcpNioSocketServer extends AbstractMoniterServer<PushConfig> {
     }
 
     @Override
-    public void initServer() {
+    public boolean initServer() {
         //启动Socket
         try {
             selector=Selector.open();
@@ -39,11 +38,9 @@ public class TcpNioSocketServer extends AbstractMoniterServer<PushConfig> {
             logger.info("NIO TCP Connector nio 供应类: {}", selector.provider().getClass().getCanonicalName());
             serverChannel.register(selector, SelectionKey.OP_ACCEPT);
         } catch (IOException e) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            logger.error("启动服务出现异常：\n{}", sw.toString());
+            logger.error("启动服务出现异常：\n{}", StringUtils.getAllMessage(e));
         }
+        return false;
     }
 
     @Override
@@ -69,16 +66,10 @@ public class TcpNioSocketServer extends AbstractMoniterServer<PushConfig> {
                 }
             }
         } catch(ClosedSelectorException cse) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            cse.printStackTrace(pw);
-            logger.error("启动服务出现异常：\n{}", sw.toString());
+            logger.error("启动服务出现异常：\n{}", StringUtils.getAllMessage(cse));
             //若selector已关闭，则退出监控
         } catch(Exception e) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            logger.error("启动服务出现异常：\n{}", sw.toString());
+            logger.error("启动服务出现异常：\n{}", StringUtils.getAllMessage(e));
         }
     }
 
@@ -89,10 +80,7 @@ public class TcpNioSocketServer extends AbstractMoniterServer<PushConfig> {
                 selector.wakeup();
                 selector.close();
             } catch(Exception e) {
-                StringWriter sw = new StringWriter();
-                PrintWriter pw = new PrintWriter(sw);
-                e.printStackTrace(pw);
-                logger.error("启动服务出现异常：\n{}", sw.toString());
+                logger.error("启动服务出现异常：\n{}", StringUtils.getAllMessage(e));
             } finally {
                 selector=null;
             }
@@ -101,10 +89,7 @@ public class TcpNioSocketServer extends AbstractMoniterServer<PushConfig> {
             try {
                 serverChannel.close();
             } catch(Exception e) {
-                StringWriter sw = new StringWriter();
-                PrintWriter pw = new PrintWriter(sw);
-                e.printStackTrace(pw);
-                logger.error("启动服务出现异常：\n{}", sw.toString());
+                logger.error("启动服务出现异常：\n{}", StringUtils.getAllMessage(e));
             } finally {
                 serverChannel=null;
             }

@@ -1,8 +1,6 @@
 package com.woting.push;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import com.spiritdata.framework.core.cache.CacheEle;
 import com.spiritdata.framework.core.cache.SystemCache;
 import com.spiritdata.framework.jsonconf.JsonConfig;
+import com.spiritdata.framework.util.StringUtils;
 import com.woting.push.config.ConfigLoadUtils;
 import com.woting.push.config.PushConfig;
 //import com.woting.push.core.monitor.TcpNioSocketServer;
@@ -21,6 +20,10 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 
+/**
+ * 服务启动的主类
+ * @author wanghui
+ */
 public class ServerListener {
     public static void main(String[] args) {
         ServerListener sl = ServerListener.getInstance();
@@ -53,7 +56,6 @@ public class ServerListener {
     private Logger logger=null;
     private static int _RUN_STATUS=0;//运行状态，0未启动，1正在启动，2启动成功；3准备停止；4停止
 
-//    private TcpNioSocketServer  tcpCtlServer=null; //tcp控制信道监控服务
     private TcpSocketServer  tcpCtlServer=null; //tcp控制信道监控服务
     
     /**
@@ -74,7 +76,7 @@ public class ServerListener {
     /*
      * 初始化环境
      */
-    private void initEnvironment() {
+    private boolean initEnvironment() {
         boolean initOk=false;
         long beginTime=System.currentTimeMillis();
         long segmentBeginTime=beginTime;
@@ -82,7 +84,7 @@ public class ServerListener {
 
         _RUN_STATUS=1;//==================正在启动
 
-        //获取运行路径
+        //1=获取运行路径
         String rootPath=ServerListener.class.getResource("").getPath();
         if (rootPath.indexOf("!")!=-1) {//jar包
             rootPath=rootPath.substring(0, rootPath.indexOf("!"));
@@ -107,7 +109,7 @@ public class ServerListener {
         else if (os.toLowerCase().startsWith("window")&&rootPath.startsWith("/")) rootPath=rootPath.substring(1);
         SystemCache.setCache(new CacheEle<String>(PushConstants.APP_PATH, "系统运行的路径", rootPath));
 
-        //logback加载xml内容
+        //2=logback加载xml内容
         LoggerContext lc=(LoggerContext)LoggerFactory.getILoggerFactory();
         JoranConfigurator configurator=new JoranConfigurator();
         configurator.setContext(lc);
@@ -127,7 +129,7 @@ public class ServerListener {
             logger.info("加载运行目录，用时[{}]毫秒", System.currentTimeMillis()-_begin);
             //读取系统配置
             _begin=System.currentTimeMillis();
-            //loadConfig(rootPath+"conf/config.jconf");
+            loadConfig(rootPath+"conf/config.jconf");
             logger.info("加载系统配置，用时[{}]毫秒", System.currentTimeMillis()-_begin);
             //Spring环境加载
             SpringShell.init();
@@ -145,20 +147,24 @@ public class ServerListener {
 
             initOk=true;
         } catch(Exception e) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            logger.info("启动服务出现异常：\n{}", sw.toString());
+            logger.info("启动服务出现异常：\n{}", StringUtils.getAllMessage(e));
             initOk=false;
         }
 
         if (initOk) logger.info("Push服务环境加载成功，共用时[{}]毫秒", System.currentTimeMillis()-beginTime);
         else logger.info("Push服务环境加载错误，启动失败。共用时[{}]毫秒", System.currentTimeMillis()-beginTime);
+        return initOk;
     }
+
+    /*
+     * 加载服务配置
+     * @param configFileName 配置文件
+     * @throws IOException
+     */
     private void loadConfig(String configFileName) throws IOException {
         JsonConfig jc=new JsonConfig(configFileName);
         PushConfig pc=ConfigLoadUtils.getPushConfig(jc);
-        SystemCache.setCache(new CacheEle<PushConfig>(PushConstants.PUSH_CONF, "系统运行的路径", pc));
+        SystemCache.setCache(new CacheEle<PushConfig>(PushConstants.PUSH_CONF, "系统配置", pc));
     }
 
     private void begin() {
@@ -178,12 +184,13 @@ public class ServerListener {
             }
         });
 
-        initEnvironment();
+        boolean initOk=initEnvironment();
 
-        //开始运行子进程
-        startServers();
-        listener();
-        stopServers(); //若listener不结束，不会执行这里的内容
+        if (initOk) {
+            startServers();//开始运行子进程
+            listener();
+            stopServers(); //若listener不结束，不会执行这里的内容
+        }
     }
 
     private void startServers() {
@@ -198,7 +205,6 @@ public class ServerListener {
     }
     private void stopServers() {
         stopTcpServer();
-
         int i=0;
         while (tcpCtlServer.getRUN_STATUS()!=4&&(i++<10)) {
             try { Thread.sleep(500); } catch(Exception e) {}

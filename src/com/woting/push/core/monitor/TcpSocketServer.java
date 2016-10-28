@@ -1,8 +1,6 @@
 package com.woting.push.core.monitor;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -10,6 +8,7 @@ import java.net.Socket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.spiritdata.framework.util.StringUtils;
 import com.woting.push.config.PushConfig;
 
 /**
@@ -60,10 +59,7 @@ public class TcpSocketServer extends Thread {
             logger.info("Tcp控制通道服务监控线程启动:地址[{}],端口[{}]", InetAddress.getLocalHost().getHostAddress(), pc.get_ControlTcpPort());
             _RUN_STATUS=2;
         } catch (IOException e) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            logger.error("启动服务出现异常：\n{}", sw.toString());
+            logger.error("启动服务出现异常：\n{}", StringUtils.getAllMessage(e));
         }
 
         //socket服务的真正监控
@@ -76,10 +72,7 @@ public class TcpSocketServer extends Thread {
 //                    new Thread(new SocketHandle(client, smc),"Socket["+client.getRemoteSocketAddress()+",socketKey="+client.hashCode()+"]监控主线程").start();
                 }
             } catch(Exception e) {
-                StringWriter sw = new StringWriter();
-                PrintWriter pw = new PrintWriter(sw);
-                e.printStackTrace(pw);
-                logger.error("启动服务出现异常：\n{}", sw.toString());
+                logger.error("启动服务出现异常：\n{}", StringUtils.getAllMessage(e));
             }
         }
 

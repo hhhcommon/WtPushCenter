@@ -24,7 +24,7 @@ public interface MonitorServer extends Runnable {
     /**
      * 初始化监控服务
      */
-    public void initServer();
+    public boolean initServer();
 
     /**
      * 停止监控服务。调用此过程后，通知监控服务要停止，但并不马上停止，还需要执行destroyServer。

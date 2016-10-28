@@ -1,14 +1,12 @@
 package com.woting.push.ext;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
 
 import com.spiritdata.framework.core.cache.CacheEle;
 import com.spiritdata.framework.core.cache.SystemCache;
+import com.spiritdata.framework.util.StringUtils;
 import com.woting.push.PushConstants;
 
 /**
@@ -39,10 +37,7 @@ public abstract class SpringShell {
         try {
             return ((ApplicationContext)(SystemCache.getCache(PushConstants.CONTEXT_SPRINGCTX).getContent())).getBean(beanName);
         } catch(Exception e) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            LoggerFactory.getLogger(SpringShell.class).error("得到名称为[{}]的bean对象出现异常：\n{}", beanName, sw.toString());
+            LoggerFactory.getLogger(SpringShell.class).error("得到名称为[{}]的bean对象出现异常：\n{}", beanName, StringUtils.getAllMessage(e));
         }
         return null;
     }

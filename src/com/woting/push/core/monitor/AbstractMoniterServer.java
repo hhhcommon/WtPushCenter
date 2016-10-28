@@ -1,5 +1,9 @@
 package com.woting.push.core.monitor;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.spiritdata.framework.util.StringUtils;
 import com.woting.push.config.Config;
 
 /**
@@ -13,7 +17,9 @@ import com.woting.push.config.Config;
  *
  */
 public abstract class AbstractMoniterServer<C extends Config> extends Thread implements MonitorServer {
-    private static int _RUN_STATUS=0;//运行状态，0未启动，1正在启动，2启动成功；3准备停止；4停止
+    private Logger logger=LoggerFactory.getLogger(AbstractMoniterServer.class);
+
+    private static int _RUN_STATUS=0;//运行状态:0未启动，1正在启动，2启动成功；3准备停止；4停止
     protected C conf;
 
     protected AbstractMoniterServer(C conf) {
@@ -27,7 +33,7 @@ public abstract class AbstractMoniterServer<C extends Config> extends Thread imp
     public abstract boolean canContinue();
 
     /**
-     * 每一监控周期所执行得过程。
+     * 每一监控周期所执行的过程。
      */
     public abstract void oneProcess();
 
@@ -52,7 +58,7 @@ public abstract class AbstractMoniterServer<C extends Config> extends Thread imp
             try {
                 oneProcess();
             } catch(Exception e) {
-                e.printStackTrace();
+                logger.error("服务[{}]监控过程异常：\n{}", this.getName(), StringUtils.getAllMessage(e));
             }
         }
         _RUN_STATUS=3;
@@ -63,13 +69,17 @@ public abstract class AbstractMoniterServer<C extends Config> extends Thread imp
      */
     public void run() {
         _RUN_STATUS=1;
-        initServer();
-        _RUN_STATUS=2;
+        boolean initOk=initServer();
+        if (!initOk) {
+            logger.info("服务[{}]初始化失败", this.getName());
+        } else {
+            _RUN_STATUS=2;
 
-        moniter();
+            moniter();
 
-        _RUN_STATUS=3;
-        destroyServer();
-        _RUN_STATUS=4;
+            _RUN_STATUS=3;
+            destroyServer();
+            _RUN_STATUS=4;
+        }
     }
 }
