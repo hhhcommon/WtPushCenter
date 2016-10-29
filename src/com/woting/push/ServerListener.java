@@ -14,8 +14,8 @@ import com.woting.push.config.PushConfig;
 import com.woting.push.config.SocketHandleConfig;
 import com.woting.push.core.monitor.AbstractMoniterServer;
 import com.woting.push.core.service.LoadSysCacheService;
-import com.woting.push.core.socket.nio.NioServer;
-import com.woting.push.core.socket.oio.OioServer;
+import com.woting.push.core.monitor.socket.nio.NioServer;
+import com.woting.push.core.monitor.socket.oio.OioServer;
 import com.woting.push.ext.SpringShell;
 
 import ch.qos.logback.classic.LoggerContext;
@@ -181,8 +181,7 @@ public class ServerListener {
         //结束服务的钩子
         final Thread mainT=Thread.currentThread();
         Runtime.getRuntime().addShutdownHook(new Thread(){
-            public void run(){
-                _RUN_STATUS=3;
+            public void run() {
                 logger.info("正在正在关闭服务... ");
                 stopServers();
                 try{

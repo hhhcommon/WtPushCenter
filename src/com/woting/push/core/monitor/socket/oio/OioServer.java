@@ -1,4 +1,4 @@
-package com.woting.push.core.socket.oio;
+package com.woting.push.core.monitor.socket.oio;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -8,8 +8,12 @@ import java.net.Socket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.spiritdata.framework.core.cache.CacheEle;
+import com.spiritdata.framework.core.cache.SystemCache;
 import com.spiritdata.framework.util.StringUtils;
+import com.woting.push.PushConstants;
 import com.woting.push.config.PushConfig;
+import com.woting.push.config.SocketHandleConfig;
 import com.woting.push.core.monitor.AbstractMoniterServer;
 
 public class OioServer extends AbstractMoniterServer<PushConfig> {
@@ -27,12 +31,15 @@ public class OioServer extends AbstractMoniterServer<PushConfig> {
             serverSocket=new ServerSocket(pc.get_ControlTcpPort());
             logger.info("Tcp控制通道服务监控线程启动:地址[{}],端口[{}]", InetAddress.getLocalHost().getHostAddress(), pc.get_ControlTcpPort());
             //加一个关闭jvm时可调用的方法，关闭此线程池
+            final Thread thisT=Thread.currentThread();
             Runtime.getRuntime().addShutdownHook(new Thread() {
                 public void run() {
-                    try {
-                        System.out.println("JVM退出时关闭推送服务监控进程");
-                        destroyServer();
-                    } catch (Exception e) {
+                    logger.info("正在关闭TcpSocketServer监控线程[port:"+pc.get_ControlTcpPort()+"]...");
+                    destroyServer();
+                    try{
+                        thisT.join();
+                        logger.info("服务已关闭");
+                    }catch(Exception e){
                         e.printStackTrace();
                     }
                 }
@@ -52,9 +59,8 @@ public class OioServer extends AbstractMoniterServer<PushConfig> {
     @Override
     public void oneProcess() throws Exception {
         Socket client=serverSocket.accept();//获得连接
-//        //准备参数
-//        SocketMonitorConfig smc=new SocketMonitorConfig();
-//        new Thread(new SocketHandle(client, smc),"Socket["+client.getRemoteSocketAddress()+",socketKey="+client.hashCode()+"]监控主线程").start();
+        SocketHandleConfig shc=((CacheEle<SocketHandleConfig>)SystemCache.getCache(PushConstants.SOCKETHANDLE_CONF)).getContent();
+        
     }
     @Override
     public void destroyServer() {
