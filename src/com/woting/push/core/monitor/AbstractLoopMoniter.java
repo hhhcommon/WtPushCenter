@@ -16,14 +16,27 @@ import com.woting.push.config.Config;
  * @author wanghui
  *
  */
-public abstract class AbstractMoniterServer<C extends Config> extends Thread implements MonitorServer {
-    private Logger logger=LoggerFactory.getLogger(AbstractMoniterServer.class);
+public abstract class AbstractLoopMoniter<C extends Config> extends Thread implements LoopMonitor {
+    private Logger logger=LoggerFactory.getLogger(AbstractLoopMoniter.class);
 
+    private long loopDelay=0;
     private static int _RUN_STATUS=0;//运行状态:0未启动，1正在启动，2启动成功；3准备停止；4停止
     protected C conf;
 
-    protected AbstractMoniterServer(C conf) {
+    /**
+     * 构造方法
+     * @param conf 此监控的配置信息
+     */
+    protected AbstractLoopMoniter(C conf) {
         this.conf=conf;
+    }
+
+    /**
+     * 设置监控延时时长，单位为毫秒
+     * 每监控周期大于此时间
+     */
+    protected void setLoopDelay(long ld) {
+        loopDelay=ld;
     }
 
     /**
@@ -31,11 +44,6 @@ public abstract class AbstractMoniterServer<C extends Config> extends Thread imp
      * @return True，可以继续监控，False，监控将停止
      */
     public abstract boolean canContinue();
-
-    /**
-     * 每一监控周期所执行的过程。
-     */
-    public abstract void oneProcess() throws Exception;
 
     @Override
     public void setMoniterName(String mname) {
@@ -52,13 +60,13 @@ public abstract class AbstractMoniterServer<C extends Config> extends Thread imp
         _RUN_STATUS=3;
     }
 
-    @Override
     public void moniter() {
         while(_RUN_STATUS==2&&canContinue()) {
             try {
                 oneProcess();
+                if (loopDelay>0) sleep(loopDelay);
             } catch(Exception e) {
-                logger.error("服务[{}]监控过程异常：\n{}", this.getName(), StringUtils.getAllMessage(e));
+                logger.info("[{}]监控过程异常：\n{}", this.getName(), StringUtils.getAllMessage(e));
             }
         }
         _RUN_STATUS=3;
@@ -68,6 +76,19 @@ public abstract class AbstractMoniterServer<C extends Config> extends Thread imp
      * 启动监控线程
      */
     public void run() {
+        final Thread thisT=Thread.currentThread();
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                logger.info("正在关闭"+thisT.getName()+"...");
+                destroyServer();
+                try{
+                    thisT.join();
+                    logger.info(thisT.getName()+"已关闭");
+                }catch(Exception e){
+                    e.printStackTrace();
+                }
+            }
+        });
         _RUN_STATUS=1;
         boolean initOk=initServer();
         if (!initOk) {

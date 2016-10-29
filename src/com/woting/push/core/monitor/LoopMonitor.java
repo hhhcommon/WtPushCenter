@@ -1,14 +1,14 @@
 package com.woting.push.core.monitor;
 
 /**
- * 监控服务的接口。
+ * 循环执行的监控服务 接口。
  * <pre>
- * 规范监控服务类的实现方法，为监控服务控制提供基础。
+ * 规范循环执行的监控服务类的实现方法，为循环执行的监控服务提供基础框架。
  * 本接口是可运行的，它继承了Runnable接口。
  * </pre>
  * @author wanghui
  */
-public interface MonitorServer extends Runnable {
+public interface LoopMonitor extends Runnable {
     /**
      * 设置监控的名称，此名称会作为运行线程的名称，请在线程启动前设置监控名称
      * @param mname 监控名称
@@ -37,10 +37,7 @@ public interface MonitorServer extends Runnable {
     public void destroyServer();
 
     /**
-     * 监控方法，执行listen的方法
-     * <pre>
-     * 注意这个监控方法必须是循环形式，否则moniter过程执行完，会直接调用服务销毁过程，在此情况下，服务仅执行一次monitor过程
-     * </pre>
+     * 循环执行的方法，每一监控周期所执行的过程。
      */
-    public void moniter();
+    public abstract void oneProcess() throws Exception;
 }

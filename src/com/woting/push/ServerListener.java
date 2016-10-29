@@ -12,10 +12,10 @@ import com.spiritdata.framework.util.StringUtils;
 import com.woting.push.config.ConfigLoadUtils;
 import com.woting.push.config.PushConfig;
 import com.woting.push.config.SocketHandleConfig;
-import com.woting.push.core.monitor.AbstractMoniterServer;
+import com.woting.push.core.monitor.AbstractLoopMoniter;
 import com.woting.push.core.service.LoadSysCacheService;
-import com.woting.push.core.socket.nio.NioServer;
-import com.woting.push.core.socket.oio.OioServer;
+import com.woting.push.core.monitor.socket.nio.NioServer;
+import com.woting.push.core.monitor.socket.oio.OioServer;
 import com.woting.push.ext.SpringShell;
 
 import ch.qos.logback.classic.LoggerContext;
@@ -63,7 +63,7 @@ public class ServerListener {
     private Logger logger=null;
     private static int _RUN_STATUS=0;//运行状态，0未启动，1正在启动，2启动成功；3准备停止；4停止
 
-    private AbstractMoniterServer<PushConfig> tcpCtlServer=null; //tcp控制信道监控服务
+    private AbstractLoopMoniter<PushConfig> tcpCtlServer=null; //tcp控制信道监控服务
     
     /**
      * 获得运行状态
@@ -181,8 +181,7 @@ public class ServerListener {
         //结束服务的钩子
         final Thread mainT=Thread.currentThread();
         Runtime.getRuntime().addShutdownHook(new Thread(){
-            public void run(){
-                _RUN_STATUS=3;
+            public void run() {
                 logger.info("正在正在关闭服务... ");
                 stopServers();
                 try{
