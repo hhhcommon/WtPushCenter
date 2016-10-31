@@ -22,6 +22,7 @@ public abstract class AbstractLoopMoniter<C extends Config> extends Thread imple
     private long loopDelay=0;
     private static int _RUN_STATUS=0;//运行状态:0未启动，1正在启动，2启动成功；3准备停止；4停止
     protected C conf;
+    protected boolean _canContinue=true;;
 
     /**
      * 构造方法
@@ -61,10 +62,12 @@ public abstract class AbstractLoopMoniter<C extends Config> extends Thread imple
     }
 
     public void moniter() {
-        while(_RUN_STATUS==2&&canContinue()) {
+        while(_RUN_STATUS==2&&canContinue()&&_canContinue) {
             try {
                 oneProcess();
-                if (loopDelay>0) sleep(loopDelay);
+                if (loopDelay>0) {
+                    try { sleep(loopDelay); } catch (InterruptedException e) {};
+                }
             } catch(Exception e) {
                 logger.info("[{}]监控过程异常：\n{}", this.getName(), StringUtils.getAllMessage(e));
             }

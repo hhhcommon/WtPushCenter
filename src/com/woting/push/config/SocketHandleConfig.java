@@ -21,7 +21,7 @@ public class SocketHandleConfig implements Config {
     /**
      * 尝试销毁次数，大于此数量仍未达到销毁条件，则强制销毁
      */
-    private long _TryDestoryAllCount=5;
+    private long _TryDestoryAllCount=100;
     /**
      * 多长时间发送一次心跳
      */

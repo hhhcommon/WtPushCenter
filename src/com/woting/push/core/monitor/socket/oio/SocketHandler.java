@@ -34,7 +34,6 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         super.setName("Socket["+socket.getRemoteSocketAddress()+"::"+socket.hashCode()+"]监控主线程");
         socketDesc="Socket["+socket.getRemoteSocketAddress()+"::"+socket.hashCode()+"]";
         _socket=socket;
-        
     }
 
     @Override
@@ -48,6 +47,8 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
             //创建SessionService对象
             sessionService=(SessionService)SpringShell.getBean("sessionService");
             lastVisitTime=System.currentTimeMillis();
+
+            setLoopDelay(conf.get_MonitorDelay());
 
             //启动下级线程
             receiveMsg=new _ReceiveMsg(socketDesc+"接收信息线程");
@@ -78,15 +79,53 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
 
     @Override
     public void oneProcess() throws Exception {
+        if (receiveMsg.__isInterrupted||!receiveMsg.__isRunning) {
+            sendMsg.__interrupt();
+            this._canContinue=false;
+        }
+        if (sendMsg.__isInterrupted||!sendMsg.__isRunning) {
+            receiveMsg.__interrupt();
+            this._canContinue=false;
+        }
     }
 
     @Override
     public void destroyServer() {
+        if (receiveMsg!=null) {try {receiveMsg.__interrupt();} catch(Exception e) {}}
+        if (sendMsg!=null) {try {sendMsg.__interrupt();} catch(Exception e) {}}
+
+        boolean canClose=false;
+        int loopCount=0;
+        while(!canClose) {
+            loopCount++;
+            if (loopCount>conf.get_TryDestoryAllCount()) {
+                canClose=true;
+                continue;
+            }
+            if (!receiveMsg.__isRunning&&!sendMsg.__isRunning) {
+                canClose=true;
+                continue;
+            }
+            try { sleep(10); } catch (InterruptedException e) {};
+        }
+
+        try {
+            try {_socketIn.close();} catch(Exception e) {};
+            try {_socketOut.close();} catch(Exception e) {};
+            try {_socket.close();} catch(Exception e) {};
+        } finally {
+            receiveMsg=null;
+            sendMsg=null;
+            _socketIn=null;
+            _socketOut=null;
+            _socket=null;
+        }
     }
 
+//================================子线程
     abstract class _LoopThread extends Thread {
-        private boolean __isInterrupted=false;
-        private boolean __isRunning=true;
+        protected boolean __isInterrupted=false;
+        protected boolean __isRunning=true;
         protected _LoopThread(String name) {
             super.setName(name);
         }
@@ -127,17 +166,14 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         }
         @Override
         protected void __loopProcess() throws Exception {
-            
+            lastVisitTime=System.currentTimeMillis();
         }
         @Override
         protected boolean __continue() {
-            // TODO Auto-generated method stub
-            return false;
+            return true;
         }
         @Override
         protected void __beforeRun() throws Exception {
-            // TODO Auto-generated method stub
-            
         }
     }
     class _SendMsg extends _LoopThread {
@@ -146,17 +182,13 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         }
         @Override
         protected void __loopProcess() throws Exception {
-            
         }
         @Override
         protected boolean __continue() {
-            // TODO Auto-generated method stub
-            return false;
+            return true;
         }
         @Override
         protected void __beforeRun() throws Exception {
-            // TODO Auto-generated method stub
-            
         }
     }
 }
