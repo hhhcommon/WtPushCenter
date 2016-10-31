@@ -45,6 +45,7 @@ public class OioServer extends AbstractLoopMoniter<PushConfig> {
     @Override
     public void oneProcess() throws Exception {
         Socket client=serverSocket.accept();//获得连接
+        @SuppressWarnings("unchecked")
         SocketHandleConfig shc=((CacheEle<SocketHandleConfig>)SystemCache.getCache(PushConstants.SOCKETHANDLE_CONF)).getContent();
         SocketHandler sh=new SocketHandler(shc, client);
         sh.setDaemon(true);

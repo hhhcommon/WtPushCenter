@@ -22,6 +22,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
     private BufferedOutputStream _socketOut=null;
 
     private SessionService sessionService=null;
+
     private long lastVisitTime=0l;
     private String closeCause="";//关闭socket的原因
     private String socketDesc=null;
