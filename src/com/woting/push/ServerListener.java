@@ -12,6 +12,7 @@ import com.spiritdata.framework.util.StringUtils;
 import com.woting.push.config.ConfigLoadUtils;
 import com.woting.push.config.PushConfig;
 import com.woting.push.config.SocketHandleConfig;
+import com.woting.push.core.mem.TcpGlobalMemory;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
 import com.woting.push.core.service.LoadSysCacheService;
 import com.woting.push.core.monitor.socket.nio.NioServer;
@@ -31,7 +32,6 @@ public class ServerListener {
 
     public static void main(String[] args) {
         //处理参数，看是用nio还是用oio
-
         ServerListener sl = ServerListener.getInstance();
         try {
             Thread.currentThread().setName("推送服务主进程");
@@ -150,8 +150,12 @@ public class ServerListener {
             LoadSysCacheService loadSysCacheService=(LoadSysCacheService)SpringShell.getBean("loadSysCacheService");
             loadSysCacheService.loadCache();
             logger.info("加载系统缓存数据，用时[{}]毫秒", System.currentTimeMillis()-_begin);
+            //初始化管理内存
+            _begin=System.currentTimeMillis();
+            TcpGlobalMemory.getInstance();
+            logger.info("初始化管理内存，用时[{}]毫秒", System.currentTimeMillis()-_begin);
             logger.info("系统数据加载结束，共用时[{}]毫秒", System.currentTimeMillis()-segmentBeginTime);
-
+            
             initOk=true;
         } catch(Exception e) {
             logger.info("启动服务出现异常：\n{}", StringUtils.getAllMessage(e));

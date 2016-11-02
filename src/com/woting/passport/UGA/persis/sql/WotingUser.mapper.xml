@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!-- 我听用户 -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="WT_USER">
+  <!-- 对象定义:用户信息 -->
+  <resultMap id="userMap" type="WtUser">
+    <id      column="id"             property="userId"         jdbcType="VARCHAR"/>
+    <result  column="loginName"      property="loginName"      jdbcType="VARCHAR"/>
+    <result  column="userName"       property="userName"       jdbcType="VARCHAR"/>
+    <result  column="userNum"        property="userNum"        jdbcType="VARCHAR"/>
+    <result  column="password"       property="password"       jdbcType="VARCHAR"/>
+    <result  column="mainPhoneNum"   property="mainPhoneNum"   jdbcType="VARCHAR"/>
+    <result  column="mailAddress"    property="mailAddress"    jdbcType="VARCHAR"/>
+    <result  column="userType"       property="userType"       jdbcType="INTEGER"/>
+    <result  column="userState"      property="userState"      jdbcType="INTEGER"/>
+    <result  column="portraitBig"    property="portraitBig"    jdbcType="VARCHAR"/>
+    <result  column="portraitMini"   property="portraitMini"   jdbcType="VARCHAR"/>
+    <result  column="descn"          property="descn"          jdbcType="VARCHAR"/>
+    <result  column="cTime"          property="CTime"          jdbcType="TIMESTAMP"/>
+    <result  column="lmTime"         property="lmTime"         jdbcType="TIMESTAMP"/>
+  </resultMap>
+
+  <!-- 所有列 -->
+  <sql id="Base_Column_List">
+    id, loginName, userName, userNum, password, mainPhoneNum, mailAddress, userType, userState, portraitBig, portraitMini, descn, cTime, lmTime
+  </sql>
+  <sql id="Base_Column_List_A">
+    a.id, a.loginName, a.userName, a.userNum, a.password, a.mainPhoneNum, a.mailAddress, a.userType, a.userState, a.portraitBig, a.portraitMini, a.descn, a.cTime, a.lmTime
+  </sql>
+
+  <!-- 条件子句 -->
+  <sql id="WhereClauseByEntiey">
+    <where>
+      <trim prefix="(" suffix=")" prefixOverrides="and">
+        <if test="userId!=null"> and id=#{userId,jdbcType=VARCHAR}</if>
+        <if test="loginName!=null"> and loginName=#{loginName,jdbcType=VARCHAR}</if>
+        <if test="userName!=null"> and userName=#{userName,jdbcType=VARCHAR}</if>
+        <if test="userNum!=null"> and userNum=#{userNum,jdbcType=VARCHAR}</if>
+        <if test="password!=null"> and password=#{password,jdbcType=VARCHAR}</if>
+        <if test="mainPhoneNum!=null"> and mainPhoneNum=#{mainPhoneNum,jdbcType=VARCHAR}</if>
+        <if test="mailAddress!=null"> and mailAddress=#{mailAddress,jdbcType=VARCHAR}</if>
+        <if test="userType!=null and userType!=0"> and userType=#{userType,jdbcType=INTEGER}</if>
+        <if test="userState!=null"> and userState=#{userState,jdbcType=INTEGER}</if>
+        <if test="portraitBig!=null"> and portraitBig=#{portraitBig,jdbcType=VARCHAR}</if>
+        <if test="portraitMini!=null"> and portraitMini=#{portraitMini,jdbcType=VARCHAR}</if>
+        <if test="descn!=null"> and descn=#{descn,jdbcType=VARCHAR}</if>
+        <if test="CTime!=null"> and cTime=#{CTime,jdbcType=TIMESTAMP}</if>
+        <if test="lmTime!=null"> and lmTime=#{lmTime,jdbcType=TIMESTAMP}</if>
+      </trim>
+    </where>
+  </sql>
+
+  <!-- 获得记录条数-->
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    select count(*) from plat_User <if test="_parameter!=null"><include refid="WhereClauseByEntiey"/></if>
+  </select>
+  <!-- 获得列表 -->
+  <select id="getList" resultMap="userMap" parameterType="java.util.Map">
+    select <include refid="Base_Column_List"/> from plat_User
+    <if test="_parameter!=null"><include refid="WhereClauseByEntiey"/></if>
+    <if test="orderByClause!=null">order by ${orderByClause}</if>
+  </select>
+  <select id="getListByWhere" resultMap="userMap" parameterType="java.util.Map">
+    select <include refid="Base_Column_List"/> from plat_User
+    <if test="whereByClause!=null">where ${whereByClause}</if>
+    <if test="orderByClause!=null">order by ${orderByClause}</if>
+  </select>
+  <!-- 获得好友列表 -->
+  <select id="getFriends" resultMap="userMap" parameterType="java.util.Map">
+    select <include refid="Base_Column_List_A"/> from plat_User a, vWt_Friend_Rel b
+    where a.id=b.bUserId and b.aUserId='${userId}'
+    order by b.inviteTime desc
+    <if test="orderByClause!=null">order by ${orderByClause}</if>
+  </select>
+  <!-- 获得陌生人列表 -->
+  <select id="getStrangers" resultMap="userMap" parameterType="java.util.Map">
+    select <include refid="Base_Column_List_A"/> from plat_User a
+    left join (select distinct aUserId from vWt_Friend_Rel) b on a.id=b.aUserId
+    where a.id!='${userId}' and (
+      a.loginName like '%${searchStr}%'
+      or a.userNum like '%${searchStr}%'
+      or a.mailAddress like '%${searchStr}%'
+      or a.mainPhoneNum like '%${searchStr}%'
+    )
+  </select>
+  <select id="getMembers" resultMap="userMap" parameterType="java.lang.String">
+    select * from plat_User where id in (${value})
+  </select>
+  <select id="getGroupMembers" resultMap="userMap" parameterType="java.lang.String">
+    select <include refid="Base_Column_List_A"/> from plat_User a, plat_GroupUser b where a.id=b.userId and b.groupId=#{value, jdbcType=VARCHAR}
+  </select>
+
+  <!-- 获得一条数据 -->
+  <select id="getInfo" resultMap="userMap" parameterType="java.util.Map">
+    select <include refid="Base_Column_List"/> from plat_User <if test="_parameter!=null"><include refid="WhereClauseByEntiey"/></if>
+  </select>
+  <select id="getUserById" resultMap="userMap" parameterType="java.lang.String">
+    select <include refid="Base_Column_List"/> from plat_User where id=#{userId,jdbcType=VARCHAR}
+  </select>
+  <select id="getUserByLoginName" resultMap="userMap" parameterType="java.lang.String">
+    select * from plat_User where loginName=#{loginName,jdbcType=VARCHAR}
+  </select>
+  <select id="getUserByNum" resultMap="userMap" parameterType="java.lang.String">
+    select <include refid="Base_Column_List"/> from plat_User where userNum=#{userNum,jdbcType=VARCHAR}
+  </select>
+  <select id="getUserByPhoneNum" resultMap="userMap" parameterType="java.lang.String">
+    select <include refid="Base_Column_List"/> from plat_User where mainPhoneNum=#{mainPhoneNum,jdbcType=VARCHAR}
+  </select>
+
+  <!-- 新增数据 -->
+  <insert id="insertUser" parameterType="java.util.Map"> insert into plat_User
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="userId!=null">id,</if>
+      <if test="loginName!=null">loginName,</if>
+      <if test="userName!=null">userName,</if>
+      <if test="userNum!=null">userNum,</if>
+      <if test="password!=null">password,</if>
+      <if test="mainPhoneNum!=null">mainPhoneNum,</if>
+      <if test="mailAddress!=null">mailAddress,</if>
+      <if test="userType!=null and userType!=0">userType,</if>
+      <if test="userState!=null">userState,</if>
+      <if test="portraitBig!=null">portraitBig,</if>
+      <if test="portraitMini!=null">portraitMini,</if>
+      <if test="descn!=null">descn,</if>
+      <if test="CTime!=null">cTime,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="userId!=null">#{userId,jdbcType=VARCHAR},</if>
+      <if test="loginName!=null">#{loginName,jdbcType=VARCHAR},</if>
+      <if test="userName!=null">#{userName,jdbcType=VARCHAR},</if>
+      <if test="userNum!=null">#{userNum,jdbcType=VARCHAR},</if>
+      <if test="password!=null">#{password,jdbcType=VARCHAR},</if>
+      <if test="mainPhoneNum!=null">#{mainPhoneNum,jdbcType=VARCHAR},</if>
+      <if test="mailAddress!=null">#{mailAddress,jdbcType=VARCHAR},</if>
+      <if test="userType!=null and userType!=0">#{userType,jdbcType=INTEGER},</if>
+      <if test="userState!=null">#{userState,jdbcType=INTEGER},</if>
+      <if test="portraitBig!=null">#{portraitBig,jdbcType=VARCHAR},</if>
+      <if test="portraitMini!=null">#{portraitMini,jdbcType=VARCHAR},</if>
+      <if test="descn!=null">#{descn,jdbcType=VARCHAR},</if>
+      <if test="CTime!=null">#{CTime,jdbcType=TIMESTAMP},</if>
+    </trim>
+  </insert>
+
+  <!-- 修改 根据主键-->
+  <update id="update" parameterType="java.util.Map">update plat_User
+    <set>
+      <if test="loginName!=null">loginName=#{loginName,jdbcType=VARCHAR},</if>
+      <if test="userName!=null">userName=#{userName,jdbcType=VARCHAR},</if>
+      <if test="userNum!=null">userNum=#{userNum,jdbcType=VARCHAR},</if>
+      <if test="password!=null">password=#{password,jdbcType=VARCHAR},</if>
+      <if test="mainPhoneNum!=null">mainPhoneNum=#{mainPhoneNum,jdbcType=VARCHAR},</if>
+      <if test="mailAddress!=null">mailAddress=#{mailAddress,jdbcType=VARCHAR},</if>
+      <if test="userType!=null and userType!=0">userType=#{userType,jdbcType=INTEGER},</if>
+      <if test="userState!=null">userState=#{userState,jdbcType=INTEGER},</if>
+      <if test="portraitBig!=null">portraitBig=#{portraitBig,jdbcType=VARCHAR},</if>
+      <if test="portraitMini!=null">portraitMini=#{portraitMini,jdbcType=VARCHAR},</if>
+      <if test="descn!=null">descn=#{descn,jdbcType=VARCHAR},</if>
+      <if test="CTime!=null">cTime=#{CTime,jdbcType=TIMESTAMP},</if>
+    </set>
+    where id=#{userId,jdbcType=VARCHAR}
+  </update>
+
+  <!-- 删除数据 -->
+  <delete id="delete" parameterType="java.lang.String">
+    delete from plat_User where id=#{userId,jdbcType=VARCHAR}
+  </delete>
+  <delete id="deleteByEntity" parameterType="java.util.Map">
+    delete from plat_User <if test="_parameter!=null"><include refid="WhereClauseByEntiey"/></if>
+  </delete>
+
+  <!-- 得到组内用户列表-->
+  <select id="getListUserInGroup" resultType="java.util.HashMap" parameterType="java.util.Map">
+    select <include refid="Base_Column_List_A"/>, b.groupId from plat_User a, plat_GroupUser b where a.id=b.userId
+    order by b.groupId
+  </select>
+</mapper>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<!-- 用户相关设置 -->
+<configuration>
+  <!-- 别名设置 -->
+  <typeAliases>
+    <typeAlias alias="WtUser"     type="com.woting.passport.UGA.persis.pojo.UserPo"/>
+    <typeAlias alias="MobileUsed" type="com.woting.passport.UGA.persis.pojo.MobileUsedPo"/>
+  </typeAliases>
+  <!-- SQL配置 -->
+  <mappers>
+    <mapper resource="com/woting/passport/UGA/persis/sql/WotingUser.mapper.xml"/>
+    <mapper resource="com/woting/passport/UGA/persis/sql/MobileUsed.mapper.xml"/>
+  </mappers>
+</configuration>

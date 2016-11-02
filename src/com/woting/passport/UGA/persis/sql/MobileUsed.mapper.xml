@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!-- 手机用户使用 -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="MOBILE_USED">
+  <!-- 对象定义:手机用户使用 -->
+  <resultMap id="BaseResultMap" type="MobileUsed">
+    <id      column="id"       property="muId"     jdbcType="VARCHAR"/>
+    <result  column="imei"     property="imei"     jdbcType="VARCHAR"/>
+    <result  column="pcdType"  property="PCDType"  jdbcType="INTEGER"/>
+    <result  column="userId"   property="userId"   jdbcType="VARCHAR"/>
+    <result  column="status"   property="status"   jdbcType="INTEGER"/>
+    <result  column="lmTime"   property="lmTime"   jdbcType="TIMESTAMP"/>
+  </resultMap>
+
+  <!-- 所有列 -->
+  <sql id="Base_Column_List">
+    id, imei, pcdType, userId, status, lmTime
+  </sql>
+
+  <!-- 条件子句 -->
+  <sql id="WhereClauseByEntiey">
+    <where>
+      <trim prefix="(" suffix=")" prefixOverrides="and">
+        <if test="muId!=null"> and id=#{muId,jdbcType=VARCHAR}</if>
+        <if test="imei!=null"> and imei=#{imei,jdbcType=VARCHAR}</if>
+        <if test="PCDType!=null and PCDType!=0"> and pcdType=#{PCDType,jdbcType=INTEGER}</if>
+        <if test="userId!=null"> and userId=#{userId,jdbcType=VARCHAR}</if>
+        <if test="status!=null and status!=0"> and status=#{status,jdbcType=INTEGER}</if>
+        <if test="lmTime!=null"> and lmTime=#{lmTime,jdbcType=TIMESTAMP}</if>
+      </trim>
+    </where>
+  </sql>
+
+  <!-- 获得记录条数-->
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    select count(*) from wt_MobileUsed <if test="_parameter!=null"><include refid="WhereClauseByEntiey"/></if>
+  </select>
+
+  <!-- 获得列表 -->
+  <select id="getList" resultMap="BaseResultMap" parameterType="java.util.Map">
+    select <include refid="Base_Column_List"/> from wt_MobileUsed
+    <if test="_parameter!=null"><include refid="WhereClauseByEntiey"/></if>
+    <if test="orderByClause!=null">order by ${orderByClause}</if>
+  </select>
+
+  <!-- 获得一条数据 -->
+  <select id="getInfo" resultMap="BaseResultMap" parameterType="java.util.Map">
+    select <include refid="Base_Column_List"/> from wt_MobileUsed <if test="_parameter!=null"><include refid="WhereClauseByEntiey"/></if>
+  </select>
+  <select id="getInfoById" resultMap="BaseResultMap" parameterType="java.lang.String">
+    select <include refid="Base_Column_List"/> from wt_MobileUsed where id=#{id,jdbcType=VARCHAR}
+  </select>
+  <select id="getUsedInfo" resultMap="BaseResultMap" parameterType="java.util.Map">
+    select <include refid="Base_Column_List"/> from wt_MobileUsed where imei=#{imei,jdbcType=VARCHAR} and pcdType=#{PCDType,jdbcType=INTEGER} 
+  </select>
+
+  <!-- 新增数据 -->
+  <insert id="insert" parameterType="java.util.Map">
+    insert into wt_MobileUsed
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="muId!=null">id,</if>
+      <if test="imei!=null">imei,</if>
+      <if test="PCDType!=null and PCDType!=0">pcdType,</if>
+      <if test="userId!=null">userId,</if>
+      <if test="status!=null and status!=0">status,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="muId!=null">#{muId,jdbcType=VARCHAR},</if>
+      <if test="imei!=null">#{imei,jdbcType=VARCHAR},</if>
+      <if test="PCDType!=null and PCDType!=0">#{PCDType,jdbcType=INTEGER},</if>
+      <if test="userId!=null">#{userId,jdbcType=VARCHAR},</if>
+      <if test="status!=null and status!=0">#{status,jdbcType=INTEGER},</if>
+    </trim>
+  </insert>
+
+  <!-- 修改 根据主键-->
+  <update id="update" parameterType="java.util.Map">
+    update wt_MobileUsed
+    <set>
+      <if test="imei!=null">imei=#{imei,jdbcType=VARCHAR},</if>
+      <if test="PCDType!=null and PCDType!=0">pcdType=#{PCDType,jdbcType=INTEGER},</if>
+      <if test="userId!=null">userId=#{userId,jdbcType=VARCHAR},</if>
+      <if test="status!=null and status!=0">status=#{status,jdbcType=INTEGER},</if>
+    </set>
+    where id=#{id,jdbcType=VARCHAR}
+  </update>
+
+  <!-- 修改 根据IMEI-->
+  <update id="updateByIMEI" parameterType="java.util.Map">
+    update wt_MobileUsed
+    <set>
+      <if test="userId!=null">userId=#{userId,jdbcType=VARCHAR},</if>
+      <if test="status!=null and status!=0">status=#{status,jdbcType=INTEGER},</if>
+    </set>
+    where imei=#{imei,jdbcType=VARCHAR} and pcdType=#{PCDType,jdbcType=INTEGER}
+  </update>
+
+  <!-- 删除数据 -->
+  <delete id="delete" parameterType="java.lang.String">
+    delete from wt_MobileUsed where id=#{id,jdbcType=VARCHAR}
+  </delete>
+  <delete id="deleteByEntity" parameterType="java.util.Map">
+    delete from wt_MobileUsed <if test="_parameter!=null"><include refid="WhereClauseByEntiey"/></if>
+  </delete>
+</mapper>
