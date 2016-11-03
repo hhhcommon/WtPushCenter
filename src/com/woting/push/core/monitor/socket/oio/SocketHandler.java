@@ -111,6 +111,9 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
 
     @Override
     public void destroyServer() {
+        if (StringUtils.isNullOrEmptyOrSpace(closeCause)) closeCause="未知原因";
+        logger.debug(socketDesc+"关闭::{}", closeCause);
+
         if (receiveMsg!=null) {try {receiveMsg.__interrupt();} catch(Exception e) {}}
         if (sendMsg!=null) {try {sendMsg.__interrupt();} catch(Exception e) {}}
 
@@ -176,7 +179,6 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                 }
             } catch(Exception e) {
                 logger.debug(this.getName()+"运行异常：\n{}", StringUtils.getAllMessage(e));
-                
                 if (StringUtils.isNullOrEmptyOrSpace(closeCause)) closeCause="<"+this.getName()+">运行异常关闭:"+e.getClass().getName()+" | "+e.getMessage();
             } finally {
                 __close();
@@ -298,7 +300,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                    logger.debug(JsonUtils.objToJson(ms));
+                    logger.debug("收到消息::"+JsonUtils.objToJson(ms));
 
                     if (ms!=null&&!ms.isAck()) {
                         if (ms instanceof MsgNormal) {
@@ -345,7 +347,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         }
         @Override
         protected void __beforeRun() throws Exception {
-            String filePath="/opt/logs/receiveLogs";
+            String filePath="C:/opt/logs/receiveLogs";
             File dir=new File(filePath);
             if (!dir.isDirectory()) dir.mkdirs();
             File f=new File(filePath+"/"+_socket.hashCode()+".log");

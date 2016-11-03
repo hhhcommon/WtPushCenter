@@ -6,6 +6,8 @@ import java.util.Map;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
+import org.springframework.stereotype.Service;
+
 import com.spiritdata.framework.core.dao.mybatis.MybatisDAO;
 import com.spiritdata.framework.util.SequenceUUID;
 import com.woting.passport.UGA.persis.pojo.MobileUsedPo;
@@ -14,6 +16,7 @@ import com.woting.passport.UGA.persis.pojo.MobileUsedPo;
  * 移动设备用户使用情况
  * @author wh
  */
+@Service
 public class MobileUsedService {
     @Resource(name="defaultDAO")
     private MybatisDAO<MobileUsedPo> muDao;

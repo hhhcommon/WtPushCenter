@@ -1,5 +1,6 @@
 package com.woting.push.core.mem;
 
+import java.net.Socket;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -42,7 +43,10 @@ public class TcpGlobalMemory {
      * Value是要处理的队列
      * </pre>
      */
-    private ConcurrentHashMap<String, ConcurrentLinkedDeque<Message>> typeMsgMap; 
+    private ConcurrentHashMap<String, ConcurrentLinkedDeque<Message>> typeMsgMap;
+
+    //以下为用户和Socket的绑定关系
+    private ConcurrentHashMap<PushUserUDKey, Socket> REF_udkANDsoket;
 
     public ReceiveMemory receiveMem=null;
     /*

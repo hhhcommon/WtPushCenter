@@ -19,6 +19,7 @@ public abstract class SpringShell {
      */
     public static void init() {
         //得到系统路径
+        @SuppressWarnings("unchecked")
         String contextConfFilePath=((CacheEle<String>)SystemCache.getCache(PushConstants.APP_PATH)).getContent();
         String os = System.getProperty("os.name");
         if (os.toLowerCase().startsWith("linux")||os.toLowerCase().startsWith("unix")||os.toLowerCase().startsWith("aix")) contextConfFilePath="conf/appContext.xml";
