@@ -14,7 +14,6 @@ import com.woting.push.config.Config;
  * 注意，任何Exception都不会中断Monitor过程。
  * </pre>
  * @author wanghui
- *
  */
 public abstract class AbstractLoopMoniter<C extends Config> extends Thread implements LoopMonitor {
     private Logger logger=LoggerFactory.getLogger(AbstractLoopMoniter.class);
@@ -45,11 +44,6 @@ public abstract class AbstractLoopMoniter<C extends Config> extends Thread imple
      * @return True，可以继续监控，False，监控将停止
      */
     public abstract boolean canContinue();
-
-    @Override
-    public void setMoniterName(String mname) {
-        super.setName(mname);
-    }
 
     @Override
     public int getRUN_STATUS() {

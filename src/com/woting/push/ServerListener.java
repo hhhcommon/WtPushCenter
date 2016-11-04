@@ -14,6 +14,7 @@ import com.woting.push.config.PushConfig;
 import com.woting.push.config.SocketHandleConfig;
 import com.woting.push.core.mem.TcpGlobalMemory;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
+import com.woting.push.core.monitor.DispatchMessage;
 import com.woting.push.core.service.LoadSysCacheService;
 import com.woting.push.core.monitor.socket.nio.NioServer;
 import com.woting.push.core.monitor.socket.oio.OioServer;
@@ -217,7 +218,13 @@ public class ServerListener {
         }
         tcpCtlServer.setDaemon(true);
         tcpCtlServer.start();
-
+        //2-启动分发线程
+        for (int i=0;i<pc.get_DispatchThreadCount(); i++) {
+            DispatchMessage dm=new DispatchMessage(pc);
+            dm.setName("消息分发线程"+i);
+            dm.setDaemon(true);
+            dm.start();
+        }
         _RUN_STATUS=2;//==================启动成功
     }
     private void listener() {

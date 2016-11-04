@@ -54,6 +54,14 @@ public class UserDeviceKey extends BaseObject implements Serializable {
 
     @Override
     public int hashCode() {
-        return (this.deviceId+"::"+this.PCDType+"::"+this.userId).hashCode();
+        return this.toString().hashCode();
+    }
+
+    /**
+     * 获得SessionId，SessionId就是UserId
+     * @return
+     */
+    public String toString() {
+        return this.deviceId+"::"+this.PCDType+"::"+this.userId;
     }
 }

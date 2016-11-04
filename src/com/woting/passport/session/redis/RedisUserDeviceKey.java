@@ -9,8 +9,8 @@ public class RedisUserDeviceKey extends UserDeviceKey implements RedisLoginData 
 
     public RedisUserDeviceKey(UserDeviceKey udKey) {
         if (udKey==null) throw new Plat5101CException("用户设备Key不能为空");
-        if (StringUtils.isNullOrEmptyOrSpace(this.getDeviceId()))  new Plat5101CException("未设置设备Id");
-        if (this.getPCDType()<=0)  new Plat5101CException("未设置PCDType");
+        if (StringUtils.isNullOrEmptyOrSpace(this.getDeviceId())) new Plat5101CException("未设置设备Id");
+        if (this.getPCDType()<=0) new Plat5101CException("未设置PCDType");
 
         this.setUserId(udKey.getUserId());
         this.setPCDType(udKey.getPCDType());
@@ -28,49 +28,66 @@ public class RedisUserDeviceKey extends UserDeviceKey implements RedisLoginData 
 
     @Override
     public String getKey_UserLoginStatus() {
-        if (StringUtils.isNullOrEmptyOrSpace(this.getDeviceId()))  new Plat5101CException("未设置设备Id");
-        if (this.getPCDType()<=0)  new Plat5101CException("未设置PCDType");
+        if (this.getPCDType()<=0) new Plat5101CException("未设置PCDType");
+        if (StringUtils.isNullOrEmptyOrSpace(this.getDeviceId())) new Plat5101CException("未设置设备Id");
 
-        String _userId=StringUtils.isNullOrEmptyOrSpace(this.getUserId())?this.getDeviceId():this.getUserId();
+        String _userId=this.getUserId();
+        if (this.getPCDType()==2&&StringUtils.isNullOrEmptyOrSpace(_userId)) {
+            _userId=this.getDeviceId();
+        }
+        if (StringUtils.isNullOrEmptyOrSpace(_userId)) new Plat5101CException("未能获取有效UserId");
         return "Session_User_Login::UserId_DType_DId::"+_userId+"_"+this.getPCDType()+"_"+this.getDeviceId();
     }
 
     @Override
     public String getKey_UserLoginDeviceType() {
-        if (StringUtils.isNullOrEmptyOrSpace(this.getDeviceId()))  new Plat5101CException("未设置设备Id");
-        if (this.getPCDType()<=0)  new Plat5101CException("未设置PCDType");
+        if (StringUtils.isNullOrEmptyOrSpace(this.getDeviceId())) new Plat5101CException("未设置设备Id");
+        if (this.getPCDType()<=0) new Plat5101CException("未设置PCDType");
 
-        String _userId=StringUtils.isNullOrEmptyOrSpace(this.getUserId())?this.getDeviceId():this.getUserId();
+        String _userId=this.getUserId();
+        if (this.getPCDType()==2&&StringUtils.isNullOrEmptyOrSpace(_userId)) {
+            _userId=this.getDeviceId();
+        }
+        if (StringUtils.isNullOrEmptyOrSpace(_userId)) new Plat5101CException("未能获取有效UserId");
         return "Session_User_Login::UserId_DType::"+_userId+"_"+this.getPCDType();
     }
     public String getKey_UserLoginDeviceType_OnlyUseUserId() {
-        if (this.getPCDType()<=0)  new Plat5101CException("未设置PCDType");
-        if (StringUtils.isNullOrEmptyOrSpace(this.getUserId()))  new Plat5101CException("未设置用户Id");
+        if (this.getPCDType()<=0) new Plat5101CException("未设置PCDType");
+        if (StringUtils.isNullOrEmptyOrSpace(this.getUserId())) new Plat5101CException("未设置用户Id");
 
+        String _userId=this.getUserId();
+        if (this.getPCDType()==2&&StringUtils.isNullOrEmptyOrSpace(_userId)) {
+            _userId=this.getDeviceId();
+        }
+        if (StringUtils.isNullOrEmptyOrSpace(_userId)) new Plat5101CException("未能获取有效UserId");
         return "Session_User_Login::UserId_DType::"+this.getUserId()+"_"+this.getPCDType();
     }
 
     @Override
     public String getKey_DeviceType_UserId() {
-        if (StringUtils.isNullOrEmptyOrSpace(this.getDeviceId()))  new Plat5101CException("未设置设备Id");
-        if (this.getPCDType()<=0)  new Plat5101CException("未设置PCDType");
+        if (this.getPCDType()<=0) new Plat5101CException("未设置PCDType");
+        if (StringUtils.isNullOrEmptyOrSpace(this.getDeviceId())) new Plat5101CException("未设置设备Id");
 
         return "Session_DeviceLogin_UserId::DType_DId::"+this.getPCDType()+"_"+this.getDeviceId();
     }
 
     @Override
     public String getKey_DeviceType_UserInfo() {
-        if (StringUtils.isNullOrEmptyOrSpace(this.getDeviceId()))  new Plat5101CException("未设置设备Id");
-        if (this.getPCDType()<=0)  new Plat5101CException("未设置PCDType");
+        if (this.getPCDType()<=0) new Plat5101CException("未设置PCDType");
+        if (StringUtils.isNullOrEmptyOrSpace(this.getDeviceId())) new Plat5101CException("未设置设备Id");
 
         return "Session_DeviceLogin_UserInfo::DType_DId::"+this.getPCDType()+"_"+this.getDeviceId();
     }
 
     public String getKey_UserPhoneCheck() {
-        if (StringUtils.isNullOrEmptyOrSpace(this.getDeviceId()))  new Plat5101CException("未设置设备Id");
-        if (this.getPCDType()<=0)  new Plat5101CException("未设置PCDType");
+        if (this.getPCDType()<=0) new Plat5101CException("未设置PCDType");
+        if (StringUtils.isNullOrEmptyOrSpace(this.getDeviceId())) new Plat5101CException("未设置设备Id");
 
-        String _userId=StringUtils.isNullOrEmptyOrSpace(this.getUserId())?this.getDeviceId():this.getUserId();
+        String _userId=this.getUserId();
+        if (this.getPCDType()==2&&StringUtils.isNullOrEmptyOrSpace(_userId)) {
+            _userId=this.getDeviceId();
+        }
+        if (StringUtils.isNullOrEmptyOrSpace(_userId)) new Plat5101CException("未能获取有效UserId");
         return "User_PhoneCheck::UserId_DType_DId::"+_userId+"_"+this.getPCDType()+"_"+this.getDeviceId();
     }
 }

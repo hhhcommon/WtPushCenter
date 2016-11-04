@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.net.SocketException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
@@ -199,7 +198,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
             super(name);
         }
         @Override
-        protected void __loopProcess() throws Exception {
+        protected void __loopProcess() throws Exception {//处理一条信息
             endMsgFlag[0]=0x00;
             endMsgFlag[1]=0x00;
             endMsgFlag[2]=0x00;
@@ -284,7 +283,6 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
             byte[] mba=Arrays.copyOfRange(ba, 0, i);
             if (mba==null||mba.length<3) return; //若没有得到任何内容
 
-            lastVisitTime=System.currentTimeMillis();
             //判断是否是心跳信号
             if (mba.length==3&&mba[0]=='b'&&mba[1]=='^'&&mba[2]=='^') { //如果是发送回执心跳
                 byte[] rB=new byte[3];
@@ -317,7 +315,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                 _sendMsgQueue.add(ackM.toBytes());
                             } else {//登录成功
                                 _puUdk.setUserId(""+retM.get("UserId"));
-                                if (((MsgNormal)ms).getBizType()==15) {
+                                if (((MsgNormal)ms).getBizType()==15) {//是注册消息
                                     MsgNormal ackM=MessageUtils.buildAckMsg((MsgNormal)ms);
                                     ackM.setBizType(15);
                                     ackM.setPCDType(((MsgNormal)ms).getPCDType());
@@ -325,21 +323,22 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                     ackM.setIMEI(((MsgNormal)ms).getIMEI());
                                     ackM.setReturnType(1);//成功
                                     _sendMsgQueue.add(ackM.toBytes());
-                                } else {
-                                    _pushUserKey=_puUdk;
                                     globlalMem.bindPushUserANDSocket(_pushUserKey, SocketHandler.this);
-                                    globlalMem.receiveMem.addPureQueue(ms);
+                                } else {//是非注册消息
+                                    _pushUserKey=_puUdk;
+                                    globlalMem.receiveMem.addPureMsg(ms);
                                 }
                             }
                         } else {//数据流
                             ((MsgMedia)ms).setExtInfo(_pushUserKey.toHashMapAsBean());
-                            globlalMem.receiveMem.addPureQueue(ms);
+                            globlalMem.receiveMem.addPureMsg(ms);
                         }
                     }
                 } catch(Exception e) {
                     logger.debug(StringUtils.getAllMessage(e));
                 }
             }
+            lastVisitTime=System.currentTimeMillis();
         }
         @Override
         protected boolean __continue() {

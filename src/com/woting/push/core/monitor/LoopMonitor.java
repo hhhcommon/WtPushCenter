@@ -10,12 +10,6 @@ package com.woting.push.core.monitor;
  */
 public interface LoopMonitor extends Runnable {
     /**
-     * 设置监控的名称，此名称会作为运行线程的名称，请在线程启动前设置监控名称
-     * @param mname 监控名称
-     */
-    public void setMoniterName(String mname);
-
-    /**
      * 获得运行状态：0未启动，1正在启动，2启动成功；3准备停止；4停止
      * @return
      */
