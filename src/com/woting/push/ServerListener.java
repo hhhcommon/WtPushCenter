@@ -1,6 +1,8 @@
 package com.woting.push;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +11,10 @@ import com.spiritdata.framework.core.cache.CacheEle;
 import com.spiritdata.framework.core.cache.SystemCache;
 import com.spiritdata.framework.jsonconf.JsonConfig;
 import com.spiritdata.framework.util.StringUtils;
+import com.woting.audioSNS.calling.CallingConfig;
+import com.woting.audioSNS.calling.monitor.DealCalling;
+import com.woting.audioSNS.mediaflow.MediaflowConfig;
+import com.woting.audioSNS.mediaflow.monitor.DealMediaflow;
 import com.woting.push.config.ConfigLoadUtils;
 import com.woting.push.config.PushConfig;
 import com.woting.push.config.SocketHandleConfig;
@@ -65,7 +71,10 @@ public class ServerListener {
     private static int _RUN_STATUS=0;//运行状态，0未启动，1正在启动，2启动成功；3准备停止；4停止
 
     private AbstractLoopMoniter<PushConfig> tcpCtlServer=null; //tcp控制信道监控服务
-    
+    private List<DispatchMessage> dispatchList=null; //分发线程的记录列表
+    private List<DealCalling> dealCallingList=null; //处理电话消息线程的记录列表
+    private List<DealMediaflow> dealMediaFlowList=null; //处理媒体消息线程的记录列表
+
     /**
      * 获得运行状态
      */
@@ -176,10 +185,18 @@ public class ServerListener {
     private void loadConfig(String configFileName) throws IOException {
         JsonConfig jc=new JsonConfig(configFileName);
         logger.info("配置文件信息={}", jc.getAllConfInfo());
+
         PushConfig pc=ConfigLoadUtils.getPushConfig(jc);
         SystemCache.setCache(new CacheEle<PushConfig>(PushConstants.PUSH_CONF, "系统配置", pc));
+
         SocketHandleConfig shc=ConfigLoadUtils.getSocketHandleConfig(jc);
-        SystemCache.setCache(new CacheEle<SocketHandleConfig>(PushConstants.SOCKETHANDLE_CONF, "系统配置", shc));
+        SystemCache.setCache(new CacheEle<SocketHandleConfig>(PushConstants.SOCKETHANDLE_CONF, "Socket处理配置", shc));
+
+        CallingConfig cc=ConfigLoadUtils.getCallingConfig(jc);
+        SystemCache.setCache(new CacheEle<CallingConfig>(PushConstants.CALLING_CONF, "电话控制配置", cc));
+
+        MediaflowConfig mfc=ConfigLoadUtils.getMediaFlowConfig(jc);
+        SystemCache.setCache(new CacheEle<MediaflowConfig>(PushConstants.MEDIAFLOW_CONF, "语音控制配置", mfc));
     }
 
     private void begin() {
@@ -218,12 +235,33 @@ public class ServerListener {
         }
         tcpCtlServer.setDaemon(true);
         tcpCtlServer.start();
-        //2-启动分发线程
+        //2-启动{接收消息分发}线程
+        dispatchList=new ArrayList<DispatchMessage>();
         for (int i=0;i<pc.get_DispatchThreadCount(); i++) {
-            DispatchMessage dm=new DispatchMessage(pc);
-            dm.setName("消息分发线程"+i);
+            DispatchMessage dm=new DispatchMessage(pc, i);
             dm.setDaemon(true);
             dm.start();
+            dispatchList.add(dm);
+        }
+        //3-启动{处理电话消息}线程
+        @SuppressWarnings("unchecked")
+        CallingConfig cc=((CacheEle<CallingConfig>)SystemCache.getCache(PushConstants.CALLING_CONF)).getContent();
+        dealCallingList=new ArrayList<DealCalling>();
+        for (int i=0;i<cc.get_DealThreadCount(); i++) {
+            DealCalling dc=new DealCalling(cc, i);
+            dc.setDaemon(true);
+            dc.start();
+            dealCallingList.add(dc);
+        }
+        //4-启动{流数据处理}线程
+        @SuppressWarnings("unchecked")
+        MediaflowConfig mfc=((CacheEle<MediaflowConfig>)SystemCache.getCache(PushConstants.MEDIAFLOW_CONF)).getContent();
+        dealMediaFlowList=new ArrayList<DealMediaflow>();
+        for (int i=0;i<mfc.get_DealThreadCount(); i++) {
+            DealMediaflow dmf=new DealMediaflow(mfc, i);
+            dmf.setDaemon(true);
+            dmf.start();
+            dealMediaFlowList.add(dmf);
         }
         _RUN_STATUS=2;//==================启动成功
     }
@@ -233,14 +271,51 @@ public class ServerListener {
         }
     }
     private void stopServers() {
+        boolean allClosed=false;
+        int i=0;
         //1-停止{TCP_控制信道}socket监控
         if (tcpCtlServer!=null) {
             tcpCtlServer.stopServer();
-            int i=0;
-            while (tcpCtlServer.getRUN_STATUS()!=4&&(i++<10)) {
-                try { Thread.sleep(500); } catch(Exception e) {}
+            i=0;
+            while (!tcpCtlServer.isStoped()&&i++<10) {
+                try { Thread.sleep(50); } catch(Exception e) {}
             }
-            tcpCtlServer.stopServer();;
+        }
+        //2-停止{接收消息分发}线程
+        if (dispatchList!=null&&!dispatchList.isEmpty()) {
+            for (DispatchMessage dm: dispatchList) dm.stopServer();
+            while (!allClosed&&i++<10) {
+                allClosed=true;
+                for (DispatchMessage dm: dispatchList) {
+                    allClosed=dm.isStoped();
+                    if (!allClosed) break;
+                }
+                try { Thread.sleep(50); } catch(Exception e) {}
+            }
+        }
+        //3-停止{处理电话消息}线程
+        if (dealCallingList!=null&&!dealCallingList.isEmpty()) {
+            for (DealCalling dc: dealCallingList) dc.stopServer();
+            while (!allClosed&&i++<10) {
+                allClosed=true;
+                for (DealCalling dc: dealCallingList) {
+                    allClosed=dc.isStoped();
+                    if (!allClosed) break;
+                }
+                try { Thread.sleep(50); } catch(Exception e) {}
+            }
+        }
+        //4-停止{流数据处理}线程
+        if (dealMediaFlowList!=null&&!dealMediaFlowList.isEmpty()) {
+            for (DealMediaflow dmf: dealMediaFlowList) dmf.stopServer();
+            while (!allClosed&&i++<10) {
+                allClosed=true;
+                for (DealMediaflow dmf: dealMediaFlowList) {
+                    allClosed=dmf.isStoped();
+                    if (!allClosed) break;
+                }
+                try { Thread.sleep(50); } catch(Exception e) {}
+            }
         }
         _RUN_STATUS=4;//==================成功停止
     }

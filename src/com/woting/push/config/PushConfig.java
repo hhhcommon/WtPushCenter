@@ -8,34 +8,34 @@ public class PushConfig implements Config {
     /**
      * 推送服务控制信号的tcp端口号
      */
-    private int _controlTcpPort=15678;
+    private int _ControlTcpPort=15678;
     /**
      * 检查清除会话的间隔时间，毫秒//5分钟
      */
-    private int _cleanInterval=5*60*1000;
+    private int _CleanInterval=5*60*1000;
     /**
      * 处理原生接收队列线程的个数
      */
-    private int _dispatchThreadCount=4;
+    private int _DispatchThreadCount=4;
 
     public int get_ControlTcpPort() {
-        return _controlTcpPort;
+        return _ControlTcpPort;
     }
     protected void set_ControlTcpPort(int port) {
-        this._controlTcpPort=port;
+        this._ControlTcpPort=port;
     }
 
     public int get_CleanInterval() {
-        return _cleanInterval;
+        return _CleanInterval;
     }
     protected void set_CleanInterval(int cleanInterval) {
-        this._cleanInterval=cleanInterval;
+        this._CleanInterval=cleanInterval;
     }
 
     public int get_DispatchThreadCount() {
-        return _dispatchThreadCount;
+        return _DispatchThreadCount;
     }
     protected void set_DsispatchThreadCount(int dispatchThreadCount) {
-        this._dispatchThreadCount=dispatchThreadCount;
+        this._DispatchThreadCount=dispatchThreadCount;
     }
 }

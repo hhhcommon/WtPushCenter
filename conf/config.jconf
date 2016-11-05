@@ -1,16 +1,31 @@
 ﻿{
+  //以下三项为Socket处理参数
   "pushserver":{
     "ctlTcpPort":"16789",     //控制端配置
     "dispatchThread":"4",     //分发接收消息的线程个数
     "cleanInterval":"60*1000" //清理内存间隔时间
   },
-
-  "socketmonitor":{
+  "socketenviron": {//socket监控环境参数——对所有服务都有效的环境信息
+    "recieveLogPath":"C:/opt/logs/recieveLogs",  //接收日志文件存储目录，若不设置或为空，则不进行日志存储
+    "sendLogPath":"C:/opt/logs/sendLogs"         //发送日志文件存储目录，若不设置或为空，则不进行日志存储
+  },
+  "socketmonitor":{//socket监控参数——某一个监控服务需要的参数
     "expireTime":"4*60*1000",       //4分钟，多长时间没有收到信息，若大于此时间没有获得信息，则系统认为Socket已经失效，将关闭相应的处理
     "monitorDelay":"1000",          //1秒钟，主监控进程监控周期
     "tryDestoryAllCount":"5",       //5次，尝试销毁次数，大于此数量仍未达到销毁条件，则强制销毁
     "beatDelay":"43*1000",          //43秒，多长时间发送一次心跳
-    "recieveErr_ContinueCount":"3", //3次，接收消息处理中，连续收到错误|异常消息的次数，若大于这个数量，则系统将认为此Socket为恶意连接，将关闭相应的处理
-    "recieveErr_SumCount":"7"       //7次，接收消息处理中，总共收到错误|异常消息的次数，若大于这个数量，则系统将认为此Socket为恶意连接，将关闭相应的处理
+    "errContinueCount":"3",         //3次，消息处理中，连续错误|异常消息的次数，若大于这个数量，则系统将认为此Socket为恶意连接，将关闭相应的处理
+    "errSumCount":"1000"            //1000次，消息处理中，总共错误|异常消息的次数，若大于这个数量，则系统将认为此Socket为恶意连接，将关闭相应的处理
+  },
+  //以下为电话控制参数
+  "calling": {
+    "dealThread":"2",    //处理原生接收队列线程的个数，从原生队列中获取与电话处理的相关消息，并进行处理的线程的个数。此线程包括分发和创建处理线程
+    "expireOnline":"1*1000", //检查是否在线的过期时间，毫秒
+    "expireAck":"30*1000",  //检查无应答的过期时间，毫秒
+    "expireTime":"60*1000", //检查一次通话的过期时间，毫秒
+  },
+  //以下为语音控制参数
+  "mediaflow":{
+    "dealThread":"3"
   }
 }

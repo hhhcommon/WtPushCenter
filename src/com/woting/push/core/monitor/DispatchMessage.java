@@ -13,10 +13,11 @@ import com.woting.push.user.PushUserUDKey;
  * @author wanghui
  */
 public class DispatchMessage extends AbstractLoopMoniter<PushConfig> {
-    private TcpGlobalMemory globlalMem=TcpGlobalMemory.getInstance();
+    private TcpGlobalMemory globalMem=TcpGlobalMemory.getInstance();
 
-    public DispatchMessage(PushConfig pc) {
+    public DispatchMessage(PushConfig pc, int index) {
         super(pc);
+        super.setName("消息分发线程"+index);
     }
 
     @Override
@@ -32,18 +33,13 @@ public class DispatchMessage extends AbstractLoopMoniter<PushConfig> {
 
     @Override
     public void oneProcess() throws Exception {
-        Message m=globlalMem.receiveMem.pollPureMsg();
+        Message m=globalMem.receiveMem.pollPureMsg();
         if (m!=null) {
             if (m.isAffirm()&&!(m instanceof MsgMedia)) {//处理回复消息
                 PushUserUDKey mUdk=PushUserUDKey.buildFromMsg(m);
-                globlalMem.sendMem.addMsg(mUdk, MessageUtils.buildAckMsg((MsgNormal)m));
+                globalMem.sendMem.addUserMsg(mUdk, MessageUtils.buildAckMsg((MsgNormal)m));
             }
         }
-        globlalMem.receiveMem.addTypeMsg(""+((MsgNormal)m).getBizType(), m);
+        globalMem.receiveMem.addTypeMsg(""+((MsgNormal)m).getBizType(), m);
     }
-
-    @Override
-    public void destroyServer() {
-    }
-
 }

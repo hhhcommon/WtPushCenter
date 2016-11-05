@@ -33,5 +33,10 @@ public interface LoopMonitor extends Runnable {
     /**
      * 循环执行的方法，每一监控周期所执行的过程。
      */
-    public abstract void oneProcess() throws Exception;
+    public void oneProcess() throws Exception;
+
+    /**
+     * 是否已经停止
+     */
+    public boolean isStoped();
 }

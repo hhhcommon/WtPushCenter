@@ -6,7 +6,7 @@ package com.woting.push.config;
  * 每个Socket连接都可以拥有自己的配置，但目前版本只实现所有Socket连接都采用相同的配置
  * </pre>
  * <br/>
- * 在设置类，所有字段前都有_
+ * 在配置类，所有字段前都有_
  * @author wanghui
  */
 public class SocketHandleConfig implements Config {
@@ -27,14 +27,23 @@ public class SocketHandleConfig implements Config {
      */
     private long _BeatDelay=40*1000;
     /**
-     *  接收消息处理中，连续收到错误|异常消息的次数，若大于这个数量，则系统将认为此Socket为恶意连接，将关闭相应的处理
+     * 处理中，连续错误|异常消息的次数，若大于这个数量，则系统将认为此Socket为恶意连接，将关闭相应的处理
      */
-    private long _RecieveErr_ContinueCount=3;
+    private long _Err_ContinueCount=3;
     /**
-     *  接收消息处理中，总共收到错误|异常消息的次数，若大于这个数量，则系统将认为此Socket为恶意连接，将关闭相应的处理
+     * 处理中，总共错误|异常消息的次数，若大于这个数量，则系统将认为此Socket为恶意连接，将关闭相应的处理
      */
-    private long _RecieveErr_SumCount=100;
+    private long _Err_SumCount=100;
+    /**
+     * 处理中，总共错误|异常消息的次数，若大于这个数量，则系统将认为此Socket为恶意连接，将关闭相应的处理
+     */
+    private String _Recieve_LogPath=null;
+    /**
+     * 处理中，总共错误|异常消息的次数，若大于这个数量，则系统将认为此Socket为恶意连接，将关闭相应的处理
+     */
+    private String _Send_LogPath=null;
 
+    
     public long get_ExpireTime() {
         return _ExpireTime;
     }
@@ -59,16 +68,28 @@ public class SocketHandleConfig implements Config {
     public void set_BeatDelay(long _BeatDelay) {
         this._BeatDelay = _BeatDelay;
     }
-    public long get_RecieveErr_ContinueCount() {
-        return _RecieveErr_ContinueCount;
+    public long get_Err_ContinueCount() {
+        return _Err_ContinueCount;
     }
-    public void set_RecieveErr_ContinueCount(long _RecieveErr_ContinueCount) {
-        this._RecieveErr_ContinueCount = _RecieveErr_ContinueCount;
+    public void set_Err_ContinueCount(long _Err_ContinueCount) {
+        this._Err_ContinueCount = _Err_ContinueCount;
     }
-    public long get_RecieveErr_SumCount() {
-        return _RecieveErr_SumCount;
+    public long get_Err_SumCount() {
+        return _Err_SumCount;
     }
-    public void set_RecieveErr_SumCount(long _RecieveErr_SumCount) {
-        this._RecieveErr_SumCount = _RecieveErr_SumCount;
+    public void set_Err_SumCount(long _Err_SumCount) {
+        this._Err_SumCount = _Err_SumCount;
+    }
+    public String get_Recieve_LogPath() {
+        return _Recieve_LogPath;
+    }
+    public void set_Recieve_LogPath(String _Recieve_LogPath) {
+        this._Recieve_LogPath = _Recieve_LogPath;
+    }
+    public String get_Send_LogPath() {
+        return _Send_LogPath;
+    }
+    public void set_Send_LogPath(String _Send_LogPath) {
+        this._Send_LogPath = _Send_LogPath;
     }
 }

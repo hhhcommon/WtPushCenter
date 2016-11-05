@@ -50,6 +50,20 @@ public abstract class AbstractLoopMoniter<C extends Config> extends Thread imple
         return _RUN_STATUS;
     }
 
+    /**
+     * 初始化监控服务。<br/>不做任何处理，实体类可以有自己处理
+     */
+    @Override
+    public boolean initServer() {
+        return true;
+    }
+    /**
+     * 销毁服务，把服务用到的资源关闭掉。<br/>不做任何处理，实体类可以有自己处理
+     */
+    @Override
+    public void destroyServer() {
+    }
+
     @Override
     public void stopServer() {
         _RUN_STATUS=3;
@@ -101,5 +115,10 @@ public abstract class AbstractLoopMoniter<C extends Config> extends Thread imple
                 _RUN_STATUS=4;
             }
         }
+    }
+
+    @Override
+    public boolean isStoped() {
+        return _RUN_STATUS==4&&!this.isAlive();
     }
 }

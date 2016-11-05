@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
@@ -28,6 +29,10 @@ import com.woting.push.core.service.SessionService;
 import com.woting.push.ext.SpringShell;
 import com.woting.push.user.PushUserUDKey;
 
+/**
+ * 对某一Socket连接的监控服务
+ * @author wanghui
+ */
 public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
     private Logger logger=LoggerFactory.getLogger(SocketHandler.class);
     private Socket _socket;
@@ -44,9 +49,10 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
     private String socketDesc=null;
 
     private _ReceiveMsg receiveMsg;
+    private _FatchMsg fatchMsg;
     private _SendMsg sendMsg;
 
-    private TcpGlobalMemory globlalMem=TcpGlobalMemory.getInstance();
+    private TcpGlobalMemory globalMem=TcpGlobalMemory.getInstance();
 
     protected SocketHandler(SocketHandleConfig conf, Socket socket) {
         super(conf);
@@ -67,12 +73,17 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
             sessionService=(SessionService)SpringShell.getBean("sessionService");
             lastVisitTime=System.currentTimeMillis();
 
-            setLoopDelay(conf.get_MonitorDelay());
+            setLoopDelay(conf.get_MonitorDelay());//设置监控周期
 
             //启动下级线程
             receiveMsg=new _ReceiveMsg(socketDesc+"接收信息线程");
             receiveMsg.start();
             logger.debug(socketDesc+"接收信息线程-启动");
+
+            fatchMsg=new _FatchMsg(socketDesc+"获取预发送信息线程");
+            fatchMsg.start();
+            logger.debug(socketDesc+"获取预发送信息线程-启动");
+
             sendMsg=new _SendMsg(socketDesc+"发送信息线程");
             sendMsg.start();
             logger.debug(socketDesc+"发送信息线程-启动");
@@ -93,26 +104,46 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
               +conf.get_ExpireTime()+"]，超时时长["+__period+"]";
             return false;
         }
+        return socketOk();
+    }
+    protected boolean socketOk() {
         return _socket!=null&&_socket.isBound()&&_socket.isConnected()&&!_socket.isClosed();
     }
 
+    /**
+     * 监控这个服务是否健康，主要是子线程是否运行正常
+     */
     @Override
     public void oneProcess() throws Exception {
         if (receiveMsg.__isInterrupted||!receiveMsg.__isRunning) {
+            sendMsg.__interrupt();
+            fatchMsg.__interrupt();
+            this._canContinue=false;
+        }
+        if (fatchMsg.__isInterrupted||!fatchMsg.__isRunning) {
+            receiveMsg.__interrupt();
             sendMsg.__interrupt();
             this._canContinue=false;
         }
         if (sendMsg.__isInterrupted||!sendMsg.__isRunning) {
             receiveMsg.__interrupt();
+            fatchMsg.__interrupt();
             this._canContinue=false;
         }
     }
 
+    /**
+     * 销毁某一Socket监控服务，包括：<br/>
+     * 1-停止下级线程服务
+     * 2-释放socket相关的资源
+     * 3-解除用户和服务的绑定
+     */
     @Override
     public void destroyServer() {
         if (StringUtils.isNullOrEmptyOrSpace(closeCause)) closeCause="未知原因";
         logger.debug(socketDesc+"关闭::{}", closeCause);
 
+        //1-停止下级服务
         if (receiveMsg!=null) {try {receiveMsg.__interrupt();} catch(Exception e) {}}
         if (sendMsg!=null) {try {sendMsg.__interrupt();} catch(Exception e) {}}
 
@@ -130,22 +161,29 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
             }
             try { sleep(10); } catch (InterruptedException e) {};
         }
+        receiveMsg=null;
+        sendMsg=null;
 
+        //2-释放Socket的相关资源
         try {
             try {_socketIn.close();} catch(Exception e) {};
             try {_socketOut.close();} catch(Exception e) {};
             try {_socket.close();} catch(Exception e) {};
         } finally {
-            receiveMsg=null;
-            sendMsg=null;
             _socketIn=null;
             _socketOut=null;
             _socket=null;
         }
+
+        //3-解除用户和服务的绑定
+        globalMem.unbindPushUserANDSocket(_pushUserKey, this);
     }
 
 //================================子线程
     abstract class _LoopThread extends Thread {
+        private int continueErrCodunt=0;
+        private int sumErrCount=0;
+
         protected boolean __isInterrupted=false;
         protected boolean __isRunning=true;
         protected _LoopThread(String name) {
@@ -158,7 +196,6 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         }
 
         abstract protected void __loopProcess() throws Exception;
-        abstract protected boolean __continue();
         abstract protected void __beforeRun() throws Exception;
         abstract protected void __close();
 
@@ -172,8 +209,21 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                 if (StringUtils.isNullOrEmptyOrSpace(closeCause)) closeCause="<"+this.getName()+">运行异常关闭:"+e.getClass().getName()+" | "+e.getMessage();
             }
             try {
-                while (__continue()&&__isRunning&&!__isInterrupted) {
-                    __loopProcess();
+                while (__isRunning&&!__isInterrupted&&socketOk()) {
+                    try {
+                        __loopProcess();
+                        continueErrCodunt=0;
+                    } catch(Exception e) {
+                        logger.debug(this.getName()+"运行异常：\n{}", StringUtils.getAllMessage(e));
+                        if (e instanceof SocketException) {
+                            __isRunning=false;
+                        } else {
+                            if ( (++continueErrCodunt>=conf.get_Err_ContinueCount())
+                                ||(++sumErrCount>=conf.get_Err_SumCount() )) {
+                                __isRunning=false;
+                             }
+                        }
+                    }
                     try { sleep(10); } catch (InterruptedException e) {};
                 }
             } catch(Exception e) {
@@ -185,9 +235,8 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
             }
         }
     }
+    //接收线程类
     class _ReceiveMsg extends _LoopThread {
-        private int continueErrCodunt=0;
-        private int sumErrCount=0;
         private FileOutputStream fos=null;
         private int _headLen=36;
 
@@ -196,6 +245,20 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
 
         protected _ReceiveMsg(String name) {
             super(name);
+        }
+        @Override
+        protected void __beforeRun() throws Exception {
+            if (StringUtils.isNullOrEmptyOrSpace(conf.get_Recieve_LogPath())) return;
+            String filePath=conf.get_Recieve_LogPath();
+            File dir=new File(filePath);
+            if (!dir.isDirectory()) dir.mkdirs();
+            File f=new File(filePath+"/"+_socket.hashCode()+".log");
+            try {
+                if (!f.exists()) f.createNewFile();
+                fos=new FileOutputStream(f, false);
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
         }
         @Override
         protected void __loopProcess() throws Exception {//处理一条信息
@@ -279,7 +342,11 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                     }
                 }
             }//一条消息读取完成
-            fos.flush();
+            if (fos!=null) {
+                fos.write(13);
+                fos.write(10);
+                fos.flush();
+            }
             byte[] mba=Arrays.copyOfRange(ba, 0, i);
             if (mba==null||mba.length<3) return; //若没有得到任何内容
 
@@ -323,15 +390,15 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                     ackM.setIMEI(((MsgNormal)ms).getIMEI());
                                     ackM.setReturnType(1);//成功
                                     _sendMsgQueue.add(ackM.toBytes());
-                                    globlalMem.bindPushUserANDSocket(_pushUserKey, SocketHandler.this);
+                                    globalMem.bindPushUserANDSocket(_pushUserKey, SocketHandler.this);
                                 } else {//是非注册消息
                                     _pushUserKey=_puUdk;
-                                    globlalMem.receiveMem.addPureMsg(ms);
+                                    globalMem.receiveMem.addPureMsg(ms);
                                 }
                             }
                         } else {//数据流
-                            ((MsgMedia)ms).setExtInfo(_pushUserKey.toHashMapAsBean());
-                            globlalMem.receiveMem.addPureMsg(ms);
+                            ((MsgMedia)ms).setExtInfo(_pushUserKey);
+                            globalMem.receiveMem.addTypeMsg("media", ms);
                         }
                     }
                 } catch(Exception e) {
@@ -340,13 +407,22 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
             }
             lastVisitTime=System.currentTimeMillis();
         }
-        @Override
-        protected boolean __continue() {
-            return true;
+        protected void __close() {
+            try { fos.close(); } catch (Exception e) {} finally{ fos=null; }
+        }
+    }
+    //发送线程类
+    class _SendMsg extends _LoopThread {
+        private FileOutputStream fos=null;
+        private byte[] mBytes=null;
+
+        protected _SendMsg(String name) {
+            super(name);
         }
         @Override
         protected void __beforeRun() throws Exception {
-            String filePath="C:/opt/logs/receiveLogs";
+            if (StringUtils.isNullOrEmptyOrSpace(conf.get_Send_LogPath())) return;
+            String filePath=conf.get_Send_LogPath();
             File dir=new File(filePath);
             if (!dir.isDirectory()) dir.mkdirs();
             File f=new File(filePath+"/"+_socket.hashCode()+".log");
@@ -357,28 +433,57 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                 e1.printStackTrace();
             }
         }
+        @Override
+        protected void __loopProcess() throws Exception {
+            //发送信息
+            if (_socketOut!=null&&!_socket.isOutputShutdown()) {
+                mBytes=_sendMsgQueue.poll();
+                if (mBytes==null||mBytes.length<=2) return;
+                _socketOut.write(mBytes);
+                _socketOut.flush();
+                if (mBytes.length==3&&mBytes[0]=='b'&&mBytes[1]=='|'&&mBytes[2]=='^') return;
+                if (fos!=null) {
+                    try {
+                        fos.write(mBytes);
+                        fos.write(13);
+                        fos.write(10);
+                        fos.flush();
+                    } catch (IOException e) {
+                    }
+                }
+            }
+        }
+        @Override
         protected void __close() {
             try { fos.close(); } catch (Exception e) {} finally{ fos=null; }
         }
     }
-    class _SendMsg extends _LoopThread {
-        protected _SendMsg(String name) {
+    //获取消息类
+    class _FatchMsg extends _LoopThread {
+        private boolean canAdd=false;
+
+        protected _FatchMsg(String name) {
             super(name);
-        }
-        @Override
-        protected void __loopProcess() throws Exception {
-        }
-        @Override
-        protected boolean __continue() {
-            return true;
         }
         @Override
         protected void __beforeRun() throws Exception {
         }
         @Override
+        protected void __loopProcess() throws Exception {
+            if (_pushUserKey!=null) {
+                canAdd=true;
+                //获得控制消息
+                Message m=globalMem.sendMem.getUserMsg(_pushUserKey, SocketHandler.this);
+                if (m!=null) {
+                    long t=System.currentTimeMillis();
+                    //根据消息情况，判断该消息是否还需要发送：主要是看是否过期
+                    if ((m instanceof MsgMedia)&&(t-m.getSendTime()>60*1000)) canAdd=false;
+                    if (canAdd) _sendMsgQueue.add(m.toBytes());
+                }
+            }
+        }
+        @Override
         protected void __close() {
-            // TODO Auto-generated method stub
-            
         }
     }
 }

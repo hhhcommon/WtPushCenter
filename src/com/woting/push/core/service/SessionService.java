@@ -1,6 +1,8 @@
 package com.woting.push.core.service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Resource;
@@ -18,6 +20,7 @@ import com.woting.passport.UGA.service.UserService;
 import com.woting.passport.session.DeviceType;
 import com.woting.passport.session.key.UserDeviceKey;
 import com.woting.passport.session.redis.RedisUserDeviceKey;
+import com.woting.push.user.PushUserUDKey;
 
 @Service
 public class SessionService {
@@ -192,5 +195,67 @@ public class SessionService {
         ros.del(rUdk.getKey_UserLoginDeviceType());
         ros.del(rUdk.getKey_DeviceType_UserId());
         ros.del(rUdk.getKey_DeviceType_UserInfo());
+    }
+
+    /**
+     * 返回当前用户活动的用户列表，判断活动用户：
+     * 若设备和App同时登录，则返回两个用户
+     * @param userId 用户Id
+     * @return PushUserUDKey列表
+     */
+    public List<PushUserUDKey> getActivedUserUDKs(String userId) {
+        List<PushUserUDKey> retl=new ArrayList<PushUserUDKey>();
+
+        RedisOperService roService=null;
+        try {
+            roService=new RedisOperService(redisConn, 4);
+            PushUserUDKey pUdk=new PushUserUDKey();
+            pUdk.setUserId(userId);
+            pUdk.setPCDType(1);
+            RedisUserDeviceKey rUdk=new RedisUserDeviceKey(pUdk);
+            String _deviceId=roService.get(rUdk.getKey_UserLoginDeviceType());
+            if (_deviceId!=null) {
+                pUdk.setDeviceId(new String(_deviceId));
+                retl.add(pUdk);
+            }
+            pUdk=new PushUserUDKey();
+            pUdk.setUserId(userId);
+            pUdk.setPCDType(2);
+            rUdk=new RedisUserDeviceKey(pUdk);
+            _deviceId=roService.get(rUdk.getKey_UserLoginDeviceType());
+            if (_deviceId!=null) {
+                pUdk.setDeviceId(new String(_deviceId));
+                retl.add(pUdk);
+            }
+        } finally {
+            if (roService!=null) roService.close();
+            roService=null;
+        }
+        return retl.isEmpty()?null:retl;
+    }
+
+    /**
+     * 根据用户名称和设备类型，获得当前的活跃用户的设备用户Key
+     * @param userId 用户Id
+     * @param pcdType 设备类型
+     * @return PushUserUDKey
+     */
+    public PushUserUDKey getActivedUserUDK(String userId, int pcdType) {
+        PushUserUDKey pUdk=new PushUserUDKey();
+        pUdk.setUserId(userId);
+        pUdk.setPCDType(pcdType);
+        RedisUserDeviceKey rUdk=new RedisUserDeviceKey(pUdk);
+
+        RedisOperService roService=null;
+        try {
+            roService=new RedisOperService(redisConn, 4);
+            String _deviceId=roService.get(rUdk.getKey_UserLoginDeviceType());
+            if (_deviceId==null) return null;
+            pUdk.setDeviceId(new String(_deviceId));
+            return pUdk;
+        } finally {
+            if (roService!=null) roService.close();
+            roService=null;
+        }
     }
 }
