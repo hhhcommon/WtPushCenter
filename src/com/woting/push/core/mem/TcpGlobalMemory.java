@@ -219,8 +219,8 @@ public class TcpGlobalMemory {
                     if (_msg instanceof MsgNormal &&msg instanceof MsgNormal) {
                         _exist=((MsgNormal)_msg).getMsgId().equals(((MsgNormal)msg).getMsgId());
                     }
-                    else if (_msg instanceof MsgNormal &&msg instanceof MsgNormal) {
-                        _exist=JsonUtils.objToJson(msg).equals(JsonUtils.objToJson(_msg));
+                    else if (_msg instanceof MsgMedia &&msg instanceof MsgMedia) {
+                        _exist=((MsgMedia)msg).equals(_msg);
                     }
                     if (_exist) break;
                 }

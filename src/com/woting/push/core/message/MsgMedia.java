@@ -224,4 +224,34 @@ public class MsgMedia extends Message {
     public boolean isAck() {
         return affirm==0&&msgType==1;
     }
+
+    /**
+     * 比较两个媒体包是否相同
+     * @param msg 另一个参与比较的类
+     * @return 相同返回true，否则返回false
+     */
+    public boolean equals(Message msg) {
+        if (!(msg instanceof MsgMedia)) return false;
+
+        MsgMedia _m=(MsgMedia)msg;
+        if (this.affirm!=_m.getAffirm()) return false;
+        if (this.bizType!=_m.getBizType()) return false;
+        if (this.mediaType!=_m.getMediaType()) return false;
+        if (this.talkId!=null) {
+            if (!this.talkId.equals(_m.getTalkId())) return false;
+        } else if (_m.getTalkId()==null) return false;
+        if (this.returnType!=_m.getReturnType()) return false;
+        if (this.fromType!=_m.getFromType()) return false;
+        if (this.toType!=_m.getToType()) return false;
+        if (this.getMediaData()!=null&&_m.getMediaData()!=null) {
+            if (this.getMediaData().length!=_m.getMediaData().length) return false;
+            for (int i=0; i<this.getMediaData().length; i++) {
+                if (this.getMediaData()[i]!=_m.getMediaData()[i]) return false;
+            }
+        }
+        else if (this.getMediaData()==null&&_m.getMediaData()!=null) return false;
+        else if (this.getMediaData()!=null&&_m.getMediaData()==null) return false;
+
+        return true;
+    }
 }

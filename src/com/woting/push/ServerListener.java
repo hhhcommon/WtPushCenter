@@ -245,16 +245,16 @@ public class ServerListener {
             dispatchList.add(dm);
         }
         //3-启动{处理电话消息}线程
-//        @SuppressWarnings("unchecked")
-//        CallingConfig cc=((CacheEle<CallingConfig>)SystemCache.getCache(PushConstants.CALLING_CONF)).getContent();
-//        dealCallingList=new ArrayList<DealCalling>();
-//        for (int i=0;i<cc.get_DealThreadCount(); i++) {
-//            DealCalling dc=new DealCalling(cc, i);
-//            dc.setDaemon(true);
-//            dc.start();
-//            //try { Thread.sleep(50); } catch (InterruptedException e) {};
-//            dealCallingList.add(dc);
-//        }
+        @SuppressWarnings("unchecked")
+        CallingConfig cc=((CacheEle<CallingConfig>)SystemCache.getCache(PushConstants.CALLING_CONF)).getContent();
+        dealCallingList=new ArrayList<DealCalling>();
+        for (int i=0;i<cc.get_DealThreadCount(); i++) {
+            DealCalling dc=new DealCalling(cc, i);
+            dc.setDaemon(true);
+            dc.start();
+            //try { Thread.sleep(50); } catch (InterruptedException e) {};
+            dealCallingList.add(dc);
+        }
         //4-启动{流数据处理}线程
         @SuppressWarnings("unchecked")
         MediaflowConfig mfc=((CacheEle<MediaflowConfig>)SystemCache.getCache(PushConstants.MEDIAFLOW_CONF)).getContent();
