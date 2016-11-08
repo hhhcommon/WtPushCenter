@@ -113,6 +113,8 @@ public abstract class MessageUtils {
         ret.setCmdType(0);
         ret.setReMsgId(orgMsg.getMsgId());
 
+        ret.setPCDType(orgMsg.getPCDType());
+
         return ret;
     }
 

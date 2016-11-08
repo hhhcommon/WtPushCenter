@@ -19,7 +19,7 @@ public abstract class AbstractLoopMoniter<C extends Config> extends Thread imple
     private Logger logger=LoggerFactory.getLogger(AbstractLoopMoniter.class);
 
     private long loopDelay=0;
-    private static int _RUN_STATUS=0;//运行状态:0未启动，1正在启动，2启动成功；3准备停止；4停止
+    private volatile int _RUN_STATUS=0;//运行状态:0未启动，1正在启动，2启动成功；3准备停止；4停止
     protected C conf;
     protected boolean _canContinue=true;;
 

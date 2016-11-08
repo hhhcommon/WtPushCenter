@@ -165,7 +165,7 @@ public class ServerListener {
             TcpGlobalMemory.getInstance();
             logger.info("初始化管理内存，用时[{}]毫秒", System.currentTimeMillis()-_begin);
             logger.info("系统数据加载结束，共用时[{}]毫秒", System.currentTimeMillis()-segmentBeginTime);
-            
+
             initOk=true;
         } catch(Exception e) {
             logger.info("启动服务出现异常：\n{}", StringUtils.getAllMessage(e));
@@ -238,21 +238,23 @@ public class ServerListener {
         //2-启动{接收消息分发}线程
         dispatchList=new ArrayList<DispatchMessage>();
         for (int i=0;i<pc.get_DispatchThreadCount(); i++) {
+            //for (int i=0;i<100; i++) {
             DispatchMessage dm=new DispatchMessage(pc, i);
             dm.setDaemon(true);
             dm.start();
             dispatchList.add(dm);
         }
         //3-启动{处理电话消息}线程
-        @SuppressWarnings("unchecked")
-        CallingConfig cc=((CacheEle<CallingConfig>)SystemCache.getCache(PushConstants.CALLING_CONF)).getContent();
-        dealCallingList=new ArrayList<DealCalling>();
-        for (int i=0;i<cc.get_DealThreadCount(); i++) {
-            DealCalling dc=new DealCalling(cc, i);
-            dc.setDaemon(true);
-            dc.start();
-            dealCallingList.add(dc);
-        }
+//        @SuppressWarnings("unchecked")
+//        CallingConfig cc=((CacheEle<CallingConfig>)SystemCache.getCache(PushConstants.CALLING_CONF)).getContent();
+//        dealCallingList=new ArrayList<DealCalling>();
+//        for (int i=0;i<cc.get_DealThreadCount(); i++) {
+//            DealCalling dc=new DealCalling(cc, i);
+//            dc.setDaemon(true);
+//            dc.start();
+//            //try { Thread.sleep(50); } catch (InterruptedException e) {};
+//            dealCallingList.add(dc);
+//        }
         //4-启动{流数据处理}线程
         @SuppressWarnings("unchecked")
         MediaflowConfig mfc=((CacheEle<MediaflowConfig>)SystemCache.getCache(PushConstants.MEDIAFLOW_CONF)).getContent();

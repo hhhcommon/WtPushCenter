@@ -35,61 +35,51 @@ public class SocketHandleConfig implements Config {
      */
     private long _Err_SumCount=100;
     /**
-     * 处理中，总共错误|异常消息的次数，若大于这个数量，则系统将认为此Socket为恶意连接，将关闭相应的处理
+     * 日志文件存储目录，若不设置或为空，则不进行日志存储
      */
-    private String _Recieve_LogPath=null;
-    /**
-     * 处理中，总共错误|异常消息的次数，若大于这个数量，则系统将认为此Socket为恶意连接，将关闭相应的处理
-     */
-    private String _Send_LogPath=null;
+    private String _LogPath=null;
 
     
     public long get_ExpireTime() {
         return _ExpireTime;
     }
     public void set_ExpireTime(long _ExpireTime) {
-        this._ExpireTime = _ExpireTime;
+        this._ExpireTime=_ExpireTime;
     }
     public long get_MonitorDelay() {
         return _MonitorDelay;
     }
     public void set_MonitorDelay(long _MonitorDelay) {
-        this._MonitorDelay = _MonitorDelay;
+        this._MonitorDelay=_MonitorDelay;
     }
     public long get_TryDestoryAllCount() {
         return _TryDestoryAllCount;
     }
     public void set_TryDestoryAllCount(long _TryDestoryAllCount) {
-        this._TryDestoryAllCount = _TryDestoryAllCount;
+        this._TryDestoryAllCount=_TryDestoryAllCount;
     }
     public long get_BeatDelay() {
         return _BeatDelay;
     }
     public void set_BeatDelay(long _BeatDelay) {
-        this._BeatDelay = _BeatDelay;
+        this._BeatDelay=_BeatDelay;
     }
     public long get_Err_ContinueCount() {
         return _Err_ContinueCount;
     }
     public void set_Err_ContinueCount(long _Err_ContinueCount) {
-        this._Err_ContinueCount = _Err_ContinueCount;
+        this._Err_ContinueCount=_Err_ContinueCount;
     }
     public long get_Err_SumCount() {
         return _Err_SumCount;
     }
     public void set_Err_SumCount(long _Err_SumCount) {
-        this._Err_SumCount = _Err_SumCount;
+        this._Err_SumCount=_Err_SumCount;
     }
-    public String get_Recieve_LogPath() {
-        return _Recieve_LogPath;
+    public String get_LogPath() {
+        return _LogPath;
     }
-    public void set_Recieve_LogPath(String _Recieve_LogPath) {
-        this._Recieve_LogPath = _Recieve_LogPath;
-    }
-    public String get_Send_LogPath() {
-        return _Send_LogPath;
-    }
-    public void set_Send_LogPath(String _Send_LogPath) {
-        this._Send_LogPath = _Send_LogPath;
+    public void set_LogPath(String _LogPath) {
+        this._LogPath=_LogPath;
     }
 }

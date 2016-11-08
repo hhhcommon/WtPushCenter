@@ -248,11 +248,11 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         }
         @Override
         protected void __beforeRun() throws Exception {
-            if (StringUtils.isNullOrEmptyOrSpace(conf.get_Recieve_LogPath())) return;
-            String filePath=conf.get_Recieve_LogPath();
+            if (StringUtils.isNullOrEmptyOrSpace(conf.get_LogPath())) return;
+            String filePath=conf.get_LogPath();
             File dir=new File(filePath);
             if (!dir.isDirectory()) dir.mkdirs();
-            File f=new File(filePath+"/"+_socket.hashCode()+".log");
+            File f=new File(filePath+"/"+_socket.hashCode()+"_recv.log");
             try {
                 if (!f.exists()) f.createNewFile();
                 fos=new FileOutputStream(f, false);
@@ -342,6 +342,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                     }
                 }
             }//一条消息读取完成
+
             if (fos!=null) {
                 fos.write(13);
                 fos.write(10);
@@ -382,6 +383,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                 _sendMsgQueue.add(ackM.toBytes());
                             } else {//登录成功
                                 _puUdk.setUserId(""+retM.get("UserId"));
+                                _pushUserKey=_puUdk;
                                 if (((MsgNormal)ms).getBizType()==15) {//是注册消息
                                     MsgNormal ackM=MessageUtils.buildAckMsg((MsgNormal)ms);
                                     ackM.setBizType(15);
@@ -392,7 +394,6 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                     _sendMsgQueue.add(ackM.toBytes());
                                     globalMem.bindPushUserANDSocket(_pushUserKey, SocketHandler.this);
                                 } else {//是非注册消息
-                                    _pushUserKey=_puUdk;
                                     globalMem.receiveMem.addPureMsg(ms);
                                 }
                             }
@@ -421,11 +422,11 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         }
         @Override
         protected void __beforeRun() throws Exception {
-            if (StringUtils.isNullOrEmptyOrSpace(conf.get_Send_LogPath())) return;
-            String filePath=conf.get_Send_LogPath();
+            if (StringUtils.isNullOrEmptyOrSpace(conf.get_LogPath())) return;
+            String filePath=conf.get_LogPath();
             File dir=new File(filePath);
             if (!dir.isDirectory()) dir.mkdirs();
-            File f=new File(filePath+"/"+_socket.hashCode()+".log");
+            File f=new File(filePath+"/"+_socket.hashCode()+"_send.log");
             try {
                 if (!f.exists()) f.createNewFile();
                 fos=new FileOutputStream(f, false);

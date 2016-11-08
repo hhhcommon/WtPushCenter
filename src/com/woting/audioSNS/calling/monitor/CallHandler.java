@@ -53,6 +53,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         this.sessionService=sessionService;
         this.userService=userService;
         this.callData.setCallHandler(this);
+        this.callData.setBeginDialTime();
     }
 
     @Override
@@ -73,21 +74,21 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             }
 
             //一段时间后未收到自动回复，的处理
-            if (this.callData.getStatus()==1
+            if ((this.callData.getStatus()==1||this.callData.getStatus()==0)
               &&this.callData.getBeginDialTime()!=-1
               &&(System.currentTimeMillis()-this.callData.getBeginDialTime()>this.callData.getExpireOnline()))
             {
                 dealOutLine();
             }
             //一段时间后未收到“被叫者”手工应答Ack，的处理
-            if ((this.callData.getStatus()==1||this.callData.getStatus()==2)
+            if ((this.callData.getStatus()==0||this.callData.getStatus()==1||this.callData.getStatus()==2)
               &&this.callData.getBeginDialTime()!=-1
               &&(System.currentTimeMillis()-this.callData.getBeginDialTime()>this.callData.getExpireAck()))
             {
                 dealNoAck();
             }
             //一段时间后未收到任何消息，通话过期
-            if ((this.callData.getStatus()==1||this.callData.getStatus()==2||this.callData.getStatus()==3)
+            if ((this.callData.getStatus()==0||this.callData.getStatus()==1||this.callData.getStatus()==2||this.callData.getStatus()==3)
               &&(System.currentTimeMillis()-this.callData.getLastUsedTime()>this.callData.getExpireTime()))
             {
                 dealCallExpire();
@@ -224,8 +225,6 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             this.callData.addSendedMsg(toCallederMsg);
         }
 
-        //开始计时，两个过程
-        this.callData.setBeginDialTime();
         //若不存在用户或占线要删除数据及这个过程
         if (!callerExisted||isBusy) shutdown();
         else {

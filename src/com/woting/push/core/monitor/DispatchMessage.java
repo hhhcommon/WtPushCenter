@@ -39,7 +39,7 @@ public class DispatchMessage extends AbstractLoopMoniter<PushConfig> {
                 PushUserUDKey mUdk=PushUserUDKey.buildFromMsg(m);
                 globalMem.sendMem.addUserMsg(mUdk, MessageUtils.buildAckMsg((MsgNormal)m));
             }
+            globalMem.receiveMem.addTypeMsg(""+((MsgNormal)m).getBizType(), m);
         }
-        globalMem.receiveMem.addTypeMsg(""+((MsgNormal)m).getBizType(), m);
     }
 }

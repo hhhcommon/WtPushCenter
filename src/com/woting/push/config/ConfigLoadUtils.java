@@ -44,10 +44,7 @@ public abstract class ConfigLoadUtils {
             shc.set_Err_SumCount((int)fel.eval(jc.getString("socketmonitor.errSumCount")));
         } catch(Exception e) {}
         try {
-            shc.set_Recieve_LogPath(jc.getString("socketenviron.recieveLogPath"));
-        } catch(Exception e) {}
-        try {
-            shc.set_Send_LogPath(jc.getString("socketenviron.sendLogPath"));
+            shc.set_LogPath(jc.getString("socketenviron.logPath"));
         } catch(Exception e) {}
         return shc;
     }

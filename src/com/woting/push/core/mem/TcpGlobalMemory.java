@@ -83,6 +83,7 @@ public class TcpGlobalMemory {
     private TcpGlobalMemory() {
        pureMsgQueue=new ConcurrentLinkedQueue<Message>();
        typeMsg=new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
+       sendMsg=new ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Message>>();
        REF_udkANDsocket=new HashMap<PushUserUDKey, SocketHandler>();
        REF_socketANDudk=new HashMap<SocketHandler, PushUserUDKey>();
        receiveMem=new ReceiveMemory();
@@ -215,7 +216,12 @@ public class TcpGlobalMemory {
                 //查找相同的消息是否存在
                 boolean _exist=false;
                 for (Message _msg: _userQueue) {
-                    _exist=JsonUtils.objToJson(msg).equals(JsonUtils.objToJson(_msg));
+                    if (_msg instanceof MsgNormal &&msg instanceof MsgNormal) {
+                        _exist=((MsgNormal)_msg).getMsgId().equals(((MsgNormal)msg).getMsgId());
+                    }
+                    else if (_msg instanceof MsgNormal &&msg instanceof MsgNormal) {
+                        _exist=JsonUtils.objToJson(msg).equals(JsonUtils.objToJson(_msg));
+                    }
                     if (_exist) break;
                 }
                 if (_exist) return true;
@@ -223,13 +229,13 @@ public class TcpGlobalMemory {
             }
         }
 
-
         /**
          * 向某一设移动设备的输出队列中插入唯一消息，唯一消息是指，同一时间某类消息对一个设备只能有一个消息内容。
          * @param pUdk 用户标识
          * @param msg 消息数据
          * @return 加入成功返回true(若消息已经存在，也放回true)，否则返回false
          */
+        @SuppressWarnings({ "rawtypes", "unchecked" })
         public boolean addUnionUserMsg(PushUserUDKey pUdk, MsgMedia msg, CompareMsg compMsg) {
             if (sendMsg==null||msg==null||pUdk==null) return false;
             //唯一化处理
@@ -271,7 +277,7 @@ public class TcpGlobalMemory {
             }
             if (canRead) {
                 Queue<Message> mQueue=sendMsg.get(pUdk);
-                m=mQueue.poll();
+                if (mQueue!=null) m=mQueue.poll();
             }
             if (m==null) { //从未发布成功的消息中获取消息
                 /*
