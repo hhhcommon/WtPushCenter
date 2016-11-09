@@ -238,7 +238,6 @@ public class ServerListener {
         //2-启动{接收消息分发}线程
         dispatchList=new ArrayList<DispatchMessage>();
         for (int i=0;i<pc.get_DispatchThreadCount(); i++) {
-            //for (int i=0;i<100; i++) {
             DispatchMessage dm=new DispatchMessage(pc, i);
             dm.setDaemon(true);
             dm.start();
@@ -252,7 +251,6 @@ public class ServerListener {
             DealCalling dc=new DealCalling(cc, i);
             dc.setDaemon(true);
             dc.start();
-            //try { Thread.sleep(50); } catch (InterruptedException e) {};
             dealCallingList.add(dc);
         }
         //4-启动{流数据处理}线程

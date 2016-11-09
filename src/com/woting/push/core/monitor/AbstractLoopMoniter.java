@@ -19,7 +19,7 @@ public abstract class AbstractLoopMoniter<C extends Config> extends Thread imple
     private Logger logger=LoggerFactory.getLogger(AbstractLoopMoniter.class);
 
     private long loopDelay=0;
-    private volatile int _RUN_STATUS=0;//运行状态:0未启动，1正在启动，2启动成功；3准备停止；4停止
+    private int _RUN_STATUS=0;//运行状态:0未启动，1正在启动，2启动成功；3准备停止；4停止
     protected C conf;
     protected boolean _canContinue=true;;
 
@@ -80,7 +80,6 @@ public abstract class AbstractLoopMoniter<C extends Config> extends Thread imple
                 logger.info("[{}]监控过程异常：\n{}", this.getName(), StringUtils.getAllMessage(e));
             }
         }
-        _RUN_STATUS=3;
     }
 
     /**
@@ -108,6 +107,7 @@ public abstract class AbstractLoopMoniter<C extends Config> extends Thread imple
             _RUN_STATUS=2;
             try {
                 moniter();
+                _RUN_STATUS=3;
             } catch (Exception e) {
             } finally {
                 _RUN_STATUS=3;

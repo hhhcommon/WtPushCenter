@@ -43,6 +43,9 @@ public class OneCall implements Serializable {
     public String getCallerId() {
         return callerKey==null?null:callerKey.getUserId();
     }
+    public int getCallerPcdType() {
+        return callerKey==null?null:callerKey.getPCDType();
+    }
 
     private PushUserUDKey callederKey;//被叫者Key
     public PushUserUDKey getCallederKey() {
@@ -54,21 +57,24 @@ public class OneCall implements Serializable {
     public String getCallederId() {
         return callederKey==null?null:callederKey.getUserId();
     }
-
-    private int callerPcdType;//呼叫者PcdType
-    public int getCallerPcdType() {
-        return callerPcdType;
-    }
-    public void setCallerPcdType(int callerPcdType) {
-        this.callerPcdType=callerPcdType;
-    }
-    private int callederPcdType;//被叫者PcdType
     public int getCallederPcdType() {
-        return callederPcdType;
+        return callederKey==null?null:callederKey.getPCDType();
     }
-    public void setCallederPcdType(int callederPcdType) {
-        this.callederPcdType=callederPcdType;
-    }
+
+//    private int callerPcdType;//呼叫者PcdType
+//    public int getCallerPcdType() {
+//        return callerPcdType;
+//    }
+//    public void setCallerPcdType(int callerPcdType) {
+//        this.callerPcdType=callerPcdType;
+//    }
+//    private int callederPcdType;//被叫者PcdType
+//    public int getCallederPcdType() {
+//        return callederPcdType;
+//    }
+//    public void setCallederPcdType(int callederPcdType) {
+//        this.callederPcdType=callederPcdType;
+//    }
 
     private long createTime;//本对象创建时间
     public long getCreateTime() {

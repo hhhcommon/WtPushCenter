@@ -33,10 +33,8 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     private CallingMemory callingMem=CallingMemory.getInstance();
 
     private OneCall callData;//所控制的通话数据
+    private volatile Object shutdownLock=new Object();
     private boolean isCallerTalked=false; //是否“被叫者”说话
-
-    private PushUserUDKey callerKey=null;
-    private PushUserUDKey callederKey=null;
 
     private SessionService sessionService=null;
     private UserService userService=null;
@@ -48,12 +46,11 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     protected CallHandler(CallingConfig conf, OneCall oneCall, SessionService sessionService, UserService userService) {
         super(conf);
         super.setName("电话处理["+oneCall.getCallId()+"]监控主线程");
-        this.setLoopDelay(10);
-        this.callData=oneCall;
+        setLoopDelay(10);
+        callData=oneCall;
         this.sessionService=sessionService;
         this.userService=userService;
-        this.callData.setCallHandler(this);
-        this.callData.setBeginDialTime();
+        callData.setCallHandler(this);
     }
 
     @Override
@@ -67,45 +64,47 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             sleep(50);//等50毫秒
             if (callData.getStatus()==9) {//结束进程
                 shutdown();
-                return;
             }
             if (callData.getStatus()==4) {//已经挂断了 //清除声音内容
                 cleanTalk(1);
             }
 
             //一段时间后未收到自动回复，的处理
-            if ((this.callData.getStatus()==1||this.callData.getStatus()==0)
-              &&this.callData.getBeginDialTime()!=-1
-              &&(System.currentTimeMillis()-this.callData.getBeginDialTime()>this.callData.getExpireOnline()))
+            if (callData.getStatus()==1
+              &&callData.getBeginDialTime()!=-1
+              &&(System.currentTimeMillis()-callData.getBeginDialTime()>callData.getExpireOnline()))
             {
                 dealOutLine();
+                shutdown();
             }
             //一段时间后未收到“被叫者”手工应答Ack，的处理
-            if ((this.callData.getStatus()==0||this.callData.getStatus()==1||this.callData.getStatus()==2)
-              &&this.callData.getBeginDialTime()!=-1
-              &&(System.currentTimeMillis()-this.callData.getBeginDialTime()>this.callData.getExpireAck()))
+            if ((callData.getStatus()==1||callData.getStatus()==2)
+              &&callData.getBeginDialTime()!=-1
+              &&(System.currentTimeMillis()-callData.getBeginDialTime()>callData.getExpireAck()))
             {
                 dealNoAck();
+                shutdown();
             }
             //一段时间后未收到任何消息，通话过期
-            if ((this.callData.getStatus()==0||this.callData.getStatus()==1||this.callData.getStatus()==2||this.callData.getStatus()==3)
-              &&(System.currentTimeMillis()-this.callData.getLastUsedTime()>this.callData.getExpireTime()))
+            if ((callData.getStatus()==1||callData.getStatus()==2||callData.getStatus()==3)
+              &&(System.currentTimeMillis()-callData.getLastUsedTime()>callData.getExpireTime()))
             {
                 dealCallExpire();
+                shutdown();
             }
 
             //“被叫者”第一次说话
-            if (!isCallerTalked&&this.callData.getCallederWts().size()>0) {
+            if (!isCallerTalked&&callData.getCallederWts().size()>0) {
                 dealCallerFirstTalk();
                 isCallerTalked=true;
             }
             //读取预处理的消息
-            MsgNormal m=this.callData.pollPreMsg();//第一条必然是呼叫信息
+            MsgNormal m=callData.pollPreMsg();//第一条必然是呼叫信息
             if (m==null) return;
 
-            this.callData.setLastUsedTime();
+            callData.setLastUsedTime();
             int flag=1;
-            ProcessedMsg pMsg=new ProcessedMsg(m, System.currentTimeMillis(), this.getClass().getName());
+            ProcessedMsg pMsg=new ProcessedMsg(m, System.currentTimeMillis(), getClass().getName());
             try {
                 if (m.getCmdType()==1) {
                     if (m.getCommand()==1) dial(m);//呼叫处理
@@ -123,22 +122,23 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 }
                 pMsg.setStatus(flag);
             } catch(Exception e) {
+                e.printStackTrace();
                 pMsg.setStatus(-1);
             } finally {
                 pMsg.setEndTime(System.currentTimeMillis());
-                this.callData.addProcessedMsg(pMsg);
+                callData.addProcessedMsg(pMsg);
             }
         } catch(Exception e) {
             e.printStackTrace();
-            cleanTalk(2);//强制清除声音
         }
     }
 
     //===========以下是分步处理过程，全部是私有函数
     //处理呼叫(CALL:1)
     private void dial(MsgNormal m) {
-        System.out.println("处理呼叫信息前==[callid="+this.callData.getCallId()+"]:status="+this.callData.getStatus());
-        PushUserUDKey callerUdk=PushUserUDKey.buildFromMsg(m);
+        callData.setBeginDialTime();
+        System.out.println("处理呼叫信息前==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
+        callData.setCallerKey(PushUserUDKey.buildFromMsg(m));
         String callId =((MapContent)m.getMsgContent()).get("CallId")+"";
         String callerId=PushUserUDKey.buildFromMsg(m).getUserId();
         String callederId=((MapContent)m.getMsgContent()).get("CallederId")+"";
@@ -157,7 +157,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         toCallerMsg.setCommand(0x09);
         //判断呼叫者是否存在
         boolean callerExisted=true; //是否呼叫者或被叫者存在
-        if ((PushUserUDKey)sessionService.getActivedUserUDK(callerUdk.getUserId(),callerUdk.getPCDType())==null) {
+        if ((PushUserUDKey)sessionService.getActivedUserUDK(callData.getCallerId(),callData.getCallerPcdType())==null) {
             toCallerMsg.setReturnType(2);
             callerExisted=false;
         }
@@ -186,9 +186,10 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         dataMap.put("CallederId", callederId);
         MapContent mc=new MapContent(dataMap);
         toCallerMsg.setMsgContent(mc);
-        globalMem.sendMem.addUserMsg(callerUdk, toCallerMsg);
+        toCallerMsg.setPCDType(callData.getCallerKey().getPCDType());
+        globalMem.sendMem.addUserMsg(callData.getCallerKey(), toCallerMsg);
         //记录到已发送列表
-        this.callData.addSendedMsg(toCallerMsg);
+        callData.addSendedMsg(toCallerMsg);
 
         //给被叫者发送信息
         if (callerExisted&&!callerId.equals(callederId)) {
@@ -219,30 +220,25 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             dataMap.put("CallerInfo", callerInfo);
 
             for (PushUserUDKey pUdk: calleredDevices) {
+                toCallederMsg.setPCDType(pUdk.getPCDType());
                 globalMem.sendMem.addUserMsg(pUdk, toCallederMsg);
             }
             //记录到已发送列表
-            this.callData.addSendedMsg(toCallederMsg);
+            callData.addSendedMsg(toCallederMsg);
         }
 
         //若不存在用户或占线要删除数据及这个过程
         if (!callerExisted||isBusy) shutdown();
-        else {
-            //修改状态
-            this.callData.setStatus_1();
-            this.callerKey=callerUdk;
-            this.callData.setCallerKey(callerUdk);
-            this.callederKey=null;
-        }
-        logger.debug("处理呼叫信息后==[callid="+this.callData.getCallId()+"]:status="+this.callData.getStatus());
+        else callData.setStatus_1(); //修改状态
+        logger.debug("处理呼叫信息后==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
     }
 
     //处理“被叫者”的自动呼叫反馈(CALL:-b1)
     private int dealAutoDialFeedback(MsgNormal m) {
-        System.out.println("处理自动应答前==[callid="+this.callData.getCallId()+"]:status="+this.callData.getStatus());
+        System.out.println("处理自动应答前==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
         //首先判断这个消息是否符合处理的要求：callid, callerId, callederId是否匹配
-        if (!this.callData.getCallerId().equals(((MapContent)m.getMsgContent()).get("CallerId")+"")||!this.callData.getCallederId().equals(PushUserUDKey.buildFromMsg(m).getUserId())) return 3;
-        if (this.callData.getStatus()==1) {//状态正确，如果是其他状态，这个消息抛弃
+        if (!callData.getCallerId().equals(((MapContent)m.getMsgContent()).get("CallerId")+"")||!callData.getCallederId().equals(PushUserUDKey.buildFromMsg(m).getUserId())) return 3;
+        if (callData.getStatus()==1) {//状态正确，如果是其他状态，这个消息抛弃
             //发送给呼叫者的消息
             MsgNormal toCallerMsg=new MsgNormal();
             toCallerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
@@ -254,21 +250,18 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             toCallerMsg.setCmdType(1);
             toCallerMsg.setCommand(0x40);
             Map<String, Object> dataMap=new HashMap<String, Object>();
-            dataMap.put("CallId", this.callData.getCallId());
-            dataMap.put("CallerId", this.callData.getCallerId());
-            dataMap.put("CallederId", this.callData.getCallederId());
+            dataMap.put("CallId", callData.getCallId());
+            dataMap.put("CallerId", callData.getCallerId());
+            dataMap.put("CallederId", callData.getCallederId());
             dataMap.put("OnLineType", "1");
             MapContent mc=new MapContent(dataMap);
             toCallerMsg.setMsgContent(mc);
+            toCallerMsg.setPCDType(callData.getCallerKey().getPCDType());
+            globalMem.sendMem.addUserMsg(callData.getCallerKey(), toCallerMsg);
+            callData.addSendedMsg(toCallerMsg);//记录到已发送列表
 
-            this.callederKey=PushUserUDKey.buildFromMsg(m); //被叫者Key
-            this.callData.setCallederKey(callederKey);
-            
-            globalMem.sendMem.addUserMsg(this.callerKey, toCallerMsg);
-            this.callData.addSendedMsg(toCallerMsg);//记录到已发送列表
-
-            this.callData.setStatus_2();//修改状态
-            System.out.println("处理自动应答后==[callid="+this.callData.getCallId()+"]:status="+this.callData.getStatus());
+            callData.setStatus_2();//修改状态
+            System.out.println("处理自动应答后==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
             return 1;
         } else return 2;//被抛弃
     }
@@ -276,18 +269,16 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     //处理“被叫者”应答(CALL:2)
     private int ackDial(MsgNormal m) {
         //首先判断这个消息是否符合处理的要求：callid, callerId, callederId是否匹配
-        if (!this.callData.getCallerId().equals(((MapContent)m.getMsgContent()).get("CallerId")+"")||!this.callData.getCallederId().equals(PushUserUDKey.buildFromMsg(m).getUserId())) return 3;
-        if (this.callData.getStatus()==1||this.callData.getStatus()==2) {//状态正确，如果是其他状态，这个消息抛弃
+        if (!callData.getCallerId().equals(((MapContent)m.getMsgContent()).get("CallerId")+"")||!callData.getCallederId().equals(PushUserUDKey.buildFromMsg(m).getUserId())) return 3;
+        if (callData.getStatus()==1||callData.getStatus()==2) {//状态正确，如果是其他状态，这个消息抛弃
             //应答状态
             int ackType=2; //拒绝
             try {
                 ackType=Integer.parseInt(""+((MapContent)m.getMsgContent()).get("ACKType"));
             } catch(Exception e) {}
 
-            PushUserUDKey _tempK=PushUserUDKey.buildFromMsg(m);
-            if (this.callederKey==null) {
-                this.callederKey=_tempK;
-                this.callData.setCallederPcdType(_tempK.getPCDType());
+            if (callData.getCallederKey()==null) {
+                callData.setCallederKey(PushUserUDKey.buildFromMsg(m));
             } else return 2;//已处理了，不再处理了。
 
             //构造“应答传递ACK”消息，并发送给“呼叫者”
@@ -301,20 +292,20 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             toCallerMsg.setCmdType(1);
             toCallerMsg.setCommand(0x20);
             Map<String, Object> dataMap=new HashMap<String, Object>();
-            dataMap.put("CallId", this.callData.getCallId());
-            dataMap.put("CallerId", this.callData.getCallerId());
-            dataMap.put("CallederId", this.callData.getCallederId());
+            dataMap.put("CallId", callData.getCallId());
+            dataMap.put("CallerId", callData.getCallerId());
+            dataMap.put("CallederId", callData.getCallederId());
             dataMap.put("ACKType", ackType);
             MapContent mc=new MapContent(dataMap);
             toCallerMsg.setMsgContent(mc);
+            toCallerMsg.setPCDType(callData.getCallerKey().getPCDType());
+            globalMem.sendMem.addUserMsg(callData.getCallerKey(), toCallerMsg);
+            callData.addSendedMsg(toCallerMsg);//记录到已发送列表
 
-            globalMem.sendMem.addUserMsg(this.callerKey, toCallerMsg);
-            this.callData.addSendedMsg(toCallerMsg);//记录到已发送列表
-
-            if (ackType==1) this.callData.setStatus_3();//修改状态:正常通话
+            if (ackType==1) callData.setStatus_3();//修改状态:正常通话
             else
-            if (ackType==2||ackType==31) this.callData.setStatus_4();//修改状态:挂断
-            System.out.println("接到被叫者手工应答后==[callid="+this.callData.getCallId()+"]:status="+this.callData.getStatus());
+            if (ackType==2||ackType==31) callData.setStatus_4();//修改状态:挂断
+            System.out.println("接到被叫者手工应答后==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
             return 1;
         } else return 2;//被抛弃
     }
@@ -323,9 +314,9 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     private int hangup(MsgNormal m) {
         //首先判断是那方在进行挂断
         String hangupperId=PushUserUDKey.buildFromMsg(m).getUserId();
-        String otherId=this.callData.getOtherId(hangupperId);
+        String otherId=callData.getOtherId(hangupperId);
         if (otherId==null) return 3;
-        PushUserUDKey otherK=this.callData.getOtherUdk(hangupperId);
+        PushUserUDKey otherK=callData.getOtherUdk(hangupperId);
         if (otherK.getPCDType()!=1&&otherK.getPCDType()!=2) return 3;
 
         //给另一方发送“挂断传递”消息
@@ -340,18 +331,18 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         otherMsg.setCmdType(1);
         otherMsg.setCommand(0x30);
         Map<String, Object> dataMap=new HashMap<String, Object>();
-        dataMap.put("CallId", this.callData.getCallId());
-        dataMap.put("CallerId", this.callData.getCallerId());
-        dataMap.put("CallederId", this.callData.getCallederId());
+        dataMap.put("CallId", callData.getCallId());
+        dataMap.put("CallerId", callData.getCallerId());
+        dataMap.put("CallederId", callData.getCallederId());
         dataMap.put("HangupType", "1");
         MapContent mc=new MapContent(dataMap);
         otherMsg.setMsgContent(mc);
-
+        otherMsg.setPCDType(otherK.getPCDType());
         globalMem.sendMem.addUserMsg(otherK, otherMsg);
-        this.callData.addSendedMsg(otherMsg);//记录到已发送列表
+        callData.addSendedMsg(otherMsg);//记录到已发送列表
         
-        this.callData.setStatus_4();//修改状态
-        System.out.println("处理挂断消息后==[callid="+this.callData.getCallId()+"]:status="+this.callData.getStatus());
+        callData.setStatus_4();//修改状态
+        System.out.println("处理挂断消息后==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
         return 1;
     }
 
@@ -370,13 +361,13 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
 
         Map<String, Object> dataMap=new HashMap<String, Object>();
         String speaker=PushUserUDKey.buildFromMsg(m).getUserId();
-        PushUserUDKey speakerK=this.callData.getUdkByUserId(speaker);
+        PushUserUDKey speakerK=callData.getUdkByUserId(speaker);
         speakerK=(PushUserUDKey)sessionService.getActivedUserUDK(speakerK.getUserId(), speakerK.getPCDType());
 
         if (StringUtils.isNullOrEmptyOrSpace(speaker)||speakerK==null) {
             toSpeakerMsg.setReturnType(0);
         } else {
-            String ret=this.callData.setSpeaker(speaker);
+            String ret=callData.setSpeaker(speaker);
             if (ret.equals("1")) {
                 toSpeakerMsg.setReturnType(1);
             } else if (ret.equals("0")) {
@@ -390,12 +381,14 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             }
 
         }
-        dataMap.put("CallId", this.callData.getCallId());
+        dataMap.put("CallId", callData.getCallId());
         MapContent mc=new MapContent(dataMap);
         toSpeakerMsg.setMsgContent(mc);
-        globalMem.sendMem.addUserMsg(PushUserUDKey.buildFromMsg(m), toSpeakerMsg);
+        PushUserUDKey _pUdk=PushUserUDKey.buildFromMsg(m);
+        toSpeakerMsg.setPCDType(_pUdk.getPCDType());
+        globalMem.sendMem.addUserMsg(_pUdk, toSpeakerMsg);
         //记录到已发送列表
-        this.callData.addSendedMsg(toSpeakerMsg);
+        callData.addSendedMsg(toSpeakerMsg);
     }
 
     //处理结束对讲(PTT:2)
@@ -413,13 +406,13 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
 
         Map<String, Object> dataMap=new HashMap<String, Object>();
         String speaker=PushUserUDKey.buildFromMsg(m).getUserId();
-        PushUserUDKey speakerK=this.callData.getUdkByUserId(speaker);
+        PushUserUDKey speakerK=callData.getUdkByUserId(speaker);
         speakerK=(PushUserUDKey)sessionService.getActivedUserUDK(speakerK.getUserId(), speakerK.getPCDType());
 
         if (speakerK==null) {
             toSpeakerMsg.setReturnType(0);
         } else {
-            String ret=this.callData.cleanSpeaker(speaker);
+            String ret=callData.cleanSpeaker(speaker);
             if (ret.equals("1")) {
                 toSpeakerMsg.setReturnType(1);
             } else if (ret.equals("0")) {
@@ -433,12 +426,14 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             }
 
         }
-        dataMap.put("CallId", this.callData.getCallId());
+        dataMap.put("CallId", callData.getCallId());
         MapContent mc=new MapContent(dataMap);
         toSpeakerMsg.setMsgContent(mc);
-        globalMem.sendMem.addUserMsg(PushUserUDKey.buildFromMsg(m), toSpeakerMsg);
+        PushUserUDKey _pUdk=PushUserUDKey.buildFromMsg(m);
+        toSpeakerMsg.setPCDType(_pUdk.getPCDType());
+        globalMem.sendMem.addUserMsg(_pUdk, toSpeakerMsg);
         //记录到已发送列表
-        this.callData.addSendedMsg(toSpeakerMsg);
+        callData.addSendedMsg(toSpeakerMsg);
     }
 
     //=======以下3个超时处理
@@ -455,18 +450,17 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         toCallerMsg.setCmdType(1);
         toCallerMsg.setCommand(0x40);
         Map<String, Object> dataMap=new HashMap<String, Object>();
-        dataMap.put("CallId", this.callData.getCallId());
-        dataMap.put("CallerId", this.callData.getCallerId());
-        dataMap.put("CallederId", this.callData.getCallederId());
+        dataMap.put("CallId", callData.getCallId());
+        dataMap.put("CallerId", callData.getCallerId());
+        dataMap.put("CallederId", callData.getCallederId());
         dataMap.put("OnLineType", "2");
         MapContent mc=new MapContent(dataMap);
         toCallerMsg.setMsgContent(mc);
+        toCallerMsg.setPCDType(callData.getCallerKey().getPCDType());
+        globalMem.sendMem.addUserMsg(callData.getCallerKey(), toCallerMsg);
+        callData.addSendedMsg(toCallerMsg);//记录到已发送列表
 
-        globalMem.sendMem.addUserMsg(this.callerKey, toCallerMsg);
-        this.callData.addSendedMsg(toCallerMsg);//记录到已发送列表
-
-        shutdown();
-        System.out.println("被叫者不在线检测到后==[callid="+this.callData.getCallId()+"]:status="+this.callData.getStatus());
+        System.out.println("被叫者不在线检测到后==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
     }
 
     //处理“被叫者”未手工应答
@@ -482,14 +476,15 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         toCallerMsg.setCmdType(1);
         toCallerMsg.setCommand(0x20);
         Map<String, Object> dataMap=new HashMap<String, Object>();
-        dataMap.put("CallId", this.callData.getCallId());
-        dataMap.put("CallerId", this.callData.getCallerId());
-        dataMap.put("CallederId", this.callData.getCallederId());
+        dataMap.put("CallId", callData.getCallId());
+        dataMap.put("CallerId", callData.getCallerId());
+        dataMap.put("CallederId", callData.getCallederId());
         dataMap.put("ACKType", "32");
         MapContent mc=new MapContent(dataMap);
         toCallerMsg.setMsgContent(mc);
-        globalMem.sendMem.addUserMsg(this.callerKey, toCallerMsg);
-        this.callData.addSendedMsg(toCallerMsg);//记录到已发送列表
+        toCallerMsg.setPCDType(callData.getCallerKey().getPCDType());
+        globalMem.sendMem.addUserMsg(callData.getCallerKey(), toCallerMsg);
+        callData.addSendedMsg(toCallerMsg);//记录到已发送列表
 
         //2、构造“挂断传递”消息，并发送给“被叫者”
         MsgNormal toCallederMsg=new MsgNormal();
@@ -502,17 +497,17 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         toCallederMsg.setCmdType(1);
         toCallederMsg.setCommand(0x30);
         dataMap=new HashMap<String, Object>();
-        dataMap.put("CallId", this.callData.getCallId());
-        dataMap.put("CallerId", this.callData.getCallerId());
-        dataMap.put("CallederId", this.callData.getCallederId());
+        dataMap.put("CallId", callData.getCallId());
+        dataMap.put("CallerId", callData.getCallerId());
+        dataMap.put("CallederId", callData.getCallederId());
         dataMap.put("HangupType", "2");
         MapContent _mc=new MapContent(dataMap);
         toCallederMsg.setMsgContent(_mc);
-        globalMem.sendMem.addUserMsg(this.callederKey, toCallederMsg);
-        this.callData.addSendedMsg(toCallederMsg);//记录到已发送列表
+        toCallederMsg.setPCDType(callData.getCallerKey().getPCDType());
+        globalMem.sendMem.addUserMsg(callData.getCallerKey(), toCallederMsg);
+        callData.addSendedMsg(toCallederMsg);//记录到已发送列表
 
-        shutdown();
-        System.out.println("未手工应答后==[callid="+this.callData.getCallId()+"]:status="+this.callData.getStatus());
+        System.out.println("未手工应答后==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
     }
 
     //服务器发现电话过程过期
@@ -528,14 +523,15 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         toCallerMsg.setCmdType(1);
         toCallerMsg.setCommand(0x30);
         Map<String, Object> callerMap=new HashMap<String, Object>();
-        callerMap.put("CallId", this.callData.getCallId());
-        callerMap.put("CallerId", this.callData.getCallerId());
-        callerMap.put("CallederId", this.callData.getCallederId());
+        callerMap.put("CallId", callData.getCallId());
+        callerMap.put("CallerId", callData.getCallerId());
+        callerMap.put("CallederId", callData.getCallederId());
         callerMap.put("HangupType", "3");
         MapContent mc=new MapContent(callerMap);
         toCallerMsg.setMsgContent(mc);
-        globalMem.sendMem.addUserMsg(this.callerKey, toCallerMsg);
-        this.callData.addSendedMsg(toCallerMsg);//记录到已发送列表
+        toCallerMsg.setPCDType(callData.getCallerKey().getPCDType());
+        globalMem.sendMem.addUserMsg(callData.getCallerKey(), toCallerMsg);
+        callData.addSendedMsg(toCallerMsg);//记录到已发送列表
 
         //发送给“被叫者”的消息
         MsgNormal toCallederMsg=new MsgNormal();
@@ -548,22 +544,22 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         toCallederMsg.setCmdType(1);
         toCallederMsg.setCommand(0x30);
         Map<String, Object> callederMap=new HashMap<String, Object>();
-        callederMap.put("CallId", this.callData.getCallId());
-        callederMap.put("CallerId", this.callData.getCallerId());
-        callederMap.put("CallederId", this.callData.getCallederId());
+        callederMap.put("CallId", callData.getCallId());
+        callederMap.put("CallerId", callData.getCallerId());
+        callederMap.put("CallederId", callData.getCallederId());
         callederMap.put("HangupType", "3");
         MapContent _mc=new MapContent(callederMap);
         toCallederMsg.setMsgContent(_mc);
-        globalMem.sendMem.addUserMsg(this.callederKey, toCallederMsg);
-        this.callData.addSendedMsg(toCallederMsg);//记录到已发送列表
+        toCallederMsg.setPCDType(callData.getCallerKey().getPCDType());
+        globalMem.sendMem.addUserMsg(callData.getCallerKey(), toCallederMsg);
+        callData.addSendedMsg(toCallederMsg);//记录到已发送列表
 
-        shutdown();
-        System.out.println("通话检测到超时==[callid="+this.callData.getCallId()+"]:status="+this.callData.getStatus());
+        System.out.println("通话检测到超时==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
     }
 
     //===处理第一次被叫者说话的特殊流程
     private void  dealCallerFirstTalk() {
-        if (this.callData.getStatus()==1||this.callData.getStatus()==2) {//等同于“被叫者”手工应答
+        if (callData.getStatus()==1||callData.getStatus()==2) {//等同于“被叫者”手工应答
             //构造“应答传递ACK”消息，并发送给“呼叫者”
             MsgNormal toCallerMsg=new MsgNormal();
             toCallerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
@@ -577,45 +573,48 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             toCallerMsg.setCommand(0x20);
 
             Map<String, Object> dataMap=new HashMap<String, Object>();
-            dataMap.put("CallId", this.callData.getCallId());
-            dataMap.put("CallerId", this.callData.getCallerId());
-            dataMap.put("CallederId", this.callData.getCallederId());
+            dataMap.put("CallId", callData.getCallId());
+            dataMap.put("CallerId", callData.getCallerId());
+            dataMap.put("CallederId", callData.getCallederId());
             dataMap.put("ACKType", "1");//可以通话
             MapContent mc=new MapContent(dataMap);
             toCallerMsg.setMsgContent(mc);
 
-            PushUserUDKey callerK=this.callData.getUdkByUserId(this.callData.getCallerId());
+            PushUserUDKey callerK=callData.getUdkByUserId(callData.getCallerId());
             callerK=(PushUserUDKey)sessionService.getActivedUserUDK(callerK.getUserId(), callerK.getPCDType());
-
+            toCallerMsg.setPCDType(callerK.getPCDType());
             globalMem.sendMem.addUserMsg(callerK, toCallerMsg);
             //记录到已发送列表
-            this.callData.addSendedMsg(toCallerMsg);
+            callData.addSendedMsg(toCallerMsg);
             //修改状态
-            this.callData.setStatus_3();
-            System.out.println("第一次“被叫者”通话，并处理后==[callid="+this.callData.getCallId()+"]:status="+this.callData.getStatus());
+            callData.setStatus_3();
+            System.out.println("第一次“被叫者”通话，并处理后==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
         }
     }
 
     //=====以下三个为清除和关闭的操作
     //关闭
     private void shutdown() {
-        cleanData();
-        cleanTalk(2);
-        callData.setStatus_9();
-        logger.debug("结束进程后1==[callid="+this.callData.getCallId()+"]:status="+this.callData.getStatus());
+        if (callData.getStatus()<9) {
+            synchronized(shutdownLock) {
+                callData.setStatus_9();
+                cleanTalk(2);
+                logger.debug("结束进程后1==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
+                cleanData();
+            }
+        }
     }
 
     //清除数据，把本电话控制的数据从内存数据链中移除
     private void cleanData() {
         //把内容写入日志文件
-        logger.debug("结束进行后2==清除数据前[callid="+this.callData.getCallId()+"]:status="+this.callData.getStatus());
+        logger.debug("结束进行后2==清除数据前[callid="+callData.getCallId()+"]:status="+callData.getStatus());
         //清除未发送消息
-        globalMem.sendMem.cleanMsg4Call(this.callerKey, this.callData.getCallId()); //清除呼叫者信息
-        globalMem.sendMem.cleanMsg4Call(this.callederKey, this.callData.getCallId()); //清除被叫者信息
-        callingMem.removeCallData(this.callData.getCallId());
-        this.callData.getCallerWts().clear();
-        this.callData.getCallederWts().clear();
-        this.callData=null;
+        globalMem.sendMem.cleanMsg4Call(callData.getCallerKey(), callData.getCallId()); //清除呼叫者信息
+        globalMem.sendMem.cleanMsg4Call(callData.getCallederKey(), callData.getCallId()); //清除被叫者信息
+        callingMem.removeCallData(callData.getCallId());
+        callData.getCallerWts().clear();
+        callData.getCallederWts().clear();
     }
 
     /* 
@@ -627,6 +626,6 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         //删除talk内存数据链
      //   TalkMemoryManage tmm=TalkMemoryManage.getInstance();
      //   tmm.cleanCallData(this.callData.getCallId());
-        logger.debug("清除语音数据后==[callid="+this.callData.getCallId()+"]:status="+this.callData.getStatus());
+        logger.debug("清除语音数据后==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
     }
 }

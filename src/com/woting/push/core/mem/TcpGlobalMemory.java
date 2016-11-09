@@ -8,7 +8,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import com.spiritdata.framework.util.JsonUtils;
 import com.woting.push.core.message.CompareMsg;
 import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MsgMedia;
@@ -294,20 +293,22 @@ public class TcpGlobalMemory {
          * @param pUdk
          */
         public void cleanMsg4Call(PushUserUDKey pUdk, String callId) {
-            ConcurrentLinkedQueue<Message> userMsgQueue=sendMsg.get(pUdk);
-            if (userMsgQueue!=null&&!userMsgQueue.isEmpty()) {
-                synchronized(userMsgQueue) {
-                    for (Message m: userMsgQueue) {
-                        if (m instanceof MsgNormal) {
-                            MsgNormal mn=(MsgNormal)m;
-                            if (callId.equals(((MapContent)mn.getMsgContent()).get("CallId")+"")) {
-                                userMsgQueue.remove(m);
+            if (pUdk!=null) {
+                ConcurrentLinkedQueue<Message> userMsgQueue=sendMsg.get(pUdk);
+                if (userMsgQueue!=null&&!userMsgQueue.isEmpty()) {
+                    synchronized(userMsgQueue) {
+                        for (Message m: userMsgQueue) {
+                            if (m instanceof MsgNormal) {
+                                MsgNormal mn=(MsgNormal)m;
+                                if (callId.equals(((MapContent)mn.getMsgContent()).get("CallId")+"")) {
+                                    userMsgQueue.remove(m);
+                                }
                             }
-                        }
-                        if (m instanceof MsgMedia) {
-                            MsgMedia mm=(MsgMedia)m;
-                            if (mm.getBizType()==2&&callId.equals(mm.getObjId())) {
-                                userMsgQueue.remove(m);
+                            if (m instanceof MsgMedia) {
+                                MsgMedia mm=(MsgMedia)m;
+                                if (mm.getBizType()==2&&callId.equals(mm.getObjId())) {
+                                    userMsgQueue.remove(m);
+                                }
                             }
                         }
                     }
