@@ -1,43 +1,31 @@
 Manifest-Version: 1.0
-Implementation-Title: WtCrawler
+Implementation-Title: WtPush
 Implementation-Version: 0.0.1
 Archiver-Version: Plexus Archiver
 Built-By: wanghui
 Implementation-Vendor-Id: com.wotingfm
-Class-Path: runlib/spring-boot-starter-1.3.2.RELEASE.jar runlib/spring
- -boot-1.3.2.RELEASE.jar runlib/spring-context-4.2.4.RELEASE.jar runli
- b/spring-aop-4.2.4.RELEASE.jar runlib/aopalliance-1.0.jar runlib/spri
- ng-expression-4.2.4.RELEASE.jar runlib/spring-boot-autoconfigure-1.3.
- 2.RELEASE.jar runlib/spring-boot-starter-logging-1.3.2.RELEASE.jar ru
- nlib/logback-classic-1.1.3.jar runlib/logback-core-1.1.3.jar runlib/j
- cl-over-slf4j-1.7.13.jar runlib/jul-to-slf4j-1.7.13.jar runlib/log4j-
- over-slf4j-1.7.13.jar runlib/spring-core-4.2.4.RELEASE.jar runlib/sna
- keyaml-1.16.jar runlib/commons-dbcp-1.4.jar runlib/commons-pool-1.6.j
- ar runlib/spring-jdbc-4.2.4.RELEASE.jar runlib/spring-beans-4.2.4.REL
- EASE.jar runlib/spring-tx-4.2.4.RELEASE.jar runlib/mysql-connector-ja
- va-5.1.29.jar runlib/mybatis-3.2.4.jar runlib/mybatis-spring-1.2.2.ja
- r runlib/cglib-nodep-3.1.jar runlib/jackson-databind-2.6.5.jar runlib
- /jackson-annotations-2.6.5.jar runlib/jackson-core-2.6.5.jar runlib/c
- rawler4j-4.2.jar runlib/slf4j-api-1.7.13.jar runlib/lidalia-slf4j-ext
- -1.0.0.jar runlib/guava-14.0.1.jar runlib/httpclient-4.5.1.jar runlib
- /httpcore-4.4.4.jar runlib/commons-codec-1.9.jar runlib/je-5.0.73.jar
-  runlib/tika-parsers-1.5.jar runlib/tika-core-1.5.jar runlib/vorbis-j
- ava-tika-0.1.jar runlib/netcdf-4.2-min.jar runlib/apache-mime4j-core-
- 0.7.2.jar runlib/apache-mime4j-dom-0.7.2.jar runlib/commons-compress-
- 1.5.jar runlib/xz-1.2.jar runlib/pdfbox-1.8.4.jar runlib/fontbox-1.8.
- 4.jar runlib/jempbox-1.8.4.jar runlib/commons-logging-1.1.1.jar runli
- b/bcmail-jdk15-1.45.jar runlib/bcprov-jdk15-1.45.jar runlib/poi-3.10-
- beta2.jar runlib/poi-scratchpad-3.10-beta2.jar runlib/poi-ooxml-3.10-
- beta2.jar runlib/poi-ooxml-schemas-3.10-beta2.jar runlib/xmlbeans-2.3
- .0.jar runlib/dom4j-1.6.1.jar runlib/geronimo-stax-api_1.0_spec-1.0.1
- .jar runlib/tagsoup-1.2.1.jar runlib/asm-debug-all-4.1.jar runlib/iso
- parser-1.0-RC-1.jar runlib/aspectjrt-1.8.8.jar runlib/metadata-extrac
- tor-2.6.2.jar runlib/xmpcore-5.1.2.jar runlib/xercesImpl-2.8.1.jar ru
- nlib/xml-apis-1.3.03.jar runlib/boilerpipe-1.1.0.jar runlib/rome-0.9.
- jar runlib/jdom-1.0.jar runlib/vorbis-java-core-0.1.jar runlib/junive
- rsalchardet-1.0.3.jar runlib/jhighlight-1.0.jar runlib/jsoup-1.7.3.ja
- r runlib/commons-io-2.4.jar runlib/BasicPlat-0.1.0.9.jar
+Class-Path: runlib/antlr-2.7.7.jar runlib/antlr-runtime-3.4.jar runlib
+ /aopalliance-1.0.jar runlib/cglib-nodep-3.1.jar runlib/commons-dbcp-1
+ .4.jar runlib/commons-io-2.4.jar runlib/commons-pool-1.6.jar runlib/c
+ ommons-pool2-2.4.2.jar runlib/fel-0.8.jar runlib/jackson-annotations-
+ 2.6.5.jar runlib/jackson-core-2.6.5.jar runlib/jackson-databind-2.6.5
+ .jar runlib/jcl-over-slf4j-1.7.13.jar runlib/jedis-2.8.0.jar runlib/j
+ ul-to-slf4j-1.7.13.jar runlib/log4j-over-slf4j-1.7.13.jar runlib/logb
+ ack-classic-1.1.3.jar runlib/logback-core-1.1.3.jar runlib/mybatis-3.
+ 2.4.jar runlib/mybatis-spring-1.2.2.jar runlib/mysql-connector-java-5
+ .1.29.jar runlib/slf4j-api-1.7.13.jar runlib/snakeyaml-1.16.jar runli
+ b/spring-aop-4.2.4.RELEASE.jar runlib/spring-beans-4.2.4.RELEASE.jar
+ runlib/spring-boot-1.3.2.RELEASE.jar runlib/spring-boot-autoconfigure
+ -1.3.2.RELEASE.jar runlib/spring-boot-starter-1.3.2.RELEASE.jar runli
+ b/spring-boot-starter-logging-1.3.2.RELEASE.jar runlib/spring-context
+ -4.2.4.RELEASE.jar runlib/spring-context-support-4.2.4.RELEASE.jar ru
+ nlib/spring-core-4.2.4.RELEASE.jar runlib/spring-data-commons-1.11.2.
+ RELEASE.jar runlib/spring-data-keyvalue-1.0.2.RELEASE.jar runlib/spri
+ ng-data-redis-1.7.4.RELEASE.jar runlib/spring-expression-4.2.4.RELEAS
+ E.jar runlib/spring-jdbc-4.2.4.RELEASE.jar runlib/spring-oxm-4.2.4.RE
+ LEASE.jar runlib/spring-tx-4.2.4.RELEASE.jar runlib/stringtemplate-3.
+ 2.1.jar runlib/BasicPlat-0.1.0.11.jar 
 Created-By: Apache Maven 3.1.1
 Build-Jdk: 1.8.0_66
 Implementation-Vendor: Pivotal Software, Inc.
-
+Main-Class: com.woting.push.ServerListener

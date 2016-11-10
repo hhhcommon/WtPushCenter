@@ -1,26 +1,5 @@
-@echo off
-echo [ÍÆËÍ·þÎñ]Æô¶¯
-
-set _javaOpts=-Xms512m -Xmx1024m
-set _javaHome=C:\jdk1.8.0_66\
-set _runDir=%~dp0%
-
-set _runLibDir=%_runDir%runlib
-setlocal enabledelayedexpansion 
-set _classpath=
-for %%i in (%_runLibDir%\*.jar) do (
-  set _classpath=%%i;!_classpath!
-)
-
-echo =================================================
-echo Using Duser.dir: %_runDir%
-echo Using JAVA_HOME: %_javaHome%
-echo Using JAVA_OPTS: %_javaOpts%
-echo Usiig CLASSPATH: %_classpath%
-echo =================================================
-echo Start Command:
-echo   %_javaHome%bin\java -Duser.dir=%DIR% %_javaOpts% -classpath %_classpath%PushCenter.jar com.woting.push.ServerStart
-echo =================================================
-
-%_javaHome%bin\java -Duser.dir=%DIR% %_javaOpts% -classpath %_classpath%PushCenter.jar com.woting.push.ServerStart 2>&1 >> push.log
-
+#å¯åŠ¨æŽ¨é€æœåŠ¡
+echo start push
+_heapMem="-Xms512m -Xmx1024m"
+#java $_heapMem -jar PushCenter.jar
+nohup java $_heapMem -jar PushCenter.jar > push.log 2>&1 &

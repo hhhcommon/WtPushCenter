@@ -1,7 +1,6 @@
 package com.woting.push.core.monitor.socket.oio;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
@@ -32,7 +31,6 @@ public class OioServer extends AbstractLoopMoniter<PushConfig> {
         try {
             PushConfig pc=(PushConfig)conf;
             serverSocket=new ServerSocket(pc.get_ControlTcpPort());
-            logger.info("Tcp控制通道服务监控线程启动:地址[{}],端口[{}]", InetAddress.getLocalHost().getHostAddress(), pc.get_ControlTcpPort());
             return true;
         } catch (IOException e) {
             logger.error("启动服务出现异常：\n{}", StringUtils.getAllMessage(e));

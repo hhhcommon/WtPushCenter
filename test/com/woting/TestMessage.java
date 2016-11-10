@@ -8,10 +8,11 @@ import com.spiritdata.framework.util.JsonUtils;
 import com.woting.push.core.message.ByteConvert;
 import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MsgMedia;
+import com.woting.push.core.message.MsgNormal;
 
 public class TestMessage {
 
-    public static void main(String[] args) throws UnsupportedEncodingException {
+    public static void main(String[] args) throws Exception {
         System.out.println((char)Message.END_FIELD[0]+""+(char)Message.END_FIELD[1]);
         System.out.println((char)Message.END_HEAD[0]+""+(char)Message.END_HEAD[1]);
         byte[] test={'a','b','c','@', '|', '^'};
@@ -80,5 +81,9 @@ public class TestMessage {
         System.out.println(Integer.toBinaryString(__b));
         MsgMedia mm2=null;//new MsgMedia(bbb);
         System.out.println(JsonUtils.objToJson(mm2));
+        System.out.println("==========================");
+        byte[] msgBytes1={124, 94, -128, -78, -75, -95, 71, 88, 1, 0, 0, 33, 9, 3, 54, 49, 100, 54, 52, 49, 100, 57, 54, 101, 50, 49, 124, 124, 57, 54, 50, 49, 101, 97, 53, 51, 54, 53, 48, 98, 52, 50, 101, 99, 98, 55, 50, 52, 56, 56, 55, 50, 56, 54, 97, 99, 54, 51, 57, 50, 16, 94, 94, 87, 0, 123, 34, 67, 97, 108, 108, 101, 100, 101, 114, 73, 100, 34, 58, 34, 101, 57, 97, 56, 102, 99, 49, 101, 97, 55, 52, 53, 34, 44, 34, 67, 97, 108, 108, 73, 100, 34, 58, 34, 49, 50, 51, 52, 53, 54, 55, 56, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 34, 44, 34, 67, 97, 108, 108, 101, 114, 73, 100, 34, 58, 34, 52, 50, 51, 48, 48, 55, 99, 102, 49, 102, 98, 49, 34, 125};
+        MsgNormal test12=new MsgNormal(msgBytes1);
+        System.out.println(JsonUtils.objToJson(test12));
     }
 }

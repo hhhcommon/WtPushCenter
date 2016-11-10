@@ -99,6 +99,7 @@ public abstract class AbstractLoopMoniter<C extends Config> extends Thread imple
                 }
             }
         });
+        logger.info("[{}]启动", this.getName());
         _RUN_STATUS=1;
         boolean initOk=initServer();
         if (!initOk) {

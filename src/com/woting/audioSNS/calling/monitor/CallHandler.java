@@ -69,29 +69,29 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 cleanTalk(1);
             }
 
-            //一段时间后未收到自动回复，的处理
-            if (callData.getStatus()==1
-              &&callData.getBeginDialTime()!=-1
-              &&(System.currentTimeMillis()-callData.getBeginDialTime()>callData.getExpireOnline()))
-            {
-                dealOutLine();
-                shutdown();
-            }
-            //一段时间后未收到“被叫者”手工应答Ack，的处理
-            if ((callData.getStatus()==1||callData.getStatus()==2)
-              &&callData.getBeginDialTime()!=-1
-              &&(System.currentTimeMillis()-callData.getBeginDialTime()>callData.getExpireAck()))
-            {
-                dealNoAck();
-                shutdown();
-            }
-            //一段时间后未收到任何消息，通话过期
-            if ((callData.getStatus()==1||callData.getStatus()==2||callData.getStatus()==3)
-              &&(System.currentTimeMillis()-callData.getLastUsedTime()>callData.getExpireTime()))
-            {
-                dealCallExpire();
-                shutdown();
-            }
+//            //一段时间后未收到自动回复，的处理
+//            if (callData.getStatus()==1
+//              &&callData.getBeginDialTime()!=-1
+//              &&(System.currentTimeMillis()-callData.getBeginDialTime()>callData.getExpireOnline()))
+//            {
+//                dealOutLine();
+//                shutdown();
+//            }
+//            //一段时间后未收到“被叫者”手工应答Ack，的处理
+//            if ((callData.getStatus()==1||callData.getStatus()==2)
+//              &&callData.getBeginDialTime()!=-1
+//              &&(System.currentTimeMillis()-callData.getBeginDialTime()>callData.getExpireAck()))
+//            {
+//                dealNoAck();
+//                shutdown();
+//            }
+//            //一段时间后未收到任何消息，通话过期
+//            if ((callData.getStatus()==1||callData.getStatus()==2||callData.getStatus()==3)
+//              &&(System.currentTimeMillis()-callData.getLastUsedTime()>callData.getExpireTime()))
+//            {
+//                dealCallExpire();
+//                shutdown();
+//            }
 
             //“被叫者”第一次说话
             if (!isCallerTalked&&callData.getCallederWts().size()>0) {
