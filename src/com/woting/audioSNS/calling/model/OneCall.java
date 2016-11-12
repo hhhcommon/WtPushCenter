@@ -61,6 +61,25 @@ public class OneCall implements Serializable {
         return callederKey==null?null:callederKey.getPCDType();
     }
 
+    private List<PushUserUDKey> callederKeys; //被叫者不同设备的列表
+    public List<PushUserUDKey> getCallederList() {
+        return callederKeys;
+    }
+    public void addCallederList(PushUserUDKey callederKey) {
+        if (callederKeys==null) {
+            callederKeys=new ArrayList<PushUserUDKey>();
+        }
+        boolean canAdd=true;
+        for (int i=0;i<callederKeys.size();i++) {
+            if (callederKeys.get(i).equals(callederKey)) {
+                canAdd=false;
+                break;
+            }
+        }
+        if (canAdd) {
+            callederKeys.add(callederKey);
+        }
+    }
 //    private int callerPcdType;//呼叫者PcdType
 //    public int getCallerPcdType() {
 //        return callerPcdType;
@@ -109,7 +128,7 @@ public class OneCall implements Serializable {
         return expireTime;
     }
 
-    private volatile int status=0; //通话过程的状态10呼叫；这个在写的时候再完善
+    private volatile int status=0; //通话过程的状态:初始状态
     public int getStatus() {
         synchronized(statuslock) {
             return status;
@@ -120,12 +139,12 @@ public class OneCall implements Serializable {
             this.status=1;
         }
     }
-    public void setStatus_2() {//已收到“被叫者”的自动呼叫反馈，等待“被叫者”手工应答
+    public void setStatus_2() {//已收到某一“被叫者”的自动呼叫反馈，等待“被叫者”手工应答
         synchronized(statuslock) {
             this.status=2;
         }
     }
-    public void setStatus_3() {//已收到“被叫者”的手动反馈反馈ACK，可以通话了
+    public void setStatus_3() {//已收到某一“被叫者”的手动反馈反馈ACK，可以通话了
         synchronized(statuslock) {
             this.status=3;//这是通话状态
         }
@@ -223,11 +242,44 @@ public class OneCall implements Serializable {
         if (this.getCallederId().equals(oneId)) otherId=this.getCallerId();
         return otherId;
     }
-    public PushUserUDKey getOtherUdk(String oneId) {
-        PushUserUDKey otherUdk=new PushUserUDKey();
-        if (this.getCallerId().equals(oneId)) otherUdk=this.callederKey;
-        if (this.getCallederId().equals(oneId)) otherUdk=this.callerKey;
-        return otherUdk;
+    /**
+     * 得到另一方信息，返回另一方的KeyList<br/>
+     * 可能另一方是多个设备
+     * @param oneKey 本方Key
+     * @return
+     */
+    public List<PushUserUDKey> getOthers(PushUserUDKey oneKey) {
+        if (oneKey==null) return null;
+        if (oneKey.equals(callerKey)) {
+            if (getStatus()<3&&callederKey==null) return callederKeys;
+            if (getStatus()>=3&&callederKey!=null) {
+                List<PushUserUDKey> ret=new ArrayList<PushUserUDKey>();
+                ret.add(callederKey);
+                return ret;
+            }
+        }
+        if (getStatus()>=3&&oneKey.equals(callederKey)) {
+            if (callerKey!=null) {
+                List<PushUserUDKey> ret=new ArrayList<PushUserUDKey>();
+                ret.add(callerKey);
+                return ret;
+            }
+        } else if (getStatus()<3) {
+            List<PushUserUDKey> ret=new ArrayList<PushUserUDKey>();
+            boolean find=false;
+            if (callederKeys!=null) {
+                for (PushUserUDKey _pUdkey: callederKeys) {
+                    if (_pUdkey.equals(oneKey)) {
+                        find=true;
+                    } else ret.add(_pUdkey);
+                }
+            }
+            if (find) {
+                if (callerKey!=null) ret.add(callerKey);
+                return ret;
+            }
+        }
+        return null;
     }
 
     /**

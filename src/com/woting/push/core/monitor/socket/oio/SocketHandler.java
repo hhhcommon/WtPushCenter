@@ -343,6 +343,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                 }
             }//一条消息读取完成
 
+            if (i<3) return;
             if (fos!=null) {
                 fos.write(13);
                 fos.write(10);

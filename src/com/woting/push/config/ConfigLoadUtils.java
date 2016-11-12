@@ -55,13 +55,13 @@ public abstract class ConfigLoadUtils {
             cc.set_DealThreadCount((int)fel.eval(jc.getString("calling.dealThread")));
         } catch(Exception e) {}
         try {
-            cc.set_ExpireOnline((long)fel.eval(jc.getString("calling.expireOnline")));
+            cc.set_ExpireOnline((int)fel.eval(jc.getString("calling.expireOnline")));
         } catch(Exception e) {}
         try {
-            cc.set_ExpireAck((long)fel.eval(jc.getString("calling.expireAck")));
-        } catch(Exception e) {}
+            cc.set_ExpireAck((int)fel.eval(jc.getString("calling.expireAck")));
+        } catch(Exception e) {e.printStackTrace();}
         try {
-            cc.set_ExpireTime((long)fel.eval(jc.getString("calling.expireTime")));
+            cc.set_ExpireTime((int)fel.eval(jc.getString("calling.expireTime")));
         } catch(Exception e) {}
         return cc;
     }
