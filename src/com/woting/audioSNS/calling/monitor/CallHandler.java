@@ -14,6 +14,7 @@ import com.woting.push.core.message.MsgNormal;
 import com.woting.push.core.message.ProcessedMsg;
 import com.woting.push.core.message.content.MapContent;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
+import com.woting.push.core.monitor.socket.oio.SocketHandler;
 import com.woting.push.core.service.SessionService;
 import com.woting.audioSNS.calling.CallingConfig;
 import com.woting.audioSNS.calling.mem.CallingMemory;
@@ -156,22 +157,30 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         toCallerMsg.setCmdType(1);
         toCallerMsg.setCommand(0x09);
         //判断呼叫者是否存在
-        boolean callerExisted=true; //是否呼叫者或被叫者存在
-        if ((PushUserUDKey)sessionService.getActivedUserUDK(callData.getCallerId(),callData.getCallerPcdType())==null) {
+        boolean existFlag=true; //呼叫者或被叫者存在
+        PushUserUDKey _pUdkFlag=sessionService.getActivedUserUDK(callData.getCallerId(),callData.getCallerPcdType());
+        SocketHandler _sh=globalMem.getPushUserBySocket(_pUdkFlag);
+        if (_pUdkFlag==null||_sh==null||!_sh.socketOk()) {
             toCallerMsg.setReturnType(2);
-            callerExisted=false;
+            existFlag=false;
         }
-        List<PushUserUDKey> calleredDevices=null;
-        if (callerExisted) {
-            calleredDevices=(List<PushUserUDKey>)sessionService.getActivedUserUDKs(callederId);
-            if (calleredDevices==null||calleredDevices.isEmpty()) {
-                toCallerMsg.setReturnType(3);
-                callerExisted=false;
+        List<PushUserUDKey> calleredKeys=null;
+        if (existFlag) {
+            calleredKeys=(List<PushUserUDKey>)sessionService.getActivedUserUDKs(callederId);
+            for (PushUserUDKey udk: calleredKeys) {
+                _sh=globalMem.getPushUserBySocket(udk);
+                if (_sh!=null&&_sh.socketOk()) {
+                    callData.addCallederList(udk);
+                }
             }
+        }
+        if (callData.getCallederList()==null||callData.getCallederList().isEmpty()) {
+            toCallerMsg.setReturnType(3);
+            existFlag=false;
         }
         //判断是否占线
         boolean isBusy=true; //是否占线
-        if (callerExisted) {
+        if (existFlag) {
             if (callerId.equals(callederId))  toCallerMsg.setReturnType(6);
             else
 //            if (gmm.isTalk(callederId)) toCallerMsg.setReturnType(5);
@@ -179,7 +188,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             if (callingMem.isTalk(callederId, callId)) toCallerMsg.setReturnType(4);
             else isBusy=false;
         }
-        if (callerExisted&&!isBusy) toCallerMsg.setReturnType(1);
+        if (existFlag&&!isBusy) toCallerMsg.setReturnType(1);
         dataMap=new HashMap<String, Object>();
         dataMap.put("CallId", callId);
         dataMap.put("CallerId", callerId);
@@ -192,44 +201,42 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         callData.addSendedMsg(toCallerMsg);
 
         //给被叫者发送信息
-        if (callerExisted&&!callerId.equals(callederId)) {
-            MsgNormal toCallederMsg=new MsgNormal();
-            toCallederMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-            toCallederMsg.setMsgType(0);
-            toCallederMsg.setAffirm(1);
-            toCallederMsg.setBizType(2);
-            toCallederMsg.setCmdType(1);
-            toCallederMsg.setCommand(0x10);
-            toCallederMsg.setFromType(1);
-            toCallederMsg.setToType(0);
-            dataMap=new HashMap<String, Object>();
-            dataMap.put("DialType", isBusy?"2":"1");
-            dataMap.put("CallId", callId);
-            dataMap.put("CallerId", callerId);
-            dataMap.put("CallederId", callederId);
-            MapContent _mc=new MapContent(dataMap);
-            toCallederMsg.setMsgContent(_mc);
-            //加入“呼叫者”的用户信息给被叫者
-            Map<String, Object> callerInfo=new HashMap<String, Object>();
-            UserPo u=userService.getUserById(callerId);
-            callerInfo.put("UserName", u.getLoginName());
-            callerInfo.put("UserNum", u.getUserNum());
-            callerInfo.put("Portrait", u.getPortraitMini());
-            callerInfo.put("Mail", u.getMailAddress());
-            callerInfo.put("Descn", u.getDescn());
-            dataMap.put("CallerInfo", callerInfo);
-
-            for (PushUserUDKey pUdk: calleredDevices) {
-                toCallederMsg.setPCDType(pUdk.getPCDType());
-                callData.addCallederList(pUdk);
-                globalMem.sendMem.addUserMsg(pUdk, toCallederMsg);
+        if (existFlag&&!callerId.equals(callederId)) {
+            for (PushUserUDKey _pUdk: callData.getCallederList()) {
+                MsgNormal toCallederMsg=new MsgNormal();
+                toCallederMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
+                toCallederMsg.setMsgType(0);
+                toCallederMsg.setAffirm(1);
+                toCallederMsg.setBizType(2);
+                toCallederMsg.setCmdType(1);
+                toCallederMsg.setCommand(0x10);
+                toCallederMsg.setFromType(1);
+                toCallederMsg.setToType(0);
+                dataMap=new HashMap<String, Object>();
+                dataMap.put("DialType", isBusy?"2":"1");
+                dataMap.put("CallId", callId);
+                dataMap.put("CallerId", callerId);
+                dataMap.put("CallederId", callederId);
+                MapContent _mc=new MapContent(dataMap);
+                toCallederMsg.setMsgContent(_mc);
+                //加入“呼叫者”的用户信息给被叫者
+                Map<String, Object> callerInfo=new HashMap<String, Object>();
+                UserPo u=userService.getUserById(callerId);
+                callerInfo.put("UserName", u.getLoginName());
+                callerInfo.put("UserNum", u.getUserNum());
+                callerInfo.put("Portrait", u.getPortraitMini());
+                callerInfo.put("Mail", u.getMailAddress());
+                callerInfo.put("Descn", u.getDescn());
+                dataMap.put("CallerInfo", callerInfo);
+                toCallederMsg.setPCDType(_pUdk.getPCDType());
+                globalMem.sendMem.addUserMsg(_pUdk, toCallederMsg);
+                //记录到已发送列表
+                callData.addSendedMsg(toCallederMsg);
             }
-            //记录到已发送列表
-            callData.addSendedMsg(toCallederMsg);
         }
 
         //若不存在用户或占线要删除数据及这个过程
-        if (!callerExisted||isBusy) shutdown();
+        if (!existFlag||isBusy) shutdown();
         else callData.setStatus_1(); //修改状态
         logger.debug("处理呼叫信息后==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
     }

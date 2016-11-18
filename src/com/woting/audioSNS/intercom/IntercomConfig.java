@@ -1,5 +1,7 @@
 package com.woting.audioSNS.intercom;
 
-public class IntercomConfig {
+import com.woting.push.config.Config;
+
+public class IntercomConfig implements Config {
 
 }

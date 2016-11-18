@@ -106,7 +106,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         }
         return socketOk();
     }
-    protected boolean socketOk() {
+    public boolean socketOk() {
         return _socket!=null&&_socket.isBound()&&_socket.isConnected()&&!_socket.isClosed();
     }
 
@@ -399,8 +399,18 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                 }
                             }
                         } else {//数据流
-                            ((MsgMedia)ms).setExtInfo(_pushUserKey);
-                            globalMem.receiveMem.addTypeMsg("media", ms);
+                            _pushUserKey=globalMem.getPushUserBySocket(SocketHandler.this);
+                            if (_pushUserKey!=null) {
+                                ((MsgMedia)ms).setExtInfo(_pushUserKey);
+                                globalMem.receiveMem.addTypeMsg("media", ms);
+                            }
+                        }
+                        if (fos!=null) {
+                            byte[] aa=JsonUtils.objToJson(ms).getBytes();
+                            fos.write(aa, 0, aa.length);
+                            fos.write(13);
+                            fos.write(10);
+                            fos.flush();
                         }
                     }
                 } catch(Exception e) {
@@ -416,6 +426,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
     //发送线程类
     class _SendMsg extends _LoopThread {
         private FileOutputStream fos=null;
+
         private byte[] mBytes=null;
 
         protected _SendMsg(String name) {
@@ -463,12 +474,24 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
     //获取消息类
     class _FatchMsg extends _LoopThread {
         private boolean canAdd=false;
+        private FileOutputStream fos=null;
 
         protected _FatchMsg(String name) {
             super(name);
         }
         @Override
         protected void __beforeRun() throws Exception {
+            if (StringUtils.isNullOrEmptyOrSpace(conf.get_LogPath())) return;
+            String filePath=conf.get_LogPath();
+            File dir=new File(filePath);
+            if (!dir.isDirectory()) dir.mkdirs();
+            File f=new File(filePath+"/"+_socket.hashCode()+"_sendMsg.log");
+            try {
+                if (!f.exists()) f.createNewFile();
+                fos=new FileOutputStream(f, false);
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
         }
         @Override
         protected void __loopProcess() throws Exception {
@@ -480,12 +503,23 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                     long t=System.currentTimeMillis();
                     //根据消息情况，判断该消息是否还需要发送：主要是看是否过期
                     if ((m instanceof MsgMedia)&&(t-m.getSendTime()>60*1000)) canAdd=false;
-                    if (canAdd) _sendMsgQueue.add(m.toBytes());
+                    if (canAdd) {
+                        try {
+                            byte[] aa=JsonUtils.objToJson(m).getBytes();
+                            fos.write(aa, 0, aa.length);
+                            fos.write(13);
+                            fos.write(10);
+                            fos.flush();
+                        } catch (IOException e) {
+                        }
+                        _sendMsgQueue.add(m.toBytes());
+                    }
                 }
             }
         }
         @Override
         protected void __close() {
+            try { fos.close(); } catch (Exception e) {} finally{ fos=null; }
         }
     }
 }

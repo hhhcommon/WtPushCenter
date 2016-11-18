@@ -135,6 +135,14 @@ public class TcpGlobalMemory {
             }
         }
     }
+    public PushUserUDKey getPushUserBySocket(SocketHandler sh) {
+        if (sh==null) return null;
+        return REF_socketANDudk.get(sh);
+    }
+    public SocketHandler getPushUserBySocket(PushUserUDKey pUdk) {
+        if (pUdk==null) return null;
+        return REF_udkANDsocket.get(pUdk);
+    }
     /**
      * 得到注册的仍然活动的Socket处理线程
      * @return 返回活动的Socket处理线程列表

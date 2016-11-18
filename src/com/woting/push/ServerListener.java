@@ -90,7 +90,7 @@ public class ServerListener {
     }
 
     //以下为Server的真实方法===========================================================================================
-    /*
+    /**
      * 初始化环境
      */
     private boolean initEnvironment() {

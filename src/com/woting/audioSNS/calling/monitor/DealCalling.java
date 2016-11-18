@@ -89,9 +89,7 @@ public class DealCalling extends AbstractLoopMoniter<CallingConfig> {
                 MapContent mc=new MapContent(dataMap);
                 retMsg.setMsgContent(mc);
                 globalMem.sendMem.addUserMsg(pUdk, retMsg);
-                return;
-            }
-            oneCall.addPreMsg(sourceMsg);//把消息压入队列
+            } else oneCall.addPreMsg(sourceMsg);//把消息压入队列
         }
     }
 
