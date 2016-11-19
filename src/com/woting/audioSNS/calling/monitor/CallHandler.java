@@ -724,7 +724,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         //清除未发送消息
         globalMem.sendMem.cleanMsg4Call(callData.getCallerKey(), callData.getCallId()); //清除呼叫者信息
         globalMem.sendMem.cleanMsg4Call(callData.getCallederKey(), callData.getCallId()); //清除被叫者信息
-        callingMem.removeCallData(callData.getCallId());
+        callingMem.removeOneCall(callData.getCallId());
         callData.getCallerWts().clear();
         callData.getCallederWts().clear();
     }

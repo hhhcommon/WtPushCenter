@@ -45,6 +45,40 @@ public class CallingMemory {
     }
 
     /**
+     * 根据callId获得电话通话数据
+     * @param callId 电话通话Id
+     * @return 电话通话数据
+     */
+    public OneCall getOneCall(String callId) {
+        lock.readLock().lock();
+        try {
+            if (callMap!=null) {
+                OneCall oc=callMap.get(callId);
+                if (oc!=null&&oc.getStatus()!=9&&oc.getStatus()!=4) return oc;
+            }
+        } finally {
+            lock.readLock().unlock();
+        }
+        return null;
+    }
+
+    /**
+     * 删除电话通话数据
+     * @param callId
+     */
+    public void removeOneCall(String callId) {
+        lock.writeLock().lock();
+        try {
+            if (callMap!=null) {
+                if (callMap.get(callId)!=null) callMap.get(callId).setStatus_9();
+                callMap.remove(callId);
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
      * 判断是否有人在通话
      * @param callorId 通话者Id
      * @param callId 通话Id
@@ -63,40 +97,6 @@ public class CallingMemory {
             lock.readLock().unlock();
         }
         return false;
-    }
-
-    /**
-     * 根据callId获得电话通话数据
-     * @param callId 电话通话Id
-     * @return 电话通话数据
-     */
-    public OneCall getCallData(String callId) {
-        lock.readLock().lock();
-        try {
-            if (callMap!=null) {
-                OneCall oc=callMap.get(callId);
-                if (oc!=null&&oc.getStatus()!=9&&oc.getStatus()!=4) return oc;
-            }
-        } finally {
-            lock.readLock().unlock();
-        }
-        return null;
-    }
-
-    /**
-     * 删除电话通话数据
-     * @param callId
-     */
-    public void removeCallData(String callId) {
-        lock.writeLock().lock();
-        try {
-            if (callMap!=null) {
-                if (callMap.get(callId)!=null) callMap.get(callId).setStatus_9();
-                callMap.remove(callId);
-            }
-        } finally {
-            lock.writeLock().unlock();
-        }
     }
 
     /**

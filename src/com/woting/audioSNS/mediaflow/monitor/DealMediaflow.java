@@ -105,7 +105,7 @@ public class DealMediaflow extends AbstractLoopMoniter<MediaflowConfig> {
 //                    return;
 //                }
             } else {//电话
-                oc=callingMem.getCallData(objId);
+                oc=callingMem.getOneCall(objId);
                 if (oc==null) {
 //                    retMsg.setReturnType("1003");
 //                    pmm.getSendMemory().addUniqueMsg2Queue(mk, retMsg, new CompareAudioFlowMsg());

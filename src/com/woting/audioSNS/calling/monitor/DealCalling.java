@@ -80,7 +80,7 @@ public class DealCalling extends AbstractLoopMoniter<CallingConfig> {
             callHandler.start();
         } else {//其他消息，放到具体的独立处理线程中处理
             //查找是否有对应的内存数据，如果没有，则说明通话已经结束，告诉传来者
-            oneCall=callingMem.getCallData(callId);
+            oneCall=callingMem.getOneCall(callId);
             if (oneCall==null) {//没有对应的内存数据
                 retMsg.setCommand(0x30);
                 retMsg.setMsgType(1);
