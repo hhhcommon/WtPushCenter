@@ -30,7 +30,7 @@ public class IntercomMemory {
      * @param oc 新的会议处理控制数据
      * @return 成功返回1，若已经存在这个会话返回0，若这个会话不是新会话返回-1
      */
-    public int addOneCall(OneMeet om) {
+    public int addOneMeet(OneMeet om) {
         lock.writeLock().lock();
         try {
             meetMap.put(om.getMeetId(), om);
@@ -38,5 +38,14 @@ public class IntercomMemory {
             lock.writeLock().unlock();
         }
         return 1;
+    }
+
+    /**
+     * 得到组对讲(会议)对象
+     * @param gId 组通话Id
+     * @return 组对讲对象
+     */
+    public OneMeet getOneMeet(String gId) {
+        return meetMap.get(gId);
     }
 }

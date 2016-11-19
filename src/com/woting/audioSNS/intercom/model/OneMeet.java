@@ -20,7 +20,7 @@ public class OneMeet  implements Serializable {
     private static final long serialVersionUID=-2635864824531924446L;
 
     //=1是对讲模式；=2是会议模式；若是0，则表明未设置，采用默认值1
-    private int callType;
+    private int callType=1;
     //当前说话的人
     private volatile PushUserUDKey speaker;
     //组信息
