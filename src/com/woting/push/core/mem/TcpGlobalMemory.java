@@ -8,6 +8,9 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import com.spiritdata.framework.util.StringUtils;
+import com.woting.audioSNS.intercom.model.OneMeet;
+import com.woting.passport.UGA.persis.pojo.UserPo;
 import com.woting.push.core.message.CompareMsg;
 import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MsgMedia;
@@ -316,6 +319,37 @@ public class TcpGlobalMemory {
                                 MsgMedia mm=(MsgMedia)m;
                                 if (mm.getBizType()==2&&callId.equals(mm.getObjId())) {
                                     userMsgQueue.remove(m);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        /**
+         * 删除指定对讲(会议)组相关的数据
+         * @param groupId 对讲(会议)组Id
+         */
+        public void cleanMsg4Intercom(OneMeet om) {
+            if (om!=null&&StringUtils.isNullOrEmptyOrSpace(om.getGroupId())) {
+                Map<PushUserUDKey, UserPo> onlineMap=om.getEntryGroupUserMap();
+                for (PushUserUDKey pUdk: onlineMap.keySet()) {
+                    ConcurrentLinkedQueue<Message> userMsgQueue=sendMsg.get(pUdk);
+                    if (userMsgQueue!=null&&!userMsgQueue.isEmpty()) {
+                        synchronized(userMsgQueue) {
+                            for (Message m: userMsgQueue) {
+                                if (m instanceof MsgNormal) {
+                                    MsgNormal mn=(MsgNormal)m;
+                                    if (om.getGroupId().equals(((MapContent)mn.getMsgContent()).get("GroupId")+"")) {
+                                        userMsgQueue.remove(m);
+                                    }
+                                }
+                                if (m instanceof MsgMedia) {
+                                    MsgMedia mm=(MsgMedia)m;
+                                    if (mm.getBizType()==2&&om.getGroupId().equals(mm.getObjId())) {
+                                        userMsgQueue.remove(m);
+                                    }
                                 }
                             }
                         }

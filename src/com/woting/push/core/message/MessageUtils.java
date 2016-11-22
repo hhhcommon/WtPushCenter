@@ -2,6 +2,8 @@ package com.woting.push.core.message;
 
 import java.io.UnsupportedEncodingException;
 
+import com.spiritdata.framework.util.SequenceUUID;
+
 /**
  * 消息处理中，对字节数组和消息内容的转换方法和公共判断方法的集合
  * @author wanghui
@@ -142,6 +144,26 @@ public abstract class MessageUtils {
         ret.setObjId(orgMsg.getObjId()); //准备删除
 
         return ret;
+    }
+
+    /**
+     * 根据原消息，生成返回消息的壳 
+     * @param msg 愿消息
+     * @return 返回消息壳
+     */
+    public static MsgNormal buildRetMsg(MsgNormal msg) {
+        MsgNormal retMsg=new MsgNormal();
+
+        retMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
+        retMsg.setReMsgId(msg.getMsgId());
+        retMsg.setToType(msg.getFromType());
+        retMsg.setFromType(msg.getToType());
+        retMsg.setMsgType(0);//是应答消息
+        retMsg.setAffirm(0);//不需要回复
+        retMsg.setBizType(msg.getBizType());
+        retMsg.setCmdType(msg.getCmdType());
+
+        return retMsg;
     }
 
     /**

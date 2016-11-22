@@ -81,7 +81,6 @@ public class Group extends GroupPo implements ModelSwapPo {
     public void setUserList(List<UserPo> userList) {
         this.userList = userList;
     }
-
     public void addOneUser(UserPo up) {
         for (UserPo _up: userList) {
             if (up.getUserId().equals(_up.getUserId())) return;

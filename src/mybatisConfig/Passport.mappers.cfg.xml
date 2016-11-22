@@ -5,11 +5,13 @@
   <!-- 别名设置 -->
   <typeAliases>
     <typeAlias alias="WtUser"     type="com.woting.passport.UGA.persis.pojo.UserPo"/>
+    <typeAlias alias="WtGroup"    type="com.woting.passport.UGA.persis.pojo.GroupPo"/>
     <typeAlias alias="MobileUsed" type="com.woting.passport.UGA.persis.pojo.MobileUsedPo"/>
   </typeAliases>
   <!-- SQL配置 -->
   <mappers>
     <mapper resource="com/woting/passport/UGA/persis/sql/WotingUser.mapper.xml"/>
     <mapper resource="com/woting/passport/UGA/persis/sql/MobileUsed.mapper.xml"/>
+    <mapper resource="com/woting/passport/UGA/persis/sql/WotingGroup.mapper.xml"/>
   </mappers>
 </configuration>

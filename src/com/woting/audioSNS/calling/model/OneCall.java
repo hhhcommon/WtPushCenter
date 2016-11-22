@@ -80,20 +80,6 @@ public class OneCall implements Serializable {
             callederKeys.add(callederKey);
         }
     }
-//    private int callerPcdType;//呼叫者PcdType
-//    public int getCallerPcdType() {
-//        return callerPcdType;
-//    }
-//    public void setCallerPcdType(int callerPcdType) {
-//        this.callerPcdType=callerPcdType;
-//    }
-//    private int callederPcdType;//被叫者PcdType
-//    public int getCallederPcdType() {
-//        return callederPcdType;
-//    }
-//    public void setCallederPcdType(int callederPcdType) {
-//        this.callederPcdType=callederPcdType;
-//    }
 
     private long createTime;//本对象创建时间
     public long getCreateTime() {
@@ -106,26 +92,12 @@ public class OneCall implements Serializable {
     public void setBeginDialTime() {
         this.beginDialTime=System.currentTimeMillis();
     }
-    private long lastUsedTime;//最后被使用时间
+    private long lastUsedTime=-1;//最后被使用时间
     public long getLastUsedTime() {
         return lastUsedTime;
     }
     public void setLastUsedTime() {
         this.lastUsedTime=System.currentTimeMillis();
-    }
-
-    //以下是两个判断超时的参数，这种方法允许每个不同的通话采用自己的机制处理超时
-    private final long expireOnline;//检查是否在线的过期时间
-    private final long expireAck;//检查是否无应答的过期时间
-    private final long expireTime;//检查通话过期时间
-    public long getExpireOnline() {
-        return expireOnline;
-    }
-    public long getExpireAck() {
-        return expireAck;
-    }
-    public long getExpireTime() {
-        return expireTime;
     }
 
     private volatile int status=0; //通话过程的状态:初始状态
@@ -179,7 +151,7 @@ public class OneCall implements Serializable {
      * @param expireAck 未应答怕判断过期时间
      * @param expireTime 通话过期时间
      */
-    public OneCall(int callType, String callId, String callerId, String callederId, long expireOnline, long expireAck, long expireTime) {
+    public OneCall(int callType, String callId, String callerId, String callederId) {
         super();
         this.speakerId=null;
         this.callType=callType;
@@ -192,10 +164,6 @@ public class OneCall implements Serializable {
         this.createTime=System.currentTimeMillis();
         this.beginDialTime=-1;//不在使用的情况
         this.lastUsedTime=System.currentTimeMillis();
-
-        this.expireOnline=(expireOnline<=0?10000:expireOnline);
-        this.expireAck=(expireAck<=0?60000:expireAck);
-        this.expireTime=(expireTime<=0?120000:expireTime);
 
         this.status=0;//仅创建，还未处理
 
@@ -363,6 +331,11 @@ public class OneCall implements Serializable {
     }
     public List<WholeTalk> getCallederWts() {
         return this.callederWts;
+    }
+
+    public void clear() {
+        if (callerWts!=null) callerWts.clear();
+        if (callederWts!=null) callederWts.clear();
     }
 
     private static final String convertStatus(int status) {

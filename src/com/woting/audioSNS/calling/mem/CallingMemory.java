@@ -101,7 +101,7 @@ public class CallingMemory {
 
     /**
      * 得到仍然活动的通话处理线程
-     * @return 返回活动的Socket处理线程列表
+     * @return 返回活动的通话处理线程列表
      */
     public List<CallHandler> getCallHanders() {
         List<CallHandler> ret=new ArrayList<CallHandler>();

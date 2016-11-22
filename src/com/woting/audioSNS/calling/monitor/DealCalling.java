@@ -4,13 +4,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.spiritdata.framework.util.SequenceUUID;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.calling.CallingConfig;
 import com.woting.audioSNS.calling.mem.CallingMemory;
 import com.woting.audioSNS.calling.model.OneCall;
 import com.woting.passport.UGA.service.UserService;
 import com.woting.push.core.mem.TcpGlobalMemory;
+import com.woting.push.core.message.MessageUtils;
 import com.woting.push.core.message.MsgNormal;
 import com.woting.push.core.message.content.MapContent;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
@@ -47,8 +47,6 @@ public class DealCalling extends AbstractLoopMoniter<CallingConfig> {
         MsgNormal sourceMsg=(MsgNormal)globalMem.receiveMem.pollTypeMsg("2");
         if (sourceMsg==null) return;
 
-        MsgNormal retMsg=buildRetMsg(sourceMsg);
-        Map<String, Object> dataMap=new HashMap<String, Object>();
         String callId=null;
         try {
             callId=((MapContent)sourceMsg.getMsgContent()).get("CallId")+"";
@@ -58,14 +56,13 @@ public class DealCalling extends AbstractLoopMoniter<CallingConfig> {
 
         OneCall oneCall=null;//通话对象
         PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(sourceMsg);
+
+        MsgNormal retMsg=MessageUtils.buildRetMsg(sourceMsg);
         if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==1) {//发起呼叫过程
             String callerId=pUdk.getUserId();
             String CallederId=((MapContent)sourceMsg.getMsgContent()).get("CallederId")+"";
             //创建内存对象
-            oneCall=new OneCall(1, callId, callerId, CallederId
-                              , conf.get_ExpireOnline()
-                              , conf.get_ExpireAck()
-                              , conf.get_ExpireTime());
+            oneCall=new OneCall(1, callId, callerId, CallederId);
             oneCall.addPreMsg(sourceMsg);//设置第一个消息
             //加入内存
             int addFlag=callingMem.addOneCall(oneCall);
@@ -84,6 +81,7 @@ public class DealCalling extends AbstractLoopMoniter<CallingConfig> {
             if (oneCall==null) {//没有对应的内存数据
                 retMsg.setCommand(0x30);
                 retMsg.setMsgType(1);
+                Map<String, Object> dataMap=new HashMap<String, Object>();
                 dataMap.put("HangupType", "0");
                 dataMap.put("ServerMsg", "服务器处理进程不存在");
                 MapContent mc=new MapContent(dataMap);
@@ -116,25 +114,5 @@ public class DealCalling extends AbstractLoopMoniter<CallingConfig> {
     @Override
     public boolean canContinue() {
         return true;
-    }
-
-    /*
-     * 根据原消息，生成返回消息的壳 
-     * @param msg
-     * @return 返回消息壳
-     */
-    private MsgNormal buildRetMsg(MsgNormal msg) {
-        MsgNormal retMsg=new MsgNormal();
-
-        retMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-        retMsg.setReMsgId(msg.getMsgId());
-        retMsg.setToType(msg.getFromType());
-        retMsg.setFromType(msg.getToType());
-        retMsg.setMsgType(0);//是应答消息
-        retMsg.setAffirm(0);//不需要回复
-        retMsg.setBizType(msg.getBizType());
-        retMsg.setCmdType(msg.getCmdType());
-
-        return retMsg;
     }
 }

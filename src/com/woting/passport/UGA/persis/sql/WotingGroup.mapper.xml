@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!-- 我听用户 -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="WT_GROUP">
+  <!-- 对象定义:用户信息 -->
+  <resultMap id="groupMap" type="WtGroup">
+    <id      column="id"              property="groupId"         jdbcType="VARCHAR"/>
+    <result  column="groupNum"        property="groupNum"        jdbcType="VARCHAR"/>
+    <result  column="groupName"       property="groupName"       jdbcType="VARCHAR"/>
+    <result  column="groupSignature"  property="groupSignature"  jdbcType="VARCHAR"/>
+    <result  column="groupPwd"        property="groupPwd"        jdbcType="VARCHAR"/>
+    <result  column="groupImg"        property="groupImg"        jdbcType="VARCHAR"/>
+    <result  column="groupType"       property="groupType"       jdbcType="INTEGER"/>
+    <result  column="pId"             property="PId"             jdbcType="VARCHAR"/>
+    <result  column="sort"            property="sort"            jdbcType="INTEGER"/>
+    <result  column="createUserId"    property="createUserId"    jdbcType="VARCHAR"/>
+    <result  column="adminUserIds"    property="adminUserIds"    jdbcType="INTEGER"/>
+    <result  column="descn"           property="descn"           jdbcType="VARCHAR"/>
+    <result  column="cTime"           property="CTime"           jdbcType="TIMESTAMP"/>
+    <result  column="lmTime"          property="lmTime"          jdbcType="TIMESTAMP"/>
+    <result  column="groupCount"      property="groupCount"      jdbcType="INTEGER"/>
+  </resultMap>
+
+  <!-- 对象定义:组用户信息 -->
+  <resultMap id="groupUserMap" type="WtGroupUser">
+    <id      column="id"           property="id"           jdbcType="VARCHAR"/>
+    <result  column="groupId"      property="groupId"      jdbcType="VARCHAR"/>
+    <result  column="userId"       property="userId"       jdbcType="VARCHAR"/>
+    <result  column="inviter"      property="inviter"      jdbcType="VARCHAR"/>
+    <result  column="groupAlias"   property="groupAlias"   jdbcType="VARCHAR"/>
+    <result  column="groupDescn"   property="groupDescn"   jdbcType="VARCHAR"/>
+    <result  column="cTime"        property="CTime"        jdbcType="TIMESTAMP"/>
+  </resultMap>
+
+  <!-- 所有列 -->
+  <sql id="Base_Column_List">
+    id, groupNum, groupName, groupSignature, groupPwd, groupImg, groupType, pId, sort, createUserId, adminUserIds, descn, cTime, lmTime
+  </sql>
+
+  <!-- 条件子句 -->
+  <sql id="WhereClauseByEntiey">
+    <where>
+      <trim prefix="(" suffix=")" prefixOverrides="and">
+        <if test="groupId!=null"> and id=#{groupId,jdbcType=VARCHAR}</if>
+        <if test="groupNum!=null"> and groupNum=#{groupNum,jdbcType=VARCHAR}</if>
+        <if test="groupName!=null"> and groupName=#{groupName,jdbcType=VARCHAR}</if>
+        <if test="groupSignature!=null"> and groupSignature=#{groupSignature,jdbcType=VARCHAR}</if>
+        <if test="groupPwd!=null"> and groupPwd=#{groupPwd,jdbcType=VARCHAR}</if>
+        <if test="groupImg!=null"> and groupImg=#{groupImg,jdbcType=VARCHAR}</if>
+        <if test="groupType!=null"> and groupType=#{groupType,jdbcType=INTEGER}</if>
+        <if test="pId!=null"> and pId=#{pId,jdbcType=VARCHAR}</if>
+        <if test="sort!=null and sort!=0"> and sort=#{sort,jdbcType=INTEGER}</if>
+        <if test="createUserId!=null"> and createUserId=#{createUserId,jdbcType=VARCHAR}</if>
+        <if test="adminUserIds!=null"> and adminUserIds=#{adminUserIds,jdbcType=VARCHAR}</if>
+        <if test="descn!=null"> and descn=#{descn,jdbcType=VARCHAR}</if>
+        <if test="CTime!=null"> and cTime=#{CTime,jdbcType=TIMESTAMP}</if>
+        <if test="lmTime!=null"> and lmTime=#{lmTime,jdbcType=TIMESTAMP}</if>
+      </trim>
+    </where>
+  </sql>
+
+  <!-- 获得记录条数-->
+  <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    select count(*) from plat_Group <if test="_parameter!=null"><include refid="WhereClauseByEntiey"/></if>
+  </select>
+
+  <!-- 获得列表 -->
+  <select id="getList" resultMap="groupMap" parameterType="java.util.Map">
+    select <include refid="Base_Column_List"/> from plat_Group
+    <if test="_parameter!=null"><include refid="WhereClauseByEntiey"/></if>
+    <if test="orderByClause!=null">order by ${orderByClause}</if>
+  </select>
+
+  <!-- 获得一条数据 -->
+  <select id="getInfo" resultMap="groupMap" parameterType="java.util.Map">
+    select <include refid="Base_Column_List"/> from plat_Group <if test="_parameter!=null"><include refid="WhereClauseByEntiey"/></if>
+  </select>
+  <select id="getGroupById" resultMap="groupMap" parameterType="java.lang.String">
+    select <include refid="Base_Column_List"/> from plat_Group where id=#{value,jdbcType=VARCHAR}
+  </select>
+
+  <!-- 得到某用户所属的用户组 -->
+  <select id="getGroupListByUserId"  resultType="java.util.HashMap" parameterType="java.lang.String">
+    select a.*, b.groupCount, c.* from plat_Group a,
+    (select groupId, count(userId) groupCount from plat_GroupUser group by groupId) b,
+    (select * from plat_GroupUser where userId=#{value, jdbcType=VARCHAR}) c
+    where a.id=b.groupId and a.id=c.groupId
+  </select>
+</mapper>

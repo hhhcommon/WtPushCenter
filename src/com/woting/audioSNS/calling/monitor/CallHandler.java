@@ -62,7 +62,6 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     @Override
     public void oneProcess() throws Exception {
         try {
-            sleep(50);//等50毫秒
             if (callData.getStatus()==9) {//结束进程
                 shutdown();
             }
@@ -73,7 +72,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             //一段时间后未收到自动回复，的处理
             if (callData.getStatus()==1
               &&callData.getBeginDialTime()!=-1
-              &&(System.currentTimeMillis()-callData.getBeginDialTime()>callData.getExpireOnline()))
+              &&(System.currentTimeMillis()-callData.getBeginDialTime()>conf.get_ExpireOnline()))
             {
                 dealOutLine();
                 shutdown();
@@ -81,14 +80,14 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             //一段时间后未收到“被叫者”手工应答Ack，的处理
             if ((callData.getStatus()==1||callData.getStatus()==2)
               &&callData.getBeginDialTime()!=-1
-              &&(System.currentTimeMillis()-callData.getBeginDialTime()>callData.getExpireAck()))
+              &&(System.currentTimeMillis()-callData.getBeginDialTime()>conf.get_ExpireAck()))
             {
                 dealNoAck();
                 shutdown();
             }
             //一段时间后未收到任何消息，通话过期
             if ((callData.getStatus()==1||callData.getStatus()==2||callData.getStatus()==3)
-              &&(System.currentTimeMillis()-callData.getLastUsedTime()>callData.getExpireTime()))
+              &&(System.currentTimeMillis()-callData.getLastUsedTime()>conf.get_ExpireTime()))
             {
                 dealCallExpire();
                 shutdown();
@@ -724,9 +723,8 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         //清除未发送消息
         globalMem.sendMem.cleanMsg4Call(callData.getCallerKey(), callData.getCallId()); //清除呼叫者信息
         globalMem.sendMem.cleanMsg4Call(callData.getCallederKey(), callData.getCallId()); //清除被叫者信息
+        callData.clear();
         callingMem.removeOneCall(callData.getCallId());
-        callData.getCallerWts().clear();
-        callData.getCallederWts().clear();
     }
 
     /* 
