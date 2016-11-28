@@ -26,7 +26,8 @@ public abstract class SpringShell {
         else if (os.toLowerCase().startsWith("window")) contextConfFilePath+="conf/appContext.xml";
 
         SystemCache.setCache(new CacheEle<ApplicationContext>(PushConstants.CONTEXT_SPRINGCTX, "Spring ICO上下文",
-                new FileSystemXmlApplicationContext(new String[] {contextConfFilePath})));
+                new FileSystemXmlApplicationContext(new String[] {contextConfFilePath}))
+        );
     }
 
     /**

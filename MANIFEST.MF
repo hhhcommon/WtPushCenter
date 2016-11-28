@@ -14,7 +14,7 @@ Class-Path: runlib/antlr-2.7.7.jar runlib/antlr-runtime-3.4.jar runlib
  ack-classic-1.1.3.jar runlib/logback-core-1.1.3.jar runlib/mybatis-3.
  2.4.jar runlib/mybatis-spring-1.2.2.jar runlib/mysql-connector-java-5
  .1.29.jar runlib/slf4j-api-1.7.13.jar runlib/snakeyaml-1.16.jar runli
- b/spring-aop-4.2.4.RELEASE.jar runlib/spring-beans-4.2.4.RELEASE.jar
+ b/spring-aop-4.2.4.RELEASE.jar runlib/spring-beans-4.2.4.RELEASE.jar 
  runlib/spring-boot-1.3.2.RELEASE.jar runlib/spring-boot-autoconfigure
  -1.3.2.RELEASE.jar runlib/spring-boot-starter-1.3.2.RELEASE.jar runli
  b/spring-boot-starter-logging-1.3.2.RELEASE.jar runlib/spring-context
