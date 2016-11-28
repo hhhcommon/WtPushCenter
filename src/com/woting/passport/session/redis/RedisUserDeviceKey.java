@@ -5,7 +5,7 @@ import com.spiritdata.framework.util.StringUtils;
 import com.woting.passport.session.key.UserDeviceKey;
 
 public class RedisUserDeviceKey extends UserDeviceKey implements RedisLoginData {
-    private static final long serialVersionUID = 2017041361668506482L;
+    private static final long serialVersionUID=2017041361668506482L;
 
     public RedisUserDeviceKey(UserDeviceKey udKey) {
         if (udKey==null) throw new Plat5101CException("用户设备Key不能为空");

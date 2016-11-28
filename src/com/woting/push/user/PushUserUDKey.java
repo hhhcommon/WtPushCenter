@@ -10,7 +10,7 @@ import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MsgNormal;
 
 public class PushUserUDKey extends UserDeviceKey implements Serializable {
-    private static final long serialVersionUID = -1794652738025588641L;
+    private static final long serialVersionUID=-1794652738025588641L;
 
     public PushUserUDKey() {
         super();

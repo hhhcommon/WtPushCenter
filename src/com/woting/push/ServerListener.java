@@ -39,7 +39,7 @@ public class ServerListener {
 
     public static void main(String[] args) {
         //处理参数，看是用nio还是用oio
-        ServerListener sl = ServerListener.getInstance();
+        ServerListener sl=ServerListener.getInstance();
         try {
             Thread.currentThread().setName("推送服务主进程");
             sl.begin();

@@ -2,6 +2,7 @@ package com.woting.audioSNS.calling.mem;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -14,7 +15,7 @@ public class CallingMemory {
 
     //java的占位单例模式===begin
     private static class InstanceHolder {
-        public static CallingMemory instance = new CallingMemory();
+        public static CallingMemory instance=new CallingMemory();
     }
     public static CallingMemory getInstance() {
         return InstanceHolder.instance;
@@ -22,9 +23,11 @@ public class CallingMemory {
     //java的占位单例模式===end
 
     protected ConcurrentHashMap<String, OneCall> callMap;//对讲组信息Map
+    protected ConcurrentHashMap<String, Map<String, Object>> userTalk;//用户对讲信息，摸个用户正在用那个通道对讲
 
     private CallingMemory() {
-        this.callMap=new ConcurrentHashMap<String, OneCall>();
+        callMap=new ConcurrentHashMap<String, OneCall>();
+        userTalk=new ConcurrentHashMap<String, Map<String, Object>>();
     }
 
     /**

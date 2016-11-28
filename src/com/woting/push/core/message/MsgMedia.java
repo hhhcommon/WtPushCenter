@@ -10,7 +10,7 @@ import com.spiritdata.framework.util.StringUtils;
  * @author wanghui
  */
 public class MsgMedia extends Message {
-    private static final long serialVersionUID = -3827446721333425724L;
+    private static final long serialVersionUID=-3827446721333425724L;
 
     private final static int COMPACT_LEN=36;//若删除ObjId，则这个值为24
 
@@ -26,7 +26,7 @@ public class MsgMedia extends Message {
         return extInfo;
     }
     public void setExtInfo(Object extInfo) {
-        this.extInfo = extInfo;
+        this.extInfo=extInfo;
     }
 
     //以下信息在TCP原消息格式中有意义，在新的消息传输模型中需要删掉（不管是用TCP还是UDP）

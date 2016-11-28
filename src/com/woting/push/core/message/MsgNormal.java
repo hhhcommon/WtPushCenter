@@ -11,7 +11,7 @@ import com.woting.push.core.message.content.MapContent;
  * @author wanghui
  */
 public class MsgNormal extends Message {
-    private static final long serialVersionUID = -5354794282645342159L;
+    private static final long serialVersionUID=-5354794282645342159L;
 
     private String msgId; //32位消息id
     private String reMsgId; //32位消息id

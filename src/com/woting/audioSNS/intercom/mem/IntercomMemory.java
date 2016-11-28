@@ -2,6 +2,7 @@ package com.woting.audioSNS.intercom.mem;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -14,17 +15,19 @@ public class IntercomMemory {
 
     //java的占位单例模式===begin
     private static class InstanceHolder {
-        public static IntercomMemory instance = new IntercomMemory();
+        public static IntercomMemory instance=new IntercomMemory();
     }
     public static IntercomMemory getInstance() {
         return InstanceHolder.instance;
     }
     //java的占位单例模式===end
 
-    //对讲组信息Map
-    protected ConcurrentHashMap<String, OneMeet> meetMap;
+    protected ConcurrentHashMap<String, OneMeet> meetMap;//对讲组信息Map
+    protected ConcurrentHashMap<String, Map<String, Object>> userTalk;//用户对讲信息，用户正在用那个通道对讲
+
     private IntercomMemory() {
         meetMap=new ConcurrentHashMap<String, OneMeet>();
+        userTalk=new ConcurrentHashMap<String, Map<String, Object>>();
     }
 
     /**

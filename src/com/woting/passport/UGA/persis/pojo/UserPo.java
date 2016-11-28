@@ -8,7 +8,7 @@ import com.spiritdata.framework.UGA.UgaUser;
 import com.spiritdata.framework.util.StringUtils;
 
 public class UserPo extends UgaUser {
-    private static final long serialVersionUID = 400373602903981461L;
+    private static final long serialVersionUID=400373602903981461L;
 
     private String userNum; //用户号，用于公开的号码
     private String mainPhoneNum; //用户主手机号码，用户可能有多个手机号码
@@ -25,65 +25,65 @@ public class UserPo extends UgaUser {
         return userNum;
     }
     public void setUserNum(String userNum) {
-        this.userNum = userNum;
+        this.userNum=userNum;
     }
     public String getMainPhoneNum() {
         return mainPhoneNum;
     }
     public void setMainPhoneNum(String mainPhoneNum) {
-        this.mainPhoneNum = mainPhoneNum;
+        this.mainPhoneNum=mainPhoneNum;
     }
     public String getMailAddress() {
         return mailAddress;
     }
     public void setMailAddress(String mailAddress) {
-        this.mailAddress = mailAddress;
+        this.mailAddress=mailAddress;
     }
     public int getUserType() {
         return userType;
     }
     public void setUserType(int userType) {
-        this.userType = userType;
+        this.userType=userType;
     }
     public int getUserState() {
         return userState;
     }
     public void setUserState(int userState) {
-        this.userState = userState;
+        this.userState=userState;
     }
     public String getPortraitBig() {
         return portraitBig;
     }
     public void setPortraitBig(String portraitBig) {
-        this.portraitBig = portraitBig;
+        this.portraitBig=portraitBig;
     }
     public String getPortraitMini() {
         return portraitMini;
     }
     public void setPortraitMini(String portraitMini) {
-        this.portraitMini = portraitMini;
+        this.portraitMini=portraitMini;
     }
     public String getDescn() {
         return descn;
     }
     public void setDescn(String descn) {
-        this.descn = descn;
+        this.descn=descn;
     }
     public Timestamp getCTime() {
         return CTime;
     }
     public void setCTime(Timestamp cTime) {
-        CTime = cTime;
+        CTime=cTime;
     }
     public Timestamp getLmTime() {
         return lmTime;
     }
     public void setLmTime(Timestamp lmTime) {
-        this.lmTime = lmTime;
+        this.lmTime=lmTime;
     }
 
     public Map<String, Object> toHashMap4Mobile() {
-        Map<String, Object> retM = new HashMap<String, Object>();
+        Map<String, Object> retM=new HashMap<String, Object>();
         if (!StringUtils.isNullOrEmptyOrSpace(this.userId)) retM.put("UserId", this.userId);
         if (!StringUtils.isNullOrEmptyOrSpace(this.userName)) retM.put("RealName", this.userName);
         if (!StringUtils.isNullOrEmptyOrSpace(this.userNum)) retM.put("UserNum", this.userNum);

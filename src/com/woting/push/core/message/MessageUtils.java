@@ -98,30 +98,23 @@ public abstract class MessageUtils {
     }
 
     /**
-     * 根据原始一般消息(非媒体消息)生成应答消息
-     * @param orgMsg 一般消息
-     * @return 应答消息
+     * 根据字符串数组创建消息对象
+     * @param binaryMsg
+     * @return
+     * @throws Exception 
      */
-    public static MsgNormal buildAckMsg(MsgNormal orgMsg) {
-        MsgNormal ret=new MsgNormal();
-
-        ret.setAffirm(0);
-        ret.setMsgType(1);
-        ret.setSendTime(System.currentTimeMillis());
-        ret.setFromType(orgMsg.getToType());
-        ret.setToType(orgMsg.getFromType());
-
-        ret.setBizType(0);
-        ret.setCmdType(0);
-        ret.setReMsgId(orgMsg.getMsgId());
-
-        ret.setPCDType(orgMsg.getPCDType());
-
-        return ret;
+    public static Message buildMsgByBytes(byte[] binaryMsg) throws Exception {
+        int msgType=decideMsg(binaryMsg);
+        if (msgType==0) return new MsgNormal(binaryMsg);
+        else
+        if (msgType==1) return new MsgMedia(binaryMsg);
+        else
+        return null;
     }
 
+
     /**
-     * 根据原始媒体消息(非媒体消息)生成应答消息
+     * 根据原始媒体消息生成应答消息
      * @param orgMsg 一般消息
      * @param returnType 返回类型
      * @return 应答消息
@@ -131,7 +124,6 @@ public abstract class MessageUtils {
 
         ret.setAffirm(0);
         ret.setMsgType(1);
-        ret.setSendTime(System.currentTimeMillis());
         ret.setFromType(orgMsg.getToType());
         ret.setToType(orgMsg.getFromType());
 
@@ -147,6 +139,32 @@ public abstract class MessageUtils {
     }
 
     /**
+     * 根据原始一般消息(非媒体消息)生成应答消息
+     * @param orgMsg 一般消息
+     * @return 应答消息
+     */
+    public static MsgNormal buildAckMsg(MsgNormal orgMsg) {
+        MsgNormal ret=new MsgNormal();
+
+        ret.setReMsgId(orgMsg.getMsgId());
+
+        ret.setToType(orgMsg.getFromType());
+        ret.setFromType(orgMsg.getToType());
+
+        ret.setMsgType(1);
+        ret.setAffirm(0);
+
+        ret.setBizType(0);
+        ret.setCmdType(0);
+
+        ret.setIMEI(orgMsg.getIMEI());
+        ret.setUserId(orgMsg.getUserId());
+        ret.setPCDType(orgMsg.getPCDType());
+
+        return ret;
+    }
+
+    /**
      * 根据原消息，生成返回消息的壳 
      * @param msg 愿消息
      * @return 返回消息壳
@@ -156,28 +174,47 @@ public abstract class MessageUtils {
 
         retMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
         retMsg.setReMsgId(msg.getMsgId());
+
         retMsg.setToType(msg.getFromType());
         retMsg.setFromType(msg.getToType());
+
         retMsg.setMsgType(0);//是应答消息
         retMsg.setAffirm(0);//不需要回复
+
         retMsg.setBizType(msg.getBizType());
         retMsg.setCmdType(msg.getCmdType());
+
+        retMsg.setIMEI(msg.getIMEI());
+        retMsg.setUserId(msg.getUserId());
+        retMsg.setPCDType(msg.getPCDType());
 
         return retMsg;
     }
 
     /**
-     * 根据字符串数组创建消息对象
-     * @param binaryMsg
-     * @return
-     * @throws Exception 
+     * 根据原消息，生成返回消息的壳 
+     * @param msg 愿消息
+     * @return 返回消息壳
      */
-    public static Message buildMsgByBytes(byte[] binaryMsg) throws Exception {
-        int msgType=decideMsg(binaryMsg);
-        if (msgType==0) return new MsgNormal(binaryMsg);
-        else
-        if (msgType==1) return new MsgMedia(binaryMsg);
-        else
-        return null;
+    public static MsgNormal clone(MsgNormal msg) {
+        MsgNormal retMsg=new MsgNormal();
+
+        retMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
+        retMsg.setReMsgId(msg.getMsgId());
+
+        retMsg.setToType(msg.getFromType());
+        retMsg.setFromType(msg.getToType());
+
+        retMsg.setMsgType(msg.getMsgType());//是应答消息
+        retMsg.setAffirm(msg.getAffirm());//不需要回复
+
+        retMsg.setBizType(msg.getBizType());
+        retMsg.setCmdType(msg.getCmdType());
+
+        retMsg.setIMEI(msg.getIMEI());
+        retMsg.setUserId(msg.getUserId());
+        retMsg.setPCDType(msg.getPCDType());
+
+        return retMsg;
     }
 }

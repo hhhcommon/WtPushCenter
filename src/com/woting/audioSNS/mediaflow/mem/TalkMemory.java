@@ -70,10 +70,10 @@ public class TalkMemory {
 //
 //            PushMemoryManage pmm=PushMemoryManage.getInstance();
 //            for (String k: talkMap.keySet()) {
-//                WholeTalk wt = talkMap.get(k);
+//                WholeTalk wt=talkMap.get(k);
 //                if (wt.getTalkType()==1) {//对讲
 //                    GroupMemoryManage gmm=GroupMemoryManage.getInstance();
-//                    GroupInterCom gic = gmm.getGroupInterCom(wt.getObjId());
+//                    GroupInterCom gic=gmm.getGroupInterCom(wt.getObjId());
 //                    //判断对讲是否结束
 //                    boolean talkEnd=false;
 //                    talkEnd=wt.isSendCompleted()||gic==null||gic.getSpeaker()==null;
@@ -99,7 +99,7 @@ public class TalkMemory {
 //                            //发送广播消息
 //                            Map<String, UserPo> entryGroupUsers=gic.getEntryGroupUserMap();
 //                            for (String _k: entryGroupUsers.keySet()) {
-//                                String _sp[] = _k.split("::");
+//                                String _sp[]=_k.split("::");
 //                                mUdk=new MobileUDKey();
 //                                mUdk.setDeviceId(_sp[0]);
 //                                mUdk.setPCDType(Integer.parseInt(_sp[1]));

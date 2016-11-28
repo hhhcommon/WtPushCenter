@@ -12,7 +12,7 @@ import com.woting.push.core.message.MessageContent;
  * @author wanghui
  */
 public class MapContent implements MessageContent, Serializable {
-    private static final long serialVersionUID = 1772778270294321854L;
+    private static final long serialVersionUID=1772778270294321854L;
 
     /**
      * 消息内容
@@ -37,7 +37,7 @@ public class MapContent implements MessageContent, Serializable {
     }
 
     public void setContentMap(Map<String, Object> contentMap) {
-        this.contentMap = contentMap;
+        this.contentMap=contentMap;
     }
 
     @Override

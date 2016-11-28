@@ -15,7 +15,7 @@ import com.woting.passport.UGA.persis.pojo.UserPo;
  * @author wanghui
  */
 public class Group extends GroupPo implements ModelSwapPo {
-    private static final long serialVersionUID = 7365795273402631290L;
+    private static final long serialVersionUID=7365795273402631290L;
 
     private String innerPhoneNum;  //内部电话号吗
     private String defaultFreqNum;  //默认频段
@@ -24,21 +24,21 @@ public class Group extends GroupPo implements ModelSwapPo {
         return defaultFreqNum;
     }
     public void setDefaultFreqNum(String defaultFreqNum) {
-        this.defaultFreqNum = defaultFreqNum;
+        this.defaultFreqNum=defaultFreqNum;
     }
     public String getInnerPhoneNum() {
         if (StringUtils.isNullOrEmptyOrSpace(this.innerPhoneNum)) return "3000";
         return innerPhoneNum;
     }
     public void setInnerPhoneNum(String innerPhoneNum) {
-        this.innerPhoneNum = innerPhoneNum;
+        this.innerPhoneNum=innerPhoneNum;
     }
 
     @Override
     public void buildFromPo(Object po) {
         if (po==null) throw new Plat0006CException("Po对象为空，无法从空对象得到概念/逻辑对象！");
         if (!(po instanceof GroupPo)) throw new Plat0006CException("Po对象不是GroupPo的实例，无法从此对象构建用户模型！");
-        GroupPo _po = (GroupPo)po;
+        GroupPo _po=(GroupPo)po;
         this.setGroupId(_po.getGroupId());
         this.setGroupNum(_po.getGroupNum());
         this.setGroupName(_po.getGroupName());
@@ -55,7 +55,7 @@ public class Group extends GroupPo implements ModelSwapPo {
     }
     @Override
     public Object convert2Po() {
-        GroupPo ret = new GroupPo();
+        GroupPo ret=new GroupPo();
         if (StringUtils.isNullOrEmptyOrSpace(this.getGroupId())) ret.setGroupId(SequenceUUID.getUUIDSubSegment(4));
         else ret.setGroupId(this.getGroupId());
         ret.setGroupNum(this.getGroupNum());
@@ -74,12 +74,12 @@ public class Group extends GroupPo implements ModelSwapPo {
     }
 
     //组用户处理
-    private List<UserPo> userList = new ArrayList<UserPo>();;
+    private List<UserPo> userList=new ArrayList<UserPo>();;
     public List<UserPo> getUserList() {
         return userList;
     }
     public void setUserList(List<UserPo> userList) {
-        this.userList = userList;
+        this.userList=userList;
     }
     public void addOneUser(UserPo up) {
         for (UserPo _up: userList) {

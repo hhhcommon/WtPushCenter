@@ -16,6 +16,6 @@ public class MediaflowConfig implements Config {
         return _DealThreadCount;
     }
     public void set_DealThreadCount(int _DealThreadCount) {
-        this._DealThreadCount = _DealThreadCount;
+        this._DealThreadCount=_DealThreadCount;
     }
 }

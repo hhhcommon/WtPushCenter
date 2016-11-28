@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class LoadSysCacheService {
-//    private Logger logger = LoggerFactory.getLogger(LoadSysCacheService.class);
+//    private Logger logger=LoggerFactory.getLogger(LoadSysCacheService.class);
 
     /**
      * 加载内容管理中的资源库数据，为数据导入做准备

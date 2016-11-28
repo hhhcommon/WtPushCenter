@@ -16,12 +16,12 @@ public class IntercomConfig implements Config {
         return _DealThreadCount;
     }
     public void set_DealThreadCount(int _DealThreadCount) {
-        this._DealThreadCount = _DealThreadCount;
+        this._DealThreadCount=_DealThreadCount;
     }
     public long get_ExpireTime() {
         return _ExpireTime;
     }
     public void set_ExpireTime(long _ExpireTime) {
-        this._ExpireTime = _ExpireTime;
+        this._ExpireTime=_ExpireTime;
     }
 }

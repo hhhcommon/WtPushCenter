@@ -53,7 +53,7 @@ public class NioServer extends AbstractLoopMoniter<PushConfig> {
     public void oneProcess() {
         try {
             if(selector.select()>0) {
-                Iterator<SelectionKey> it = selector.selectedKeys().iterator();
+                Iterator<SelectionKey> it=selector.selectedKeys().iterator();
                 while (it.hasNext()) {
                     SelectionKey key=it.next();
                     it.remove();

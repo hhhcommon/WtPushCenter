@@ -122,14 +122,14 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 }
                 pMsg.setStatus(flag);
             } catch(Exception e) {
-                e.printStackTrace();
+                logger.debug(StringUtils.getAllMessage(e));
                 pMsg.setStatus(-1);
             } finally {
                 pMsg.setEndTime(System.currentTimeMillis());
                 callData.addProcessedMsg(pMsg);
             }
         } catch(Exception e) {
-            e.printStackTrace();
+            logger.debug(StringUtils.getAllMessage(e));
         }
     }
 
@@ -158,7 +158,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         //判断呼叫者是否存在
         boolean existFlag=true; //呼叫者或被叫者存在
         PushUserUDKey _pUdkFlag=sessionService.getActivedUserUDK(callData.getCallerId(),callData.getCallerPcdType());
-        SocketHandler _sh=globalMem.getPushUserBySocket(_pUdkFlag);
+        SocketHandler _sh=globalMem.getSocketByPushUser(_pUdkFlag);
         if (_pUdkFlag==null||_sh==null||!_sh.socketOk()) {
             toCallerMsg.setReturnType(2);
             existFlag=false;
@@ -167,7 +167,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         if (existFlag) {
             calleredKeys=(List<PushUserUDKey>)sessionService.getActivedUserUDKs(callederId);
             for (PushUserUDKey udk: calleredKeys) {
-                _sh=globalMem.getPushUserBySocket(udk);
+                _sh=globalMem.getSocketByPushUser(udk);
                 if (_sh!=null&&_sh.socketOk()) {
                     callData.addCallederList(udk);
                 }

@@ -377,9 +377,6 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                             if (!(""+retM.get("ReturnType")).equals("1001")) {
                                 MsgNormal ackM=MessageUtils.buildAckMsg((MsgNormal)ms);
                                 ackM.setBizType(15);
-                                ackM.setPCDType(((MsgNormal)ms).getPCDType());
-                                ackM.setUserId(((MsgNormal)ms).getUserId());
-                                ackM.setIMEI(((MsgNormal)ms).getIMEI());
                                 ackM.setReturnType(0);//失败
                                 _sendMsgQueue.add(ackM.toBytes());
                             } else {//登录成功
@@ -388,9 +385,6 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                 if (((MsgNormal)ms).getBizType()==15) {//是注册消息
                                     MsgNormal ackM=MessageUtils.buildAckMsg((MsgNormal)ms);
                                     ackM.setBizType(15);
-                                    ackM.setPCDType(((MsgNormal)ms).getPCDType());
-                                    ackM.setUserId(((MsgNormal)ms).getUserId());
-                                    ackM.setIMEI(((MsgNormal)ms).getIMEI());
                                     ackM.setReturnType(1);//成功
                                     _sendMsgQueue.add(ackM.toBytes());
                                     globalMem.bindPushUserANDSocket(_pushUserKey, SocketHandler.this);

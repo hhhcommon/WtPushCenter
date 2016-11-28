@@ -268,7 +268,7 @@ public class WholeTalk {
 //                                        System.out.println("======重发[seqNum="+ts.getSeqNum()+"]="+ts.getSendTimeMap().get(k).size()+"次===============================================");
 //                                        bMsg.setMsgContent(dataMap);
 //
-//                                        String _sp[] = k.split("::");
+//                                        String _sp[]=k.split("::");
 //                                        MobileKey mk=new MobileKey();
 //                                        mk.setMobileId(_sp[0]);
 //                                        mk.setPCDType(Integer.parseInt(_sp[1]));

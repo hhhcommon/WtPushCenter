@@ -64,6 +64,14 @@ public class TcpGlobalMemory {
      * </pre>
      */
     private ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Message>> sendMsg;
+    /**
+     * 给用户的广播消息队列
+     * <pre>
+     * Key    用户设备标识
+     * Value  消息队列
+     * </pre>
+     */
+    private ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Message>> notifyMsg;
 
     //以下为用户和Socket的绑定关系
     private Object LOCK_usersocketMap=new Object();//用户和Sockek对应的临界区的锁，这个锁是读写一致的，虽然慢，但能保证数据一致性
@@ -142,7 +150,7 @@ public class TcpGlobalMemory {
         if (sh==null) return null;
         return REF_socketANDudk.get(sh);
     }
-    public SocketHandler getPushUserBySocket(PushUserUDKey pUdk) {
+    public SocketHandler getSocketByPushUser(PushUserUDKey pUdk) {
         if (pUdk==null) return null;
         return REF_udkANDsocket.get(pUdk);
     }
@@ -246,11 +254,11 @@ public class TcpGlobalMemory {
          * @return 加入成功返回true(若消息已经存在，也放回true)，否则返回false
          */
         @SuppressWarnings({ "rawtypes", "unchecked" })
-        public boolean addUnionUserMsg(PushUserUDKey pUdk, MsgMedia msg, CompareMsg compMsg) {
+        public boolean addUnionUserMsg(PushUserUDKey pUdk, Message msg, CompareMsg compMsg) {
             if (sendMsg==null||msg==null||pUdk==null) return false;
             //唯一化处理
             //1-首先把一已发送列表中的同类消息删除
-//            SendMessageList sendedMl = this.msgSendedMap.get(mUdk.toString());
+//            SendMessageList sendedMl=this.msgSendedMap.get(mUdk.toString());
 //            if (sendedMl!=null&&sendedMl.size()>0) {
 //                for (int i=sendedMl.size()-1; i>=0; i--) {
 //                    Message m=sendedMl.get(i);
@@ -264,7 +272,7 @@ public class TcpGlobalMemory {
                 sendMsg.put(pUdk, _userQueue);
             }
             synchronized(_userQueue) {
-                List<Message> removeMsg = new ArrayList<Message>();
+                List<Message> removeMsg=new ArrayList<Message>();
                 for (Message m: _userQueue) {
                     if (compMsg!=null&&compMsg.compare(m, msg)) removeMsg.add(m);
                 }
@@ -329,10 +337,10 @@ public class TcpGlobalMemory {
 
         /**
          * 删除指定对讲(会议)组相关的数据
-         * @param groupId 对讲(会议)组Id
+         * @param om 对讲(会议)组对象
          */
         public void cleanMsg4Intercom(OneMeet om) {
-            if (om!=null&&StringUtils.isNullOrEmptyOrSpace(om.getGroupId())) {
+            if (om!=null&&!StringUtils.isNullOrEmptyOrSpace(om.getGroupId())) {
                 Map<PushUserUDKey, UserPo> onlineMap=om.getEntryGroupUserMap();
                 for (PushUserUDKey pUdk: onlineMap.keySet()) {
                     ConcurrentLinkedQueue<Message> userMsgQueue=sendMsg.get(pUdk);
@@ -350,6 +358,35 @@ public class TcpGlobalMemory {
                                     if (mm.getBizType()==2&&om.getGroupId().equals(mm.getObjId())) {
                                         userMsgQueue.remove(m);
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        /**
+         * 删除指定对讲(会议)组内，相关用户的消息
+         * @param om 对讲(会议)组对象
+         * @param pUdk 相关用户
+         */
+        public void cleanMsg4IntercomUser(OneMeet om, PushUserUDKey pUdk) {
+            if (om!=null&&!StringUtils.isNullOrEmptyOrSpace(om.getGroupId())&&pUdk!=null) {
+                ConcurrentLinkedQueue<Message> userMsgQueue=sendMsg.get(pUdk);
+                if (userMsgQueue!=null&&!userMsgQueue.isEmpty()) {
+                    synchronized(userMsgQueue) {
+                        for (Message m: userMsgQueue) {
+                            if (m instanceof MsgNormal) {
+                                MsgNormal mn=(MsgNormal)m;
+                                if (om.getGroupId().equals(((MapContent)mn.getMsgContent()).get("GroupId")+"")) {
+                                    userMsgQueue.remove(m);
+                                }
+                            }
+                            if (m instanceof MsgMedia) {
+                                MsgMedia mm=(MsgMedia)m;
+                                if (mm.getBizType()==2&&om.getGroupId().equals(mm.getObjId())) {
+                                    userMsgQueue.remove(m);
                                 }
                             }
                         }

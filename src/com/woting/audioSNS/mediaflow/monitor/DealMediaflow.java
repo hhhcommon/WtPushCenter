@@ -135,7 +135,7 @@ public class DealMediaflow extends AbstractLoopMoniter<MediaflowConfig> {
             if (talkType==1) ;//ts.setSendUserMap(gic.getEntryGroupUserMap());//组对讲
             else {//电话
                 UserPo u=null; 
-                PushUserUDKey otherUdk=null;//oc.getOtherUdk(talkerId);
+                PushUserUDKey otherUdk=oc.getOtherUdk(talkerId);
                 otherUdk=(PushUserUDKey)sessionService.getActivedUserUDK(otherUdk.getUserId(), otherUdk.getPCDType());
                 if (pUdk!=null) u=userService.getUserById(otherUdk.getUserId());
                 if (u!=null) {

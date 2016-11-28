@@ -24,9 +24,9 @@ public class ProcessedMsg {
      */
     public ProcessedMsg(MsgNormal msg, long beginTime, String className) {
         super();
-        this.msg = msg;
-        this.beginTime = beginTime;
-        this.className = className;
+        this.msg=msg;
+        this.beginTime=beginTime;
+        this.className=className;
         this.status=0;
     }
     public MsgNormal getMsg() {
@@ -39,13 +39,13 @@ public class ProcessedMsg {
         return endTime;
     }
     public void setEndTime(long endTime) {
-        this.endTime = endTime;
+        this.endTime=endTime;
     }
     public int getStatus() {
         return status;
     }
     public void setStatus(int status) {
-        this.status = status;
+        this.status=status;
     }
     public String getClassName() {
         return className;
@@ -54,13 +54,13 @@ public class ProcessedMsg {
         return errMsg;
     }
     public void setErrMsg(String errMsg) {
-        this.errMsg = errMsg;
+        this.errMsg=errMsg;
     }
     public Throwable getExt() {
         return ext;
     }
     public void setExt(Throwable ext) {
-        this.ext = ext;
+        this.ext=ext;
     }
 
     /**

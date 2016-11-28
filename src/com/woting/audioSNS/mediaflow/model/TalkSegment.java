@@ -14,9 +14,9 @@ import com.woting.passport.UGA.persis.pojo.UserPo;
 public class TalkSegment {
     public TalkSegment() {
         super();
-        this.sendUserMap = new HashMap<String, UserPo>();
-        this.sendFlagMap = new HashMap<String, Integer>();
-        this.sendTimeMap = new HashMap<String, List<Long>>();
+        this.sendUserMap=new HashMap<String, UserPo>();
+        this.sendFlagMap=new HashMap<String, Integer>();
+        this.sendTimeMap=new HashMap<String, List<Long>>();
     }
 
     private WholeTalk wt; //本段话对应的完整对话
@@ -32,31 +32,31 @@ public class TalkSegment {
         return wt;
     }
     public void setWt(WholeTalk wt) {
-        this.wt = wt;
+        this.wt=wt;
     }
     public byte[] getData() {
         return data;
     }
     public void setData(byte[] data) {
-        this.data = data;
+        this.data=data;
     }
     public long getBegin() {
         return begin;
     }
     public void setBegin(long begin) {
-        this.begin = begin;
+        this.begin=begin;
     }
     public long getEnd() {
         return end;
     }
     public void setEnd(long end) {
-        this.end = end;
+        this.end=end;
     }
     public int getSeqNum() {
         return seqNum;
     }
     public void setSeqNum(int seqNum) {
-        this.seqNum = seqNum;
+        this.seqNum=seqNum;
     }
 
     public Map<String, UserPo> getSendUserMap() {

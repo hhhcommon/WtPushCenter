@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.calling.monitor.CallHandler;
 import com.woting.audioSNS.mediaflow.model.WholeTalk;
 import com.woting.push.user.PushUserUDKey;
@@ -204,11 +205,17 @@ public class OneCall implements Serializable {
         this.processedMsgList.add(pm);
     }
 
-    public String getOtherId(String oneId) {
-        String otherId=null;
-        if (this.getCallerId().equals(oneId)) otherId=this.getCallederId();
-        if (this.getCallederId().equals(oneId)) otherId=this.getCallerId();
-        return otherId;
+    public PushUserUDKey getOtherUdk(PushUserUDKey oneKey) {
+        if (oneKey==null) return null;
+        if (oneKey.equals(callederKey)) return this.callerKey;
+        if (oneKey.equals(callerKey)) return this.callederKey;
+        return null;
+    }
+    public PushUserUDKey getOtherUdk(String oneId) {
+        if (StringUtils.isNullOrEmptyOrSpace(oneId)) return null;
+        if (callederKey!=null&&oneId.equals(callederKey.getUserId())) return this.callerKey;
+        if (callerKey!=null&&oneId.equals(callerKey.getUserId())) return this.callederKey;
+        return null;
     }
     /**
      * 得到另一方信息，返回另一方的KeyList<br/>

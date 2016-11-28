@@ -4,7 +4,7 @@ import java.sql.Timestamp;
 import com.spiritdata.framework.core.model.BaseObject;
 
 public class GroupPo extends BaseObject {
-    private static final long serialVersionUID = -4171166651180143388L;
+    private static final long serialVersionUID=-4171166651180143388L;
 
     private String groupId; //用户组id
     private String groupNum; //组号，用于公开的号码
@@ -26,90 +26,90 @@ public class GroupPo extends BaseObject {
         return groupId;
     }
     public void setGroupId(String groupId) {
-        this.groupId = groupId;
+        this.groupId=groupId;
     }
     public String getGroupNum() {
         return groupNum;
     }
     public void setGroupNum(String groupNum) {
-        this.groupNum = groupNum;
+        this.groupNum=groupNum;
     }
     public String getGroupName() {
         return groupName;
     }
     public void setGroupName(String groupName) {
-        this.groupName = groupName;
+        this.groupName=groupName;
     }
     public String getGroupSignature() {
         return groupSignature;
     }
     public void setGroupSignature(String groupSignature) {
-        this.groupSignature = groupSignature;
+        this.groupSignature=groupSignature;
     }
     public String getGroupPwd() {
         return groupPwd;
     }
     public void setGroupPwd(String groupPwd) {
-        this.groupPwd = groupPwd;
+        this.groupPwd=groupPwd;
     }
     public String getGroupImg() {
         return groupImg;
     }
     public void setGroupImg(String groupImg) {
-        this.groupImg = groupImg;
+        this.groupImg=groupImg;
     }
     public int getGroupType() {
         return groupType;
     }
     public void setGroupType(int groupType) {
-        this.groupType = groupType;
+        this.groupType=groupType;
     }
     public String getPId() {
         return pId;
     }
     public void setPId(String pId) {
-        this.pId = pId;
+        this.pId=pId;
     }
     public int getSort() {
         return sort;
     }
     public void setSort(int sort) {
-        this.sort = sort;
+        this.sort=sort;
     }
     public String getCreateUserId() {
         return createUserId;
     }
     public void setCreateUserId(String createUserId) {
-        this.createUserId = createUserId;
+        this.createUserId=createUserId;
     }
     public String getAdminUserIds() {
         return adminUserIds;
     }
     public void setAdminUserIds(String adminUserIds) {
-        this.adminUserIds = adminUserIds;
+        this.adminUserIds=adminUserIds;
     }
     public String getDescn() {
         return descn;
     }
     public void setDescn(String descn) {
-        this.descn = descn;
+        this.descn=descn;
     }
     public Timestamp getCTime() {
         return CTime;
     }
     public void setCTime(Timestamp cTime) {
-        CTime = cTime;
+        CTime=cTime;
     }
     public Timestamp getLmTime() {
         return lmTime;
     }
     public void setLmTime(Timestamp lmTime) {
-        this.lmTime = lmTime;
+        this.lmTime=lmTime;
     }
     public int getGroupCount() {
         return groupCount;
     }
     public void setGroupCount(int groupCount) {
-        this.groupCount = groupCount;
+        this.groupCount=groupCount;
     }
 }

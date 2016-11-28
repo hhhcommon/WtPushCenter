@@ -29,24 +29,24 @@ public class CallingConfig implements Config {
         return _DealThreadCount;
     }
     public void set_DealThreadCount(int _DealThreadCount) {
-        this._DealThreadCount = _DealThreadCount;
+        this._DealThreadCount=_DealThreadCount;
     }
     public long get_ExpireOnline() {
         return _ExpireOnline;
     }
     public void set_ExpireOnline(long _ExpireOnline) {
-        this._ExpireOnline = _ExpireOnline;
+        this._ExpireOnline=_ExpireOnline;
     }
     public long get_ExpireAck() {
         return _ExpireAck;
     }
     public void set_ExpireAck(long _ExpireAck) {
-        this._ExpireAck = _ExpireAck;
+        this._ExpireAck=_ExpireAck;
     }
     public long get_ExpireTime() {
         return _ExpireTime;
     }
     public void set_ExpireTime(long _ExpireTime) {
-        this._ExpireTime = _ExpireTime;
+        this._ExpireTime=_ExpireTime;
     }
 }
