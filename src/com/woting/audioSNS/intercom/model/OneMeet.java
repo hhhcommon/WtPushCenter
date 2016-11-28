@@ -7,6 +7,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import com.woting.audioSNS.calling.mem.CallingMemory;
+import com.woting.audioSNS.intercom.mem.IntercomMemory;
 import com.woting.audioSNS.intercom.monitor.IntercomHandler;
 import com.woting.audioSNS.mediaflow.model.WholeTalk;
 import com.woting.passport.UGA.model.Group;
@@ -24,8 +26,11 @@ import com.woting.push.user.PushUserUDKey;
  * 
  * @author wanghui
  */
-public class OneMeet  implements Serializable {
+public class OneMeet implements Serializable {
     private static final long serialVersionUID=-2635864824531924446L;
+
+    private IntercomMemory interMem=IntercomMemory.getInstance();
+    private CallingMemory callingMem=CallingMemory.getInstance();
 
     private volatile Object statusLck=new Object();
     private volatile Object preMsgLck=new Object();
@@ -100,7 +105,7 @@ public class OneMeet  implements Serializable {
     /**
      * 设置对讲者
      * @param pUdk 对讲者
-     * @return 1可以对讲;2无人在组;3组少于2人;4对讲者不在组
+     * @return 1可以对讲;2无人在组;3组少于2人;4对讲者不在组;5有人在通话;6自己正在用其他设备通话;7自己正在用点对点通话
      */
     public Map<String, Object> setSpeaker(PushUserUDKey pUdk) {
         synchronized(speakerLck) {
@@ -109,19 +114,35 @@ public class OneMeet  implements Serializable {
             if (meetType==1) { //如果是对讲模式
                 if (entryGroupUserMap.size()==0) retFlag=2;//无人在组
                 else if (entryGroupUserMap.size()<2) retFlag=3;//少于2人，无需通话
-                
                 else if (entryGroupUserMap.get(pUdk)==null) retFlag=4;//设置人不在组
-                else if (speaker!=null) retFlag=4;//有人在通话
-                else { //自己是否在通话
-                    retFlag=5;
-                }
+                else if (speaker!=null) retFlag=5;//有人在通话
+                else if (interMem.getUserTalk(pUdk.getUserId())!=null) retFlag=6;//自己正在用其他设备通话
+                else if (callingMem.isTalk(pUdk.getUserId())) retFlag=7;//自己正在用点对点通话
                 retFlag=1;
             } else {
                 retFlag=1; //如果是会议模式，总是允许说话
             }
-            ret.put("Ret", retFlag);
-            if (retFlag==4) ret.put("speakerId", speaker.getUserId());
+            ret.put("retFlag", retFlag);
+            if (retFlag==5) ret.put("speakerId", speaker.getUserId());
+            if (retFlag==1) {
+               speaker=pUdk;
+               interMem.setUserTalk(pUdk, this);
+            }
             return ret;
+        }
+    }
+    /**
+     * 释放对讲者，并且关闭所有的传输内容
+     * @param pUdk 对讲者
+     * @return 
+     */
+    public int relaseSpeaker(PushUserUDKey pUdk) {
+        synchronized(speakerLck) {
+            if (speaker==null) return 2;//不存在对讲者
+            if (speaker.equals(pUdk)) return 3; //停止者与当前对讲人不一致
+            speaker=null;
+            interMem.removeUserTalk(pUdk.getUserId());
+            return 1;
         }
     }
 

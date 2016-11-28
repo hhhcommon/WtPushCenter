@@ -13,6 +13,7 @@ import com.woting.audioSNS.intercom.CompareGroupMsg;
 import com.woting.audioSNS.intercom.IntercomConfig;
 import com.woting.audioSNS.intercom.mem.IntercomMemory;
 import com.woting.audioSNS.intercom.model.OneMeet;
+import com.woting.audioSNS.mediaflow.mem.TalkMemory;
 import com.woting.passport.UGA.persis.pojo.UserPo;
 import com.woting.push.core.mem.TcpGlobalMemory;
 import com.woting.push.core.message.MessageUtils;
@@ -27,6 +28,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
 
     private TcpGlobalMemory globalMem=TcpGlobalMemory.getInstance();
     private IntercomMemory interMem=IntercomMemory.getInstance();
+    private TalkMemory talkMem=TalkMemory.getInstance();
 
     private OneMeet meetData=null;
     private volatile Object shutdownLock=new Object();
@@ -230,13 +232,20 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         MapContent mc=new MapContent(dataMap);
         retMsg.setMsgContent(mc);
 
-        int retFlag=0;
+        Map<String, Object> retMap=null;
+        int retFlag=-1;
         if (!pUdk.isUser()) retMsg.setReturnType(0x00);
         else if (meetData==null) retMsg.setReturnType(0x02);
         else {
-            retFlag=meetData.setSpeaker(pUdk);
-            if (retFlag==4||retFlag==5) retMsg.setReturnType(0x40);//该用户不在指定组
-            else if (retFlag==2) retMsg.setReturnType(0x08);//该用户已经在指定组
+            retMap=meetData.setSpeaker(pUdk);
+            retFlag=Integer.parseInt(""+retMap.get("retFlag"));
+            if (retFlag==4) retMsg.setReturnType(0x04);//该用户不在指定组
+            else if (retFlag==2||retFlag==3) retMsg.setReturnType(0x05);//用户组在线人数不足
+            else if (retFlag==5) {//已经有人通话
+                retMsg.setReturnType(0x08);
+                dataMap.put("SpeakerId", retMap.get("speakerId"));
+            } else if (retFlag==6) retMsg.setReturnType(0x06);//自己在用其他设备通话
+            else if (retFlag==7) retMsg.setReturnType(0x07);//自己在电话通话
             else retMsg.setReturnType(0x01);//正确加入组
         }
         globalMem.sendMem.addUserMsg(pUdk, retMsg);
@@ -259,7 +268,51 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
     }
 
     private int endPTT(MsgNormal m) {
-        return 1;
+        if (m==null) return 2;
+        PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(m);
+        if (pUdk==null) return 2;
+
+        String groupId="";
+        try {
+            groupId+=((MapContent)m.getMsgContent()).get("GroupId");
+        } catch(Exception e) {}
+        if (groupId.length()==0) return 2;
+
+        MsgNormal retMsg=MessageUtils.buildRetMsg(m);
+        retMsg.setCommand(0x0A);
+        Map<String, Object> dataMap=new HashMap<String, Object>();
+        dataMap.put("GroupId", groupId);
+        MapContent mc=new MapContent(dataMap);
+        retMsg.setMsgContent(mc);
+
+        int retFlag=0;
+        if (!pUdk.isUser()) retMsg.setReturnType(0x00);
+        else if (meetData==null) retMsg.setReturnType(0x02);
+        else {
+            retFlag=meetData.relaseSpeaker(pUdk);
+            if (retFlag==2) retMsg.setReturnType(0x40);//该用户不在指定组
+            else if (retFlag==3) retMsg.setReturnType(0x08);//该用户和当前对讲用户不匹配
+            else retMsg.setReturnType(0x01);//正确离开组
+            //删除语音内容
+            //globalMem.sendMem.cleanMsg4InterComSpeak(meetData.getGroupId(), ); //清除说话者未发出的语音信息
+        }
+        globalMem.sendMem.addUserMsg(pUdk, retMsg);
+
+        if (retFlag==1) {
+            MsgNormal bMsg=MessageUtils.clone(retMsg);
+            bMsg.setCommand(0x20);
+            dataMap=new HashMap<String, Object>();
+            dataMap.put("GroupId", groupId);
+            dataMap.put("TalkUserId", pUdk.getUserId());
+            MapContent _mc=new MapContent(dataMap);
+            bMsg.setMsgContent(_mc);
+            //发送广播消息
+            for (PushUserUDKey k: meetData.getEntryGroupUserMap().keySet()) {
+                if (k.equals(pUdk)) continue;
+                globalMem.sendMem.addUnionUserMsg(k, retMsg, new CompareGroupMsg());
+            }
+        }
+        return retFlag==1?1:3;
     }
 
     //=====以下三个为清除和关闭的操作

@@ -8,6 +8,7 @@ public class PushConstants {
     //-缓存/配置信息常量------------------------------------------------------------------------
     public final static String PUSH_CONF="Push-Config";//推送配置
     public final static String SOCKETHANDLE_CONF="SocketHandle-Config";//推送配置
+    public final static String INTERCOM_CONF="Intercom-Config";//对讲配置
     public final static String CALLING_CONF="Calling-Config";//电话配置
     public final static String MEDIAFLOW_CONF="MediaFlow-Config";//流数据处理配置
 }

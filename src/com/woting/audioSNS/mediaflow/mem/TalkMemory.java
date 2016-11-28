@@ -1,14 +1,7 @@
 package com.woting.audioSNS.mediaflow.mem;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import com.spiritdata.framework.util.SequenceUUID;
 import com.woting.audioSNS.mediaflow.model.WholeTalk;
-import com.woting.passport.UGA.persis.pojo.UserPo;
-import com.woting.push.core.message.MsgNormal;
-import com.woting.push.core.message.content.MapContent;
 
 public class TalkMemory {
     //java的占位单例模式===begin
@@ -124,6 +117,21 @@ public class TalkMemory {
             for (String k: talkMap.keySet()) {
                 WholeTalk wt=talkMap.get(k);
                 if (wt.getTalkType()==2&&wt.getObjId().equals(callId)) {
+                    this.removeWholeTalk(wt);
+                }
+            }
+        }
+    }
+
+    /**
+     * 清除电话通话内容
+     * @param callId 通话id
+     */
+    public void cleanIntercomData(String callId) {
+        if (talkMap!=null&&!talkMap.isEmpty()) {
+            for (String k: talkMap.keySet()) {
+                WholeTalk wt=talkMap.get(k);
+                if (wt.getTalkType()==1&&wt.getObjId().equals(callId)) {
                     this.removeWholeTalk(wt);
                 }
             }

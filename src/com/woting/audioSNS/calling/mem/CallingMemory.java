@@ -114,4 +114,9 @@ public class CallingMemory {
         }
         return ret.isEmpty()?null:ret;
     }
+
+    public boolean isTalk(String userId) {
+        // TODO Auto-generated method stub
+        return false;
+    }
 }

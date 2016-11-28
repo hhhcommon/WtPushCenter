@@ -13,6 +13,8 @@ import com.spiritdata.framework.jsonconf.JsonConfig;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.calling.CallingConfig;
 import com.woting.audioSNS.calling.monitor.DealCalling;
+import com.woting.audioSNS.intercom.IntercomConfig;
+import com.woting.audioSNS.intercom.monitor.DealIntercom;
 import com.woting.audioSNS.mediaflow.MediaflowConfig;
 import com.woting.audioSNS.mediaflow.monitor.DealMediaflow;
 import com.woting.push.config.ConfigLoadUtils;
@@ -72,6 +74,7 @@ public class ServerListener {
 
     private AbstractLoopMoniter<PushConfig> tcpCtlServer=null; //tcp控制信道监控服务
     private List<DispatchMessage> dispatchList=null; //分发线程的记录列表
+    private List<DealIntercom> dealIntercomList=null; //处理对讲消息线程的记录列表
     private List<DealCalling> dealCallingList=null; //处理电话消息线程的记录列表
     private List<DealMediaflow> dealMediaFlowList=null; //处理媒体消息线程的记录列表
 
@@ -192,6 +195,9 @@ public class ServerListener {
         SocketHandleConfig shc=ConfigLoadUtils.getSocketHandleConfig(jc);
         SystemCache.setCache(new CacheEle<SocketHandleConfig>(PushConstants.SOCKETHANDLE_CONF, "Socket处理配置", shc));
 
+        IntercomConfig ic=ConfigLoadUtils.getIntercomConfig(jc);
+        SystemCache.setCache(new CacheEle<IntercomConfig>(PushConstants.INTERCOM_CONF, "对讲控制配置", ic));
+
         CallingConfig cc=ConfigLoadUtils.getCallingConfig(jc);
         SystemCache.setCache(new CacheEle<CallingConfig>(PushConstants.CALLING_CONF, "电话控制配置", cc));
 
@@ -243,7 +249,17 @@ public class ServerListener {
             dm.start();
             dispatchList.add(dm);
         }
-        //3-启动{处理电话消息}线程
+        //3-启动{处理对讲消息}线程
+        @SuppressWarnings("unchecked")
+        IntercomConfig ic=((CacheEle<IntercomConfig>)SystemCache.getCache(PushConstants.INTERCOM_CONF)).getContent();
+        dealIntercomList=new ArrayList<DealIntercom>();
+        for (int i=0;i<ic.get_DealThreadCount(); i++) {
+            DealIntercom di=new DealIntercom(ic, i);
+            di.setDaemon(true);
+            di.start();
+            dealIntercomList.add(di);
+        }
+        //4-启动{处理电话消息}线程
         @SuppressWarnings("unchecked")
         CallingConfig cc=((CacheEle<CallingConfig>)SystemCache.getCache(PushConstants.CALLING_CONF)).getContent();
         dealCallingList=new ArrayList<DealCalling>();
@@ -253,7 +269,7 @@ public class ServerListener {
             dc.start();
             dealCallingList.add(dc);
         }
-        //4-启动{流数据处理}线程
+        //5-启动{流数据处理}线程
         @SuppressWarnings("unchecked")
         MediaflowConfig mfc=((CacheEle<MediaflowConfig>)SystemCache.getCache(PushConstants.MEDIAFLOW_CONF)).getContent();
         dealMediaFlowList=new ArrayList<DealMediaflow>();
@@ -294,6 +310,18 @@ public class ServerListener {
             }
         }
         //3-停止{处理电话消息}线程
+        if (dealIntercomList!=null&&!dealIntercomList.isEmpty()) {
+            for (DealIntercom di: dealIntercomList) di.stopServer();
+            while (!allClosed&&i++<10) {
+                allClosed=true;
+                for (DealIntercom di: dealIntercomList) {
+                    allClosed=di.isStoped();
+                    if (!allClosed) break;
+                }
+                try { Thread.sleep(50); } catch(Exception e) {}
+            }
+        }
+        //4-停止{处理电话消息}线程
         if (dealCallingList!=null&&!dealCallingList.isEmpty()) {
             for (DealCalling dc: dealCallingList) dc.stopServer();
             while (!allClosed&&i++<10) {
@@ -305,7 +333,7 @@ public class ServerListener {
                 try { Thread.sleep(50); } catch(Exception e) {}
             }
         }
-        //4-停止{流数据处理}线程
+        //5-停止{流数据处理}线程
         if (dealMediaFlowList!=null&&!dealMediaFlowList.isEmpty()) {
             for (DealMediaflow dmf: dealMediaFlowList) dmf.stopServer();
             while (!allClosed&&i++<10) {

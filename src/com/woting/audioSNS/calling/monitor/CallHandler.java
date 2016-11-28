@@ -19,6 +19,7 @@ import com.woting.push.core.service.SessionService;
 import com.woting.audioSNS.calling.CallingConfig;
 import com.woting.audioSNS.calling.mem.CallingMemory;
 import com.woting.audioSNS.calling.model.OneCall;
+import com.woting.audioSNS.mediaflow.mem.TalkMemory;
 import com.woting.passport.UGA.persis.pojo.UserPo;
 import com.woting.passport.UGA.service.UserService;
 import com.woting.push.user.PushUserUDKey;
@@ -32,6 +33,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
 
     private TcpGlobalMemory globalMem=TcpGlobalMemory.getInstance();
     private CallingMemory callingMem=CallingMemory.getInstance();
+    private TalkMemory talkMem=TalkMemory.getInstance();
 
     private OneCall callData;//所控制的通话数据
     private volatile Object shutdownLock=new Object();
@@ -66,7 +68,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 shutdown();
             }
             if (callData.getStatus()==4) {//已经挂断了 //清除声音内容
-                cleanTalk(1);
+                cleanTalk();
             }
 
             //一段时间后未收到自动回复，的处理
@@ -709,7 +711,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         if (callData.getStatus()<9) {
             synchronized(shutdownLock) {
                 callData.setStatus_9();
-                cleanTalk(2);
+                cleanTalk();
                 logger.debug("结束进程后1==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
                 cleanData();
             }
@@ -724,6 +726,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         globalMem.sendMem.cleanMsg4Call(callData.getCallerKey(), callData.getCallId()); //清除呼叫者信息
         globalMem.sendMem.cleanMsg4Call(callData.getCallederKey(), callData.getCallId()); //清除被叫者信息
         callData.clear();
+        cleanTalk();
         callingMem.removeOneCall(callData.getCallId());
     }
 
@@ -731,11 +734,8 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
      * 清除语音数据
      * @param type 若=2是强制删除，不管是否语音传递完成
      */
-    private void cleanTalk(int type) {
-        //目前都是强制删除
-        //删除talk内存数据链
-     //   TalkMemoryManage tmm=TalkMemoryManage.getInstance();
-     //   tmm.cleanCallData(this.callData.getCallId());
+    private void cleanTalk() {
+        talkMem.cleanCallData(this.callData.getCallId());
         logger.debug("清除语音数据后==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
     }
 }

@@ -5,6 +5,7 @@ import com.greenpineyu.fel.FelEngineImpl;
 import com.spiritdata.framework.jsonconf.JsonConfig;
 import com.woting.audioSNS.calling.CallingConfig;
 import com.woting.audioSNS.mediaflow.MediaflowConfig;
+import com.woting.audioSNS.intercom.IntercomConfig;
 
 public abstract class ConfigLoadUtils {
     private final static FelEngine fel=new FelEngineImpl();
@@ -47,6 +48,17 @@ public abstract class ConfigLoadUtils {
             shc.set_LogPath(jc.getString("socketenviron.logPath"));
         } catch(Exception e) {}
         return shc;
+    }
+
+    public static IntercomConfig getIntercomConfig(JsonConfig jc) {
+        IntercomConfig ic=new IntercomConfig();
+        try {
+            ic.set_DealThreadCount((int)fel.eval(jc.getString("intercom.dealThread")));
+        } catch(Exception e) {}
+        try {
+            ic.set_ExpireTime((int)fel.eval(jc.getString("intercom.expireTime")));
+        } catch(Exception e) {}
+        return ic;
     }
 
     public static CallingConfig getCallingConfig(JsonConfig jc) {

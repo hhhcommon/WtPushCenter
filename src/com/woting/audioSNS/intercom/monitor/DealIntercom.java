@@ -20,7 +20,7 @@ public class DealIntercom extends AbstractLoopMoniter<IntercomConfig> {
 
     private GroupService groupService;
 
-    protected DealIntercom(IntercomConfig conf, int index) {
+    public DealIntercom(IntercomConfig conf, int index) {
         super(conf);
         super.setName("对讲处理线程"+index);
         this.setLoopDelay(10);

@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import com.mysql.jdbc.StringUtils;
 import com.woting.audioSNS.calling.mem.CallingMemory;
 import com.woting.audioSNS.calling.model.OneCall;
+import com.woting.audioSNS.intercom.mem.IntercomMemory;
+import com.woting.audioSNS.intercom.model.OneMeet;
 import com.woting.audioSNS.mediaflow.MediaflowConfig;
 import com.woting.audioSNS.mediaflow.mem.TalkMemory;
 import com.woting.audioSNS.mediaflow.model.CompareAudioFlowMsg;
@@ -28,9 +30,10 @@ public class DealMediaflow extends AbstractLoopMoniter<MediaflowConfig> {
     private Logger logger=LoggerFactory.getLogger(DealMediaflow.class);
 
     private TcpGlobalMemory globalMem=TcpGlobalMemory.getInstance();
+    private IntercomMemory intercomMem=IntercomMemory.getInstance();
     private CallingMemory callingMem=CallingMemory.getInstance();
-
     private TalkMemory talkMem=TalkMemory.getInstance();
+
     private SessionService sessionService=null;
     private UserService userService=null;
 
@@ -94,9 +97,11 @@ public class DealMediaflow extends AbstractLoopMoniter<MediaflowConfig> {
 
             int talkType=sourceMsg.getBizType();
 
-//            GroupInterCom gic=null;
+            OneMeet om=null;
             OneCall oc=null;
             if (talkType==1) {//组对讲
+                om=intercomMem.getOneMeet(objId);
+                if (om==null) return;
 //                gic=gmm.getGroupInterCom(objId);
 //                if (gic==null||gic.getSpeaker()==null||!gic.getSpeaker().getUserId().equals(talkerId)) {
 ////                    if (gic==null||gic.getSpeaker()==null||!gic.getSpeaker().getUserId().equals(talkerId)) {
@@ -106,11 +111,11 @@ public class DealMediaflow extends AbstractLoopMoniter<MediaflowConfig> {
 //                }
             } else {//电话
                 oc=callingMem.getOneCall(objId);
-                if (oc==null) {
+                if (oc==null) return;
 //                    retMsg.setReturnType("1003");
 //                    pmm.getSendMemory().addUniqueMsg2Queue(mk, retMsg, new CompareAudioFlowMsg());
-                    return;
-                }
+                    
+                //}
             }
             WholeTalk wt=null;
             wt=talkMem.getWholeTalk(talkId);

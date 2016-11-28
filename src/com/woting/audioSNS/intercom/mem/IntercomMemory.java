@@ -1,6 +1,7 @@
 package com.woting.audioSNS.intercom.mem;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -9,9 +10,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.woting.audioSNS.intercom.model.OneMeet;
 import com.woting.audioSNS.intercom.monitor.IntercomHandler;
+import com.woting.push.user.PushUserUDKey;
 
 public class IntercomMemory {
     private static final ReadWriteLock lock=new ReentrantReadWriteLock(); //读写锁 
+    private volatile Object userTalkLck=new Object();
 
     //java的占位单例模式===begin
     private static class InstanceHolder {
@@ -43,6 +46,34 @@ public class IntercomMemory {
             lock.writeLock().unlock();
         }
         return 1;
+    }
+
+    /**
+     * 设置正在对讲的用户
+     */
+    public void setUserTalk(PushUserUDKey pUdk, OneMeet om) {
+        synchronized(userTalkLck) {
+            Map<String, Object> val=new HashMap<String, Object>();
+            val.put("userKey", pUdk);
+            val.put("meetData", om);
+            userTalk.put(pUdk.getUserId(), val);
+        }
+    }
+    /**
+     * 设置正在对讲的用户
+     */
+    public void removeUserTalk(String userId) {
+        synchronized(userTalkLck) {
+            userTalk.remove(userId);
+        }
+    }
+    /**
+     * 设置正在对讲的用户
+     */
+    public Map<String, Object> getUserTalk(String userId) {
+        synchronized(userTalkLck) {
+            return userTalk.get(userId);
+        }
     }
 
     /**
