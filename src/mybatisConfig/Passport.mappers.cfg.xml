@@ -4,9 +4,10 @@
 <configuration>
   <!-- 别名设置 -->
   <typeAliases>
-    <typeAlias alias="WtUser"     type="com.woting.passport.UGA.persis.pojo.UserPo"/>
-    <typeAlias alias="WtGroup"    type="com.woting.passport.UGA.persis.pojo.GroupPo"/>
-    <typeAlias alias="MobileUsed" type="com.woting.passport.UGA.persis.pojo.MobileUsedPo"/>
+    <typeAlias alias="WtUser"      type="com.woting.passport.UGA.persis.pojo.UserPo"/>
+    <typeAlias alias="WtGroup"     type="com.woting.passport.UGA.persis.pojo.GroupPo"/>
+    <typeAlias alias="MobileUsed"  type="com.woting.passport.UGA.persis.pojo.MobileUsedPo"/>
+    <typeAlias alias="WtGroupUser" type="com.woting.passport.UGA.persis.pojo.GroupUserPo"/>
   </typeAliases>
   <!-- SQL配置 -->
   <mappers>
