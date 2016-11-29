@@ -182,8 +182,8 @@ public class OneMeet implements Serializable {
     }
     
     //六、进入该组的用户列表
-    private Map<PushUserUDKey, UserPo> entryGroupUserMap;
-    public Map<PushUserUDKey, UserPo> getEntryGroupUserMap() {
+    private Map<String, UserPo> entryGroupUserMap;
+    public Map<String, UserPo> getEntryGroupUserMap() {
         return entryGroupUserMap;
     }
     /**
@@ -243,7 +243,7 @@ public class OneMeet implements Serializable {
 
         if (type==0) {//进入
             if (exist) return 2; //用户已存在进入组，
-            entryGroupUserMap.put(pUdk, entryUp);
+            entryGroupUserMap.put(pUdk.getUserId(), entryUp);
         }
         if (type==1) {//退出
             if (exist) entryGroupUserMap.remove(pUdk);

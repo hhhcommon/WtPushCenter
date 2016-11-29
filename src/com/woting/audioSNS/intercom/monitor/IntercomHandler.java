@@ -20,12 +20,15 @@ import com.woting.push.core.message.MessageUtils;
 import com.woting.push.core.message.MsgNormal;
 import com.woting.push.core.message.ProcessedMsg;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
+import com.woting.push.core.service.SessionService;
+import com.woting.push.ext.SpringShell;
 import com.woting.push.user.PushUserUDKey;
 import com.woting.push.core.message.content.MapContent;
 
 public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
     private Logger logger=LoggerFactory.getLogger(IntercomHandler.class);
 
+    private SessionService sessionService=null;
     private TcpGlobalMemory globalMem=TcpGlobalMemory.getInstance();
     private IntercomMemory interMem=IntercomMemory.getInstance();
     private TalkMemory talkMem=TalkMemory.getInstance();
@@ -39,6 +42,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         setLoopDelay(10);
         meetData=om;
         meetData.setIntercomHandler(this);
+        sessionService=(SessionService)SpringShell.getBean("sessionService");
     }
 
     @Override
@@ -139,7 +143,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             dataMap=new HashMap<String, Object>();
             dataMap.put("GroupId", groupId);
             List<Map<String, Object>> inGroupUsers=new ArrayList<Map<String,Object>>();
-            for (PushUserUDKey k: meetData.getEntryGroupUserMap().keySet()) {
+            for (String k: meetData.getEntryGroupUserMap().keySet()) {
                 Map<String, Object> um;
                 UserPo up=meetData.getEntryGroupUserMap().get(k);
                 um=new HashMap<String, Object>();
@@ -150,8 +154,13 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             MapContent _mc=new MapContent(dataMap);
             bMsg.setMsgContent(_mc);
             //发送广播消息
-            for (PushUserUDKey k: meetData.getEntryGroupUserMap().keySet()) {
-                globalMem.sendMem.addUnionUserMsg(k, retMsg, new CompareGroupMsg());
+            for (String k: meetData.getEntryGroupUserMap().keySet()) {
+                List<PushUserUDKey> al=sessionService.getActivedUserUDKs(k);
+                if (al!=null&&!al.isEmpty()) {
+                    for (PushUserUDKey _pUdk: al) {
+                        globalMem.sendMem.addUnionUserMsg(_pUdk, retMsg, new CompareGroupMsg());
+                    }
+                }
             }
         }
         return retFlag==1?1:3;
@@ -196,7 +205,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             dataMap=new HashMap<String, Object>();
             dataMap.put("GroupId", groupId);
             List<Map<String, Object>> inGroupUsers=new ArrayList<Map<String,Object>>();
-            for (PushUserUDKey k: meetData.getEntryGroupUserMap().keySet()) {
+            for (String k: meetData.getEntryGroupUserMap().keySet()) {
                 Map<String, Object> um;
                 UserPo up=meetData.getEntryGroupUserMap().get(k);
                 um=new HashMap<String, Object>();
@@ -207,8 +216,13 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             MapContent _mc=new MapContent(dataMap);
             bMsg.setMsgContent(_mc);
             //发送广播消息
-            for (PushUserUDKey k: meetData.getEntryGroupUserMap().keySet()) {
-                globalMem.sendMem.addUnionUserMsg(k, retMsg, new CompareGroupMsg());
+            for (String k: meetData.getEntryGroupUserMap().keySet()) {
+                List<PushUserUDKey> al=sessionService.getActivedUserUDKs(k);
+                if (al!=null&&!al.isEmpty()) {
+                    for (PushUserUDKey _pUdk: al) {
+                        globalMem.sendMem.addUnionUserMsg(_pUdk, retMsg, new CompareGroupMsg());
+                    }
+                }
             }
         }
         return retFlag==1?1:3;
@@ -259,9 +273,14 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             MapContent _mc=new MapContent(dataMap);
             bMsg.setMsgContent(_mc);
             //发送广播消息
-            for (PushUserUDKey k: meetData.getEntryGroupUserMap().keySet()) {
-                if (k.equals(pUdk)) continue;
-                globalMem.sendMem.addUnionUserMsg(k, retMsg, new CompareGroupMsg());
+            for (String k: meetData.getEntryGroupUserMap().keySet()) {
+                List<PushUserUDKey> al=sessionService.getActivedUserUDKs(k);
+                if (al!=null&&!al.isEmpty()) {
+                    for (PushUserUDKey _pUdk: al) {
+                        if (_pUdk.equals(pUdk)) continue;
+                        globalMem.sendMem.addUnionUserMsg(_pUdk, retMsg, new CompareGroupMsg());
+                    }
+                }
             }
         }
         return retFlag==1?1:3;
@@ -307,9 +326,14 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             MapContent _mc=new MapContent(dataMap);
             bMsg.setMsgContent(_mc);
             //发送广播消息
-            for (PushUserUDKey k: meetData.getEntryGroupUserMap().keySet()) {
-                if (k.equals(pUdk)) continue;
-                globalMem.sendMem.addUnionUserMsg(k, retMsg, new CompareGroupMsg());
+            for (String k: meetData.getEntryGroupUserMap().keySet()) {
+                List<PushUserUDKey> al=sessionService.getActivedUserUDKs(k);
+                if (al!=null&&!al.isEmpty()) {
+                    for (PushUserUDKey _pUdk: al) {
+                        if (_pUdk.equals(pUdk)) continue;
+                        globalMem.sendMem.addUnionUserMsg(_pUdk, retMsg, new CompareGroupMsg());
+                    }
+                }
             }
         }
         return retFlag==1?1:3;

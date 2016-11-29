@@ -127,11 +127,11 @@ public class TalkMemory {
      * 清除电话通话内容
      * @param callId 通话id
      */
-    public void cleanIntercomData(String callId) {
+    public void cleanIntercomData(String talkId, String groupId) {
         if (talkMap!=null&&!talkMap.isEmpty()) {
             for (String k: talkMap.keySet()) {
                 WholeTalk wt=talkMap.get(k);
-                if (wt.getTalkType()==1&&wt.getObjId().equals(callId)) {
+                if (wt.getTalkType()==1&&wt.getObjId().equals(groupId)) {
                     this.removeWholeTalk(wt);
                 }
             }

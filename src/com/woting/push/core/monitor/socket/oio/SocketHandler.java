@@ -386,11 +386,14 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                     MsgNormal ackM=MessageUtils.buildAckMsg((MsgNormal)ms);
                                     ackM.setBizType(15);
                                     ackM.setReturnType(1);//成功
-                                    _sendMsgQueue.add(ackM.toBytes());
                                     globalMem.bindPushUserANDSocket(_pushUserKey, SocketHandler.this);
-                                } else {//是非注册消息
-                                    globalMem.receiveMem.addPureMsg(ms);
+                                    _sendMsgQueue.add(ackM.toBytes());
+                                    //发送注册成功的消息给组对讲——以便他处理组在线的功能，
+                                    //TODO 注意，这里似乎应该有一个机制，能够方便的扩充
+                                    ((MsgNormal) ms).setBizType(1);//设置为组消息
+                                    ((MsgNormal) ms).setCmdType(0);//进入消息
                                 }
+                                globalMem.receiveMem.addPureMsg(ms);
                             }
                         } else {//数据流
                             _pushUserKey=globalMem.getPushUserBySocket(SocketHandler.this);

@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.spiritdata.framework.util.StringUtils;
+import com.woting.audioSNS.intercom.CompareGroupMsg;
 import com.woting.audioSNS.intercom.model.OneMeet;
 import com.woting.passport.UGA.persis.pojo.UserPo;
 import com.woting.push.core.message.CompareMsg;
@@ -17,6 +18,8 @@ import com.woting.push.core.message.MsgMedia;
 import com.woting.push.core.message.MsgNormal;
 import com.woting.push.core.message.content.MapContent;
 import com.woting.push.core.monitor.socket.oio.SocketHandler;
+import com.woting.push.core.service.SessionService;
+import com.woting.push.ext.SpringShell;
 import com.woting.push.user.PushUserUDKey;
 
 /**
@@ -29,6 +32,8 @@ import com.woting.push.user.PushUserUDKey;
  * @author wanghui
  */
 public class TcpGlobalMemory {
+    private SessionService sessionService=null;
+
     //java的占位单例模式===begin
     private static class InstanceHolder {
         public static TcpGlobalMemory instance=new TcpGlobalMemory();
@@ -98,6 +103,7 @@ public class TcpGlobalMemory {
        REF_socketANDudk=new HashMap<SocketHandler, PushUserUDKey>();
        receiveMem=new ReceiveMemory();
        sendMem=new SendMemory();
+       sessionService=(SessionService)SpringShell.getBean("sessionService");
     }
 
     /**
@@ -341,22 +347,27 @@ public class TcpGlobalMemory {
          */
         public void cleanMsg4Intercom(OneMeet om) {
             if (om!=null&&!StringUtils.isNullOrEmptyOrSpace(om.getGroupId())) {
-                Map<PushUserUDKey, UserPo> onlineMap=om.getEntryGroupUserMap();
-                for (PushUserUDKey pUdk: onlineMap.keySet()) {
-                    ConcurrentLinkedQueue<Message> userMsgQueue=sendMsg.get(pUdk);
-                    if (userMsgQueue!=null&&!userMsgQueue.isEmpty()) {
-                        synchronized(userMsgQueue) {
-                            for (Message m: userMsgQueue) {
-                                if (m instanceof MsgNormal) {
-                                    MsgNormal mn=(MsgNormal)m;
-                                    if (om.getGroupId().equals(((MapContent)mn.getMsgContent()).get("GroupId")+"")) {
-                                        userMsgQueue.remove(m);
-                                    }
-                                }
-                                if (m instanceof MsgMedia) {
-                                    MsgMedia mm=(MsgMedia)m;
-                                    if (mm.getBizType()==2&&om.getGroupId().equals(mm.getObjId())) {
-                                        userMsgQueue.remove(m);
+                Map<String, UserPo> onlineMap=om.getEntryGroupUserMap();
+                for (String userId: onlineMap.keySet()) {
+                    List<PushUserUDKey> al=sessionService.getActivedUserUDKs(userId);
+                    if (al!=null&&!al.isEmpty()) {
+                        for (PushUserUDKey _pUdk: al) {
+                            ConcurrentLinkedQueue<Message> userMsgQueue=sendMsg.get(_pUdk);
+                            if (userMsgQueue!=null&&!userMsgQueue.isEmpty()) {
+                                synchronized(userMsgQueue) {
+                                    for (Message m: userMsgQueue) {
+                                        if (m instanceof MsgNormal) {
+                                            MsgNormal mn=(MsgNormal)m;
+                                            if (om.getGroupId().equals(((MapContent)mn.getMsgContent()).get("GroupId")+"")) {
+                                                userMsgQueue.remove(m);
+                                            }
+                                        }
+                                        if (m instanceof MsgMedia) {
+                                            MsgMedia mm=(MsgMedia)m;
+                                            if (mm.getBizType()==2&&om.getGroupId().equals(mm.getObjId())) {
+                                                userMsgQueue.remove(m);
+                                            }
+                                        }
                                     }
                                 }
                             }

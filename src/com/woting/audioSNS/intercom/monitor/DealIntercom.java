@@ -35,27 +35,31 @@ public class DealIntercom extends AbstractLoopMoniter<IntercomConfig> {
     @Override
     public void oneProcess() throws Exception {
         MsgNormal sourceMsg=(MsgNormal)globalMem.receiveMem.pollTypeMsg("1");
-        if (sourceMsg==null) return;
+        if (sourceMsg==null||sourceMsg.getBizType()!=1) return;
 
-        String groupId=null;
-        try {
-            groupId=((MapContent)sourceMsg.getMsgContent()).get("GroupId")+"";
-        } catch(Exception e) {}
-        //不管任何消息，若groupId为空，则都认为是非法的消息，这类消息不进行任何处理，丢弃掉
-        if (StringUtils.isNullOrEmptyOrSpace(groupId)) return;
+        if (sourceMsg.getCmdType()==0) { //进入绑定
+            
+        } else {
+            String groupId=null;
+            try {
+                groupId=((MapContent)sourceMsg.getMsgContent()).get("GroupId")+"";
+            } catch(Exception e) {}
+            //不管任何消息，若groupId为空，则都认为是非法的消息，这类消息不进行任何处理，丢弃掉
+            if (StringUtils.isNullOrEmptyOrSpace(groupId)) return;
 
-        OneMeet om=intercomMem.getOneMeet(groupId);
-        if (om!=null) om.addPreMsg(sourceMsg);
-        else {
-            //创建组对象
-            Group g=groupService.getGroup(groupId);
-            if (g==null) return;
-            om=new OneMeet(1, g);
-            om.addPreMsg(sourceMsg);
-            //启动处理进程
-            IntercomHandler interHandler=new IntercomHandler(conf, om);
-            interHandler.setDaemon(true);
-            interHandler.start();
+            OneMeet om=intercomMem.getOneMeet(groupId);
+            if (om!=null) om.addPreMsg(sourceMsg);
+            else {
+                //创建组对象
+                Group g=groupService.getGroup(groupId);
+                if (g==null) return;
+                om=new OneMeet(1, g);
+                om.addPreMsg(sourceMsg);
+                //启动处理进程
+                IntercomHandler interHandler=new IntercomHandler(conf, om);
+                interHandler.setDaemon(true);
+                interHandler.start();
+            }
         }
     }
 
