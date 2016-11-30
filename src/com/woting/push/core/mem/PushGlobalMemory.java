@@ -9,7 +9,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.spiritdata.framework.util.StringUtils;
-import com.woting.audioSNS.intercom.CompareGroupMsg;
 import com.woting.audioSNS.intercom.model.OneMeet;
 import com.woting.passport.UGA.persis.pojo.UserPo;
 import com.woting.push.core.message.CompareMsg;
@@ -31,18 +30,18 @@ import com.woting.push.user.PushUserUDKey;
  * </pre>
  * @author wanghui
  */
-public class TcpGlobalMemory {
+public class PushGlobalMemory {
     private SessionService sessionService=null;
 
     //java的占位单例模式===begin
     private static class InstanceHolder {
-        public static TcpGlobalMemory instance=new TcpGlobalMemory();
+        public static PushGlobalMemory instance=new PushGlobalMemory();
     }
     /**
      * 得到单例的对象
      * @return 接收消息对象
      */
-    public static TcpGlobalMemory getInstance() {
+    public static PushGlobalMemory getInstance() {
         return InstanceHolder.instance;
     }
     //java的占位单例模式===end
@@ -95,7 +94,7 @@ public class TcpGlobalMemory {
     /*
      * 初始化，创建两个主要的对象
      */
-    private TcpGlobalMemory() {
+    private PushGlobalMemory() {
        pureMsgQueue=new ConcurrentLinkedQueue<Message>();
        typeMsg=new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
        sendMsg=new ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Message>>();
@@ -323,12 +322,12 @@ public class TcpGlobalMemory {
                 if (userMsgQueue!=null&&!userMsgQueue.isEmpty()) {
                     synchronized(userMsgQueue) {
                         for (Message m: userMsgQueue) {
-                            if (m instanceof MsgNormal) {
-                                MsgNormal mn=(MsgNormal)m;
-                                if (callId.equals(((MapContent)mn.getMsgContent()).get("CallId")+"")) {
-                                    userMsgQueue.remove(m);
-                                }
-                            }
+//                            if (m instanceof MsgNormal) {
+//                                MsgNormal mn=(MsgNormal)m;
+//                                if (callId.equals(((MapContent)mn.getMsgContent()).get("CallId")+"")) {
+//                                    userMsgQueue.remove(m);
+//                                }
+//                            }
                             if (m instanceof MsgMedia) {
                                 MsgMedia mm=(MsgMedia)m;
                                 if (mm.getBizType()==2&&callId.equals(mm.getObjId())) {

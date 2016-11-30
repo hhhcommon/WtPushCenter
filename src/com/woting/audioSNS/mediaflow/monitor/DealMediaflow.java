@@ -16,7 +16,7 @@ import com.woting.audioSNS.mediaflow.mem.TalkMemory;
 import com.woting.audioSNS.mediaflow.model.CompareAudioFlowMsg;
 import com.woting.audioSNS.mediaflow.model.TalkSegment;
 import com.woting.audioSNS.mediaflow.model.WholeTalk;
-import com.woting.push.core.mem.TcpGlobalMemory;
+import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MsgMedia;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
@@ -29,7 +29,7 @@ import com.woting.passport.UGA.service.UserService;
 public class DealMediaflow extends AbstractLoopMoniter<MediaflowConfig> {
     private Logger logger=LoggerFactory.getLogger(DealMediaflow.class);
 
-    private TcpGlobalMemory globalMem=TcpGlobalMemory.getInstance();
+    private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
     private IntercomMemory intercomMem=IntercomMemory.getInstance();
     private CallingMemory callingMem=CallingMemory.getInstance();
     private TalkMemory talkMem=TalkMemory.getInstance();

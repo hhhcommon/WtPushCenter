@@ -1,7 +1,7 @@
 package com.woting.push.core.monitor;
 
 import com.woting.push.config.PushConfig;
-import com.woting.push.core.mem.TcpGlobalMemory;
+import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MessageUtils;
 import com.woting.push.core.message.MsgMedia;
@@ -13,7 +13,7 @@ import com.woting.push.user.PushUserUDKey;
  * @author wanghui
  */
 public class DispatchMessage extends AbstractLoopMoniter<PushConfig> {
-    private TcpGlobalMemory globalMem=TcpGlobalMemory.getInstance();
+    private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
 
     public DispatchMessage(PushConfig pc, int index) {
         super(pc);

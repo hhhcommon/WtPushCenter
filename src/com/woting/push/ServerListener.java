@@ -20,7 +20,7 @@ import com.woting.audioSNS.mediaflow.monitor.DealMediaflow;
 import com.woting.push.config.ConfigLoadUtils;
 import com.woting.push.config.PushConfig;
 import com.woting.push.config.SocketHandleConfig;
-import com.woting.push.core.mem.TcpGlobalMemory;
+import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
 import com.woting.push.core.monitor.DispatchMessage;
 import com.woting.push.core.service.LoadSysCacheService;
@@ -165,7 +165,7 @@ public class ServerListener {
             logger.info("加载系统缓存数据，用时[{}]毫秒", System.currentTimeMillis()-_begin);
             //初始化管理内存
             _begin=System.currentTimeMillis();
-            TcpGlobalMemory.getInstance();
+            PushGlobalMemory.getInstance();
             logger.info("初始化管理内存，用时[{}]毫秒", System.currentTimeMillis()-_begin);
             logger.info("系统数据加载结束，共用时[{}]毫秒", System.currentTimeMillis()-segmentBeginTime);
 

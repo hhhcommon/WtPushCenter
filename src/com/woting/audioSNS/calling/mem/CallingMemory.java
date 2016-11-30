@@ -23,10 +23,12 @@ public class CallingMemory {
     //java的占位单例模式===end
 
     protected ConcurrentHashMap<String, OneCall> callMap;//对讲组信息Map
-    protected ConcurrentHashMap<String, Map<String, Object>> userTalk;//用户对讲信息，摸个用户正在用那个通道对讲
+    protected ConcurrentHashMap<String, Map<String, Object>> userTalk;//用户对讲信息，某个用户正在用那个通道对讲
+    protected ConcurrentHashMap<String, OneCall> delMap;//将要被删除的对讲信息，key值是oneCall的id+当前的毫秒数
 
     private CallingMemory() {
         callMap=new ConcurrentHashMap<String, OneCall>();
+        delMap=new ConcurrentHashMap<String, OneCall>();
         userTalk=new ConcurrentHashMap<String, Map<String, Object>>();
     }
 
@@ -73,8 +75,10 @@ public class CallingMemory {
         lock.writeLock().lock();
         try {
             if (callMap!=null) {
-                if (callMap.get(callId)!=null) callMap.get(callId).setStatus_9();
+                OneCall oc=callMap.get(callId);
+                if (oc!=null) oc.setStatus_9();
                 callMap.remove(callId);
+                delMap.put(callId+"::"+System.currentTimeMillis(), oc);
             }
         } finally {
             lock.writeLock().unlock();

@@ -20,7 +20,7 @@ public class MsgNormal extends Message {
     private int command; //命令编号
     private int returnType; //返回值类型
 
-    private int PCDType; //设备：设备类型
+    private int PCDType; //设备：设备类型:1手机;2设备;3网站;0服务器
     private String userId; //设备：当前登录用户
     private String IMEI; //设备：设备串号
 
@@ -226,6 +226,38 @@ public class MsgNormal extends Message {
                 mc.fromBytes(binaryCnt);
                 this.setMsgContent(mc);
             }
+        } else {
+            if (bizType==15) {
+                //八、用户类型
+                if (fromType==0||(fromType==1&&bizType==15)) {
+                    f1=binaryMsg[_offset++];
+                    this.setPCDType(f1);
+                    f1=binaryMsg[_offset];
+                    if (f1==0x00) {
+                        _offset++;
+                        this.setUserId(null);
+                    } else {
+                        try {
+                            _tempStr=MessageUtils.parse_String(binaryMsg, _offset, 12, null);
+                        } catch (UnsupportedEncodingException e) {
+                        }
+                        _sa=_tempStr.split("::");
+                        if (_sa.length!=2) throw new Exception("消息字节串异常！");
+                        if (Integer.parseInt(_sa[0])==-1) throw new Exception("消息字节串异常！");
+                        _offset=Integer.parseInt(_sa[0]);
+                        this.setUserId(_sa[1]);
+                    }
+                    try {
+                        _tempStr=MessageUtils.parse_String(binaryMsg, _offset, 32, null);
+                    } catch (UnsupportedEncodingException e) {
+                    }
+                    _sa=_tempStr.split("::");
+                    if (_sa.length!=2) throw new Exception("消息字节串异常！");
+                    if (Integer.parseInt(_sa[0])==-1) throw new Exception("消息字节串异常！");
+                    _offset=Integer.parseInt(_sa[0]);
+                    this.setIMEI(_sa[1]);
+                }
+            }
         }
     }
 
@@ -319,6 +351,25 @@ public class MsgNormal extends Message {
                     for (i=0; i<_tempBytes.length; i++) ret[_offset++]=_tempBytes[i];
                 }
             }
+        } else {
+            if (bizType==15) {
+                //八、用户类型
+                if (StringUtils.isNullOrEmptyOrSpace(IMEI)&&fromType==0) throw new Exception("IMEI为空");
+                if (!StringUtils.isNullOrEmptyOrSpace(IMEI)) {
+                    ret[_offset++]=(byte)this.PCDType;
+                    if (StringUtils.isNullOrEmptyOrSpace(userId)) ret[_offset++]=0x00;
+                    else {
+                        try {
+                            _offset=MessageUtils.set_String(ret, _offset, 12, userId, null);
+                        } catch (UnsupportedEncodingException e) {
+                        }
+                    }
+                    try {
+                        _offset=MessageUtils.set_String(ret, _offset, 32, IMEI, null);
+                    } catch (UnsupportedEncodingException e) {
+                    }
+                }
+            }
         }
 
         byte[] _ret=Arrays.copyOfRange(ret, 0, _offset);
@@ -330,6 +381,6 @@ public class MsgNormal extends Message {
      * 判断是否是应答消息
      */
     public boolean isAck() {
-        return affirm==0&&msgType==1&&bizType==0;
+        return affirm==0&&msgType==1&&(bizType==0||bizType==15);
     }
 }

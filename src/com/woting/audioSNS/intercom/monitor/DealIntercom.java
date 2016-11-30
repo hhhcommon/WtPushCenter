@@ -8,14 +8,14 @@ import com.woting.audioSNS.intercom.mem.IntercomMemory;
 import com.woting.audioSNS.intercom.model.OneMeet;
 import com.woting.passport.UGA.model.Group;
 import com.woting.passport.UGA.service.GroupService;
-import com.woting.push.core.mem.TcpGlobalMemory;
+import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.MsgNormal;
 import com.woting.push.core.message.content.MapContent;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
 import com.woting.push.ext.SpringShell;
 
 public class DealIntercom extends AbstractLoopMoniter<IntercomConfig> {
-    private TcpGlobalMemory globalMem=TcpGlobalMemory.getInstance();
+    private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
     private IntercomMemory intercomMem=IntercomMemory.getInstance();
 
     private GroupService groupService;

@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import com.spiritdata.framework.util.SequenceUUID;
 import com.spiritdata.framework.util.StringUtils;
-import com.woting.push.core.mem.TcpGlobalMemory;
+import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.MsgNormal;
 import com.woting.push.core.message.ProcessedMsg;
 import com.woting.push.core.message.content.MapContent;
@@ -19,7 +19,6 @@ import com.woting.push.core.service.SessionService;
 import com.woting.audioSNS.calling.CallingConfig;
 import com.woting.audioSNS.calling.mem.CallingMemory;
 import com.woting.audioSNS.calling.model.OneCall;
-import com.woting.audioSNS.mediaflow.mem.TalkMemory;
 import com.woting.passport.UGA.persis.pojo.UserPo;
 import com.woting.passport.UGA.service.UserService;
 import com.woting.push.user.PushUserUDKey;
@@ -31,9 +30,8 @@ import com.woting.push.user.PushUserUDKey;
 public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     private Logger logger=LoggerFactory.getLogger(CallHandler.class);
 
-    private TcpGlobalMemory globalMem=TcpGlobalMemory.getInstance();
+    private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
     private CallingMemory callingMem=CallingMemory.getInstance();
-    private TalkMemory talkMem=TalkMemory.getInstance();
 
     private OneCall callData;//所控制的通话数据
     private volatile Object shutdownLock=new Object();
@@ -64,11 +62,8 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     @Override
     public void oneProcess() throws Exception {
         try {
-            if (callData.getStatus()==9) {//结束进程
+            if (callData.getStatus()==9||callData.getStatus()==4) {//结束进程 或 已经挂断了
                 shutdown();
-            }
-            if (callData.getStatus()==4) {//已经挂断了 //清除声音内容
-                cleanTalk();
             }
 
             //一段时间后未收到自动回复，的处理
@@ -140,14 +135,14 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     private void dial(MsgNormal m) {
         callData.setBeginDialTime();
         System.out.println("处理呼叫信息前==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
+
         callData.setCallerKey(PushUserUDKey.buildFromMsg(m));
         String callId =((MapContent)m.getMsgContent()).get("CallId")+"";
         String callerId=PushUserUDKey.buildFromMsg(m).getUserId();
         String callederId=((MapContent)m.getMsgContent()).get("CallederId")+"";
 
-        Map<String, Object> dataMap=null;
-
         //返回给呼叫者的消息
+        Map<String, Object> dataMap=null;
         MsgNormal toCallerMsg=new MsgNormal();
         toCallerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
         toCallerMsg.setReMsgId(m.getMsgId());
@@ -157,52 +152,45 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         toCallerMsg.setBizType(0x02);
         toCallerMsg.setCmdType(1);
         toCallerMsg.setCommand(0x09);
-        //判断呼叫者是否存在
-        boolean existFlag=true; //呼叫者或被叫者存在
-        PushUserUDKey _pUdkFlag=sessionService.getActivedUserUDK(callData.getCallerId(),callData.getCallerPcdType());
-        SocketHandler _sh=globalMem.getSocketByPushUser(_pUdkFlag);
-        if (_pUdkFlag==null||_sh==null||!_sh.socketOk()) {
-            toCallerMsg.setReturnType(2);
-            existFlag=false;
-        }
-        List<PushUserUDKey> calleredKeys=null;
-        if (existFlag) {
-            calleredKeys=(List<PushUserUDKey>)sessionService.getActivedUserUDKs(callederId);
-            for (PushUserUDKey udk: calleredKeys) {
-                _sh=globalMem.getSocketByPushUser(udk);
-                if (_sh!=null&&_sh.socketOk()) {
-                    callData.addCallederList(udk);
-                }
-            }
-        }
-        if (callData.getCallederList()==null||callData.getCallederList().isEmpty()) {
-            toCallerMsg.setReturnType(3);
-            existFlag=false;
-        }
-        //判断是否占线
-        boolean isBusy=true; //是否占线
-        if (existFlag) {
-            if (callerId.equals(callederId))  toCallerMsg.setReturnType(6);
-            else
-//            if (gmm.isTalk(callederId)) toCallerMsg.setReturnType(5);
-//            else
-            if (callingMem.isTalk(callederId, callId)) toCallerMsg.setReturnType(4);
-            else isBusy=false;
-        }
-        if (existFlag&&!isBusy) toCallerMsg.setReturnType(1);
+        toCallerMsg.setPCDType(0);
         dataMap=new HashMap<String, Object>();
         dataMap.put("CallId", callId);
         dataMap.put("CallerId", callerId);
         dataMap.put("CallederId", callederId);
         MapContent mc=new MapContent(dataMap);
         toCallerMsg.setMsgContent(mc);
-        toCallerMsg.setPCDType(callData.getCallerKey().getPCDType());
+
+        int returnType=0;
+        SocketHandler _sh;
+        if (callerId.equals(callederId)) returnType=6;
+        //判断呼叫者是否存在
+        if (returnType==0) {
+            _sh=globalMem.getSocketByPushUser(callData.getCallerKey());
+            if (_sh==null||!_sh.socketOk()) returnType=2;
+        }
+        //判断被叫者是否存在
+        if (returnType==0) {
+            List<PushUserUDKey> calleredKeys=(List<PushUserUDKey>)sessionService.getActivedUserUDKs(callederId);
+            if (calleredKeys!=null&&!calleredKeys.isEmpty()) {
+                for (PushUserUDKey udk: calleredKeys) {
+                    _sh=globalMem.getSocketByPushUser(udk);
+                    if (_sh!=null&&_sh.socketOk()) callData.addCallederList(udk);
+                }
+            }
+            if (callData.getCallederList()==null||callData.getCallederList().isEmpty()) returnType=3;
+        }
+        //判断是否占线，不判断被叫者是否在对讲组中进行对讲，若在对讲也认为在线，并且不忙，是否接听，让被叫者处理
+        if (returnType==0&&callingMem.isTalk(callederId, callId)) returnType=4;
+        if (returnType==0) returnType=1;
+        toCallerMsg.setReturnType(returnType);
+        boolean t=globalMem.sendMem.addUserMsg(callData.getCallerKey(), toCallerMsg);
+        System.out.println(t);
         globalMem.sendMem.addUserMsg(callData.getCallerKey(), toCallerMsg);
         //记录到已发送列表
         callData.addSendedMsg(toCallerMsg);
 
         //给被叫者发送信息
-        if (existFlag&&!callerId.equals(callederId)) {
+        if (returnType==1) {
             for (PushUserUDKey _pUdk: callData.getCallederList()) {
                 MsgNormal toCallederMsg=new MsgNormal();
                 toCallederMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
@@ -214,7 +202,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 toCallederMsg.setFromType(1);
                 toCallederMsg.setToType(0);
                 dataMap=new HashMap<String, Object>();
-                dataMap.put("DialType", isBusy?"2":"1");
+                dataMap.put("DialType", returnType==4?"2":"1");
                 dataMap.put("CallId", callId);
                 dataMap.put("CallerId", callerId);
                 dataMap.put("CallederId", callederId);
@@ -236,10 +224,9 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             }
         }
 
-        //若不存在用户或占线要删除数据及这个过程
-        if (!existFlag||isBusy) shutdown();
-        else callData.setStatus_1(); //修改状态
-        logger.debug("处理呼叫信息后==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
+        if (returnType!=1) shutdown(); //若呼叫不成功，要删除数据及这个过程
+        else callData.setStatus_1();   //若呼叫成功，修改状态
+        System.out.println("处理呼叫信息后==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
     }
 
     //处理“被叫者”的自动呼叫反馈(CALL:-b1)
@@ -711,7 +698,6 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         if (callData.getStatus()<9) {
             synchronized(shutdownLock) {
                 callData.setStatus_9();
-                cleanTalk();
                 logger.debug("结束进程后1==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
                 cleanData();
             }
@@ -722,20 +708,6 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     private void cleanData() {
         //把内容写入日志文件
         logger.debug("结束进行后2==清除数据前[callid="+callData.getCallId()+"]:status="+callData.getStatus());
-        //清除未发送消息
-        globalMem.sendMem.cleanMsg4Call(callData.getCallerKey(), callData.getCallId()); //清除呼叫者信息
-        globalMem.sendMem.cleanMsg4Call(callData.getCallederKey(), callData.getCallId()); //清除被叫者信息
-        callData.clear();
-        cleanTalk();
         callingMem.removeOneCall(callData.getCallId());
-    }
-
-    /* 
-     * 清除语音数据
-     * @param type 若=2是强制删除，不管是否语音传递完成
-     */
-    private void cleanTalk() {
-        talkMem.cleanCallData(this.callData.getCallId());
-        logger.debug("清除语音数据后==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
     }
 }

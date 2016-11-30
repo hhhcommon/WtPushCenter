@@ -14,13 +14,13 @@ import com.spiritdata.framework.util.StringUtils;
 import com.woting.push.PushConstants;
 import com.woting.push.config.PushConfig;
 import com.woting.push.config.SocketHandleConfig;
-import com.woting.push.core.mem.TcpGlobalMemory;
+import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
 
 public class OioServer extends AbstractLoopMoniter<PushConfig> {
     private Logger logger=LoggerFactory.getLogger(OioServer.class);
     private ServerSocket serverSocket=null;
-    private TcpGlobalMemory globalMem=TcpGlobalMemory.getInstance();
+    private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
 
     public OioServer(PushConfig pc) {
         super(pc);

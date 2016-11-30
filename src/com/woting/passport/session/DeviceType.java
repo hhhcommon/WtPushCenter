@@ -1,6 +1,7 @@
 package com.woting.passport.session;
 
 public enum DeviceType {
+    SERVER(0, "服务器"),
     MOBILE(1, "手机"),
     WOTING(2, "我听设备"),
     PC(3, "PC客户端"),
@@ -14,7 +15,8 @@ public enum DeviceType {
     }
 
     public static DeviceType buildDtByPCDType(int pcdType) {
-        if (pcdType==1) return MOBILE;
+        if (pcdType==0) return SERVER;
+        else if (pcdType==1) return MOBILE;
         else if (pcdType==2) return WOTING;
         else if (pcdType==3) return PC;
         else return ERR;

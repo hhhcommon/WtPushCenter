@@ -9,7 +9,7 @@ import com.woting.audioSNS.calling.CallingConfig;
 import com.woting.audioSNS.calling.mem.CallingMemory;
 import com.woting.audioSNS.calling.model.OneCall;
 import com.woting.passport.UGA.service.UserService;
-import com.woting.push.core.mem.TcpGlobalMemory;
+import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.MessageUtils;
 import com.woting.push.core.message.MsgNormal;
 import com.woting.push.core.message.content.MapContent;
@@ -23,7 +23,7 @@ import com.woting.push.user.PushUserUDKey;
  * @author wanghui
  */
 public class DealCalling extends AbstractLoopMoniter<CallingConfig> {
-    private TcpGlobalMemory globalMem=TcpGlobalMemory.getInstance();
+    private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
     private CallingMemory callingMem=CallingMemory.getInstance();
 
     private SessionService sessionService=null;

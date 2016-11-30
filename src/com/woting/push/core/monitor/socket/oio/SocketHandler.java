@@ -19,7 +19,7 @@ import com.spiritdata.framework.util.DateUtils;
 import com.spiritdata.framework.util.JsonUtils;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.push.config.SocketHandleConfig;
-import com.woting.push.core.mem.TcpGlobalMemory;
+import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MessageUtils;
 import com.woting.push.core.message.MsgMedia;
@@ -52,7 +52,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
     private _FatchMsg fatchMsg;
     private _SendMsg sendMsg;
 
-    private TcpGlobalMemory globalMem=TcpGlobalMemory.getInstance();
+    private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
 
     protected SocketHandler(SocketHandleConfig conf, Socket socket) {
         super(conf);
@@ -301,7 +301,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                     if (msgType==-1) msgType=MessageUtils.decideMsg(ba);
                     if (msgType==0) {//0=控制消息(一般消息)
                         if (isAck==-1&&i==12) {
-                            if (((ba[2]&0x80)==0x80)&&((ba[2]&0x00)==0x00)&&((ba[i-1]&0xF0)==0x00)) isAck=1; else isAck=0;
+                            if (((ba[2]&0x80)==0x80)&&((ba[2]&0x00)==0x00)&&(((ba[i-1]&0xF0)==0x00)||((ba[i-1]&0xF0)==0xF0))) isAck=1; else isAck=0;
                             if ((ba[i-1]&0xF0)==0xF0) isRegist=1;
                         } else  if (isAck==1) {//是回复消息
                             if (isRegist==1) { //是注册消息
@@ -378,6 +378,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                 MsgNormal ackM=MessageUtils.buildAckMsg((MsgNormal)ms);
                                 ackM.setBizType(15);
                                 ackM.setReturnType(0);//失败
+                                ackM.setSendTime(System.currentTimeMillis());
                                 _sendMsgQueue.add(ackM.toBytes());
                             } else {//登录成功
                                 _puUdk.setUserId(""+retM.get("UserId"));
@@ -386,10 +387,12 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                     MsgNormal ackM=MessageUtils.buildAckMsg((MsgNormal)ms);
                                     ackM.setBizType(15);
                                     ackM.setReturnType(1);//成功
+                                    ackM.setSendTime(System.currentTimeMillis());
                                     globalMem.bindPushUserANDSocket(_pushUserKey, SocketHandler.this);
                                     _sendMsgQueue.add(ackM.toBytes());
                                     //发送注册成功的消息给组对讲——以便他处理组在线的功能，
                                     //TODO 注意，这里似乎应该有一个机制，能够方便的扩充
+                                    ((MsgNormal) ms).setAffirm(0);//设置为不需要回复
                                     ((MsgNormal) ms).setBizType(1);//设置为组消息
                                     ((MsgNormal) ms).setCmdType(0);//进入消息
                                 }
