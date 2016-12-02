@@ -60,13 +60,19 @@ public class DealCalling extends AbstractLoopMoniter<CallingConfig> {
         MsgNormal retMsg=MessageUtils.buildRetMsg(sourceMsg);
         if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==1) {//发起呼叫过程
             String callerId=pUdk.getUserId();
-            String CallederId=((MapContent)sourceMsg.getMsgContent()).get("CallederId")+"";
+            String callederId=((MapContent)sourceMsg.getMsgContent()).get("CallederId")+"";
             //创建内存对象
-            oneCall=new OneCall(1, callId, callerId, CallederId);
+            oneCall=new OneCall(1, callId, callerId, callederId);
             oneCall.addPreMsg(sourceMsg);//设置第一个消息
             //加入内存
             int addFlag=callingMem.addOneCall(oneCall);
             if (addFlag!=1) {//返回错误信息
+                Map<String, Object> dataMap=new HashMap<String, Object>();
+                dataMap.put("CallId", callId);
+                dataMap.put("CallerId", callerId);
+                dataMap.put("CallederId", callederId);
+                MapContent mc=new MapContent(dataMap);
+                retMsg.setMsgContent(mc);
                 retMsg.setReturnType(addFlag==0?0x81:0x82);
                 globalMem.sendMem.addUserMsg(pUdk, retMsg);
                 return;
@@ -78,7 +84,7 @@ public class DealCalling extends AbstractLoopMoniter<CallingConfig> {
         } else {//其他消息，放到具体的独立处理线程中处理
             //查找是否有对应的内存数据，如果没有，则说明通话已经结束，告诉传来者
             oneCall=callingMem.getOneCall(callId);
-            if (oneCall==null) {//没有对应的内存数据
+            if (oneCall==null) {//没有对应的内存数据，告诉被叫者，对方已挂断
                 retMsg.setCommand(0x30);
                 retMsg.setMsgType(1);
                 Map<String, Object> dataMap=new HashMap<String, Object>();

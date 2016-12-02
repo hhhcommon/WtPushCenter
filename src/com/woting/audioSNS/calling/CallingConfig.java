@@ -24,7 +24,18 @@ public class CallingConfig implements Config {
      * 检查一次通话的过期时间，毫秒
      */
     private long _ExpireTime=60*1000;
+    /**
+     * 电话数据清理任务执行间隔时间
+     */
+    private long _CleanInternal=13*1000;
+    /**
+     * 电话数据清理数据过期时间
+     */
+    private long _CleanDataExpire=19*1000;
 
+    public void set_CleanDataExpire(long _CleanDataExpire) {
+        this._CleanDataExpire = _CleanDataExpire;
+    }
     public int get_DealThreadCount() {
         return _DealThreadCount;
     }
@@ -48,5 +59,14 @@ public class CallingConfig implements Config {
     }
     public void set_ExpireTime(long _ExpireTime) {
         this._ExpireTime=_ExpireTime;
+    }
+    public long get_CleanInternal() {
+        return _CleanInternal;
+    }
+    public void set_CleanInternal(long _CleanInternal) {
+        this._CleanInternal = _CleanInternal;
+    }
+    public long get_CleanDataExpire() {
+        return _CleanDataExpire;
     }
 }

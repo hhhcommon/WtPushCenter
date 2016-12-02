@@ -20,11 +20,7 @@ import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MsgMedia;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
-import com.woting.push.core.service.SessionService;
-import com.woting.push.ext.SpringShell;
 import com.woting.push.user.PushUserUDKey;
-import com.woting.passport.UGA.persis.pojo.UserPo;
-import com.woting.passport.UGA.service.UserService;
 
 public class DealMediaflow extends AbstractLoopMoniter<MediaflowConfig> {
     private Logger logger=LoggerFactory.getLogger(DealMediaflow.class);
@@ -34,8 +30,6 @@ public class DealMediaflow extends AbstractLoopMoniter<MediaflowConfig> {
     private CallingMemory callingMem=CallingMemory.getInstance();
     private TalkMemory talkMem=TalkMemory.getInstance();
 
-    private SessionService sessionService=null;
-    private UserService userService=null;
 
     /**
      * 给线程起一个名字的构造函数
@@ -49,9 +43,9 @@ public class DealMediaflow extends AbstractLoopMoniter<MediaflowConfig> {
 
     @Override
     public boolean initServer() {
-        sessionService=(SessionService)SpringShell.getBean("sessionService");
-        userService=(UserService)SpringShell.getBean("userService");
-        return sessionService!=null&&userService!=null;
+//        userService=(UserService)SpringShell.getBean("userService");
+//        return userService!=null;
+        return true;
     }
 
     @Override
@@ -139,13 +133,10 @@ public class DealMediaflow extends AbstractLoopMoniter<MediaflowConfig> {
             ts.setData(sourceMsg.getMediaData());
             if (talkType==1) ;//ts.setSendUserMap(gic.getEntryGroupUserMap());//组对讲
             else {//电话
-                UserPo u=null; 
                 PushUserUDKey otherUdk=oc.getOtherUdk(talkerId);
-                otherUdk=(PushUserUDKey)sessionService.getActivedUserUDK(otherUdk.getUserId(), otherUdk.getPCDType());
-                if (pUdk!=null) u=userService.getUserById(otherUdk.getUserId());
-                if (u!=null) {
-                    Map<String, UserPo> um=new HashMap<String, UserPo>();
-                    um.put(pUdk.toString(), u);
+                if (otherUdk!=null) {
+                    Map<String, PushUserUDKey> um=new HashMap<String, PushUserUDKey>();
+                    um.put(otherUdk.toString(), otherUdk);
                     ts.setSendUserMap(um);
                 }
             }
@@ -172,12 +163,7 @@ public class DealMediaflow extends AbstractLoopMoniter<MediaflowConfig> {
             bMsg.setMediaData(sourceMsg.getMediaData());
 
             for (String k: ts.getSendUserMap().keySet()) {
-                String _sp[]=k.split("::");
-                pUdk=new PushUserUDKey();
-                pUdk.setDeviceId(_sp[0]);
-                pUdk.setPCDType(Integer.parseInt(_sp[1]));
-                pUdk.setUserId(_sp[2]);
-                globalMem.sendMem.addUnionUserMsg(pUdk, bMsg, new CompareAudioFlowMsg());
+                globalMem.sendMem.addUnionUserMsg(ts.getSendUserMap().get(k), bMsg, new CompareAudioFlowMsg());
                 //处理流数据
                 ts.getSendFlagMap().put(k, 0);
                 ts.getSendTimeMap().get(k).add(System.currentTimeMillis());

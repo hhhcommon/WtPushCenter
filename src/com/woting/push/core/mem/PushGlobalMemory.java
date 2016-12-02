@@ -239,10 +239,10 @@ public class PushGlobalMemory {
                 //查找相同的消息是否存在
                 boolean _exist=false;
                 for (Message _msg: _userQueue) {
-                    if (_msg instanceof MsgNormal &&msg instanceof MsgNormal) {
+                    if (_msg instanceof MsgNormal&&msg instanceof MsgNormal) {
                         _exist=((MsgNormal)_msg).getMsgId().equals(((MsgNormal)msg).getMsgId());
                     }
-                    else if (_msg instanceof MsgMedia &&msg instanceof MsgMedia) {
+                    else if (_msg instanceof MsgMedia&&msg instanceof MsgMedia) {
                         _exist=((MsgMedia)msg).equals(_msg);
                     }
                     if (_exist) break;
@@ -322,12 +322,12 @@ public class PushGlobalMemory {
                 if (userMsgQueue!=null&&!userMsgQueue.isEmpty()) {
                     synchronized(userMsgQueue) {
                         for (Message m: userMsgQueue) {
-//                            if (m instanceof MsgNormal) {
-//                                MsgNormal mn=(MsgNormal)m;
-//                                if (callId.equals(((MapContent)mn.getMsgContent()).get("CallId")+"")) {
-//                                    userMsgQueue.remove(m);
-//                                }
-//                            }
+                            if (m instanceof MsgNormal) {
+                                MsgNormal mn=(MsgNormal)m;
+                                if (callId.equals(((MapContent)mn.getMsgContent()).get("CallId")+"")) {
+                                    userMsgQueue.remove(m);
+                                }
+                            }
                             if (m instanceof MsgMedia) {
                                 MsgMedia mm=(MsgMedia)m;
                                 if (mm.getBizType()==2&&callId.equals(mm.getObjId())) {

@@ -35,13 +35,13 @@ public class CallingMemory {
     /**
      * 把一个新的会话处理加入内存Map
      * @param oc 新的会话
-     * @return 成功返回1，若已经存在这个会话返回0，若这个会话不是新会话返回-1
+     * @return 成功返回1；若已经存在这个会话返回0；若这个会话不是新会话返回-1
      */
     public int addOneCall(OneCall oc) {
         if (oc.getStatus()!=0) return -1;//不是新会话
-        if (callMap.get(oc.getCallId())!=null) return 0;
         lock.writeLock().lock();
         try {
+            if (callMap.get(oc.getCallId())!=null) return 0;
             callMap.put(oc.getCallId(), oc);
         } finally {
             lock.writeLock().unlock();
@@ -83,6 +83,14 @@ public class CallingMemory {
         } finally {
             lock.writeLock().unlock();
         }
+    }
+
+    /**
+     * 得到被删除的通话列表
+     * @return 被删除的通话列表
+     */
+    public Map<String, OneCall> getDelMap() {
+        return delMap;
     }
 
     /**

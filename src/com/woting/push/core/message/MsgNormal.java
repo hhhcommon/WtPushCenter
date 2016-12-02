@@ -342,13 +342,15 @@ public class MsgNormal extends Message {
             if (bizType!=15) {
                 ret[_offset++]=END_HEAD[1];
                 ret[_offset++]=END_HEAD[0];
-                _tempBytes=msgContent.toBytes();
-                short len=(short)(_tempBytes==null?0:_tempBytes.length);
-                ret[_offset++]=(byte)(len>>0);
-                ret[_offset++]=(byte)(len>>8);
-                //组装消息体
-                if (_tempBytes!=null&&_tempBytes.length>0) {
-                    for (i=0; i<_tempBytes.length; i++) ret[_offset++]=_tempBytes[i];
+                if (msgContent!=null) {
+                    _tempBytes=msgContent.toBytes();
+                    short len=(short)(_tempBytes==null?0:_tempBytes.length);
+                    ret[_offset++]=(byte)(len>>0);
+                    ret[_offset++]=(byte)(len>>8);
+                    //组装消息体
+                    if (_tempBytes!=null&&_tempBytes.length>0) {
+                        for (i=0; i<_tempBytes.length; i++) ret[_offset++]=_tempBytes[i];
+                    }
                 }
             }
         } else {

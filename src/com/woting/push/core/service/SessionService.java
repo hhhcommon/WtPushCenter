@@ -34,6 +34,7 @@ public class SessionService {
     @Resource
     private MobileUsedService muService;
 
+    @SuppressWarnings("unchecked")
     public Map<String, Object> dealUDkeyEntry(UserDeviceKey udk, String operDesc) {
         Map<String,Object> map=new HashMap<String, Object>();
         if (udk==null) {
@@ -60,7 +61,7 @@ public class SessionService {
 
         RedisUserDeviceKey rUdk=new RedisUserDeviceKey(udk);
         RedisOperService roService=new RedisOperService(redisConn, 4);
-        ExpirableBlockKey rLock=RedisBlockLock.lock(rUdk.getKey_Lock(), roService, 600*1000, new BlockLockConfig(5, 2, 0, 50));
+        ExpirableBlockKey rLock=RedisBlockLock.lock(rUdk.getKey_Lock(), roService, new BlockLockConfig(5, 2, 0, 50));
         try {
             //从Redis中获得对应额UserId
             String _value=roService.get(rUdk.getKey_DeviceType_UserId());
@@ -94,7 +95,6 @@ public class SessionService {
                 map.put("ReturnType", "1001");
                 map.put("UserId", rUdk.getUserId());
                 try {
-                    @SuppressWarnings("unchecked")
                     Map<String, Object> um=(Map<String, Object>)JsonUtils.jsonToObj(roService.get(rUdk.getKey_DeviceType_UserInfo()), Map.class);
                     map.put("UserInfo", um);
                 } catch(Exception e) {

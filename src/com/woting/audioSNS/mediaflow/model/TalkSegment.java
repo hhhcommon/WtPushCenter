@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.woting.passport.UGA.persis.pojo.UserPo;
+import com.woting.push.user.PushUserUDKey;
 
 /**
  * 一段对话
@@ -14,7 +14,7 @@ import com.woting.passport.UGA.persis.pojo.UserPo;
 public class TalkSegment {
     public TalkSegment() {
         super();
-        this.sendUserMap=new HashMap<String, UserPo>();
+        this.sendUserMap=new HashMap<String, PushUserUDKey>();
         this.sendFlagMap=new HashMap<String, Integer>();
         this.sendTimeMap=new HashMap<String, List<Long>>();
     }
@@ -24,7 +24,7 @@ public class TalkSegment {
     private long begin; //开始时间点：离通话开始时间
     private long end; //本包结束的时间点：离通话开始时间
     private int seqNum; //序列号：从0开始
-    public Map<String, UserPo> sendUserMap; //需要传输的用户列表
+    public Map<String, PushUserUDKey> sendUserMap; //需要传输的用户列表
     public Map<String/*userId*/, Integer/*状态：0未传送；1已传送；2传送成功；3传送失败(无须重传了)*/> sendFlagMap; //为各用户传送数据的结果情况
     public Map<String/*userId*/, List<Long>> sendTimeMap; //为各用户传送数据的结果情况
 
@@ -59,11 +59,10 @@ public class TalkSegment {
         this.seqNum=seqNum;
     }
 
-    public Map<String, UserPo> getSendUserMap() {
+    public Map<String, PushUserUDKey> getSendUserMap() {
         return sendUserMap;
     }
-    public void setSendUserMap(Map<String, UserPo> sendUserMap) {
-        this.sendUserMap=new HashMap<String, UserPo>();
+    public void setSendUserMap(Map<String, PushUserUDKey> sendUserMap) {
         for (String k: sendUserMap.keySet()) {
             if (!k.equals(this.wt.getTalkerMk().toString())) {
                 this.sendUserMap.put(k, sendUserMap.get(k));

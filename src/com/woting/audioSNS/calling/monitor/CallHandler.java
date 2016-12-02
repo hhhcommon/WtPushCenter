@@ -62,9 +62,8 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     @Override
     public void oneProcess() throws Exception {
         try {
-            if (callData.getStatus()==9||callData.getStatus()==4) {//结束进程 或 已经挂断了
-                shutdown();
-            }
+            //结束进程 或 已经挂断了
+            if (callData.getStatus()==9||callData.getStatus()==4) shutdown();
 
             //一段时间后未收到自动回复，的处理
             if (callData.getStatus()==1
@@ -232,8 +231,6 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     //处理“被叫者”的自动呼叫反馈(CALL:-b1)
     private int dealAutoDialFeedback(MsgNormal m) {
         System.out.println("处理自动应答前==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
-        //首先判断这个消息是否符合处理的要求：callid, callerId, callederId是否匹配
-        if (!callData.getCallerId().equals(((MapContent)m.getMsgContent()).get("CallerId")+"")||!callData.getCallederId().equals(PushUserUDKey.buildFromMsg(m).getUserId())) return 3;
         if (callData.getStatus()==1) {//状态正确，如果是其他状态，这个消息抛弃
             //发送给呼叫者的消息
             MsgNormal toCallerMsg=new MsgNormal();
@@ -264,8 +261,6 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
 
     //处理“被叫者”应答(CALL:2)
     private int ackDial(MsgNormal m) {
-        //首先判断这个消息是否符合处理的要求：callid, callerId, callederId是否匹配
-        if (!callData.getCallerId().equals(((MapContent)m.getMsgContent()).get("CallerId")+"")||!callData.getCallederId().equals(PushUserUDKey.buildFromMsg(m).getUserId())) return 3;
         if (callData.getStatus()==1||callData.getStatus()==2) {//状态正确，如果是其他状态，这个消息抛弃
             PushUserUDKey ackUdkey=PushUserUDKey.buildFromMsg(m);
             callData.setCallederKey(ackUdkey);
@@ -274,10 +269,6 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             try {
                 ackType=Integer.parseInt(""+((MapContent)m.getMsgContent()).get("ACKType"));
             } catch(Exception e) {}
-
-//            if (callData.getCallederKey()==null) {
-//                callData.setCallederKey(PushUserUDKey.buildFromMsg(m));
-//            } else return 2;//已处理了，不再处理了。
 
             //构造“应答传递ACK”消息，并发送给“呼叫者”
             MsgNormal toCallerMsg=new MsgNormal();
@@ -381,11 +372,9 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         toSpeakerMsg.setCommand(9);
 
         Map<String, Object> dataMap=new HashMap<String, Object>();
-        String speaker=PushUserUDKey.buildFromMsg(m).getUserId();
-        PushUserUDKey speakerK=callData.getUdkByUserId(speaker);
-        speakerK=(PushUserUDKey)sessionService.getActivedUserUDK(speakerK.getUserId(), speakerK.getPCDType());
 
-        if (StringUtils.isNullOrEmptyOrSpace(speaker)||speakerK==null) {
+        PushUserUDKey speaker=PushUserUDKey.buildFromMsg(m);
+        if (speaker==null) {
             toSpeakerMsg.setReturnType(0);
         } else {
             String ret=callData.setSpeaker(speaker);
@@ -426,11 +415,9 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         toSpeakerMsg.setCommand(0x0A);
 
         Map<String, Object> dataMap=new HashMap<String, Object>();
-        String speaker=PushUserUDKey.buildFromMsg(m).getUserId();
-        PushUserUDKey speakerK=callData.getUdkByUserId(speaker);
-        speakerK=(PushUserUDKey)sessionService.getActivedUserUDK(speakerK.getUserId(), speakerK.getPCDType());
 
-        if (speakerK==null) {
+        PushUserUDKey speaker=PushUserUDKey.buildFromMsg(m);
+        if (speaker==null) {
             toSpeakerMsg.setReturnType(0);
         } else {
             String ret=callData.cleanSpeaker(speaker);
@@ -636,6 +623,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     //===处理第一次被叫者说话的特殊流程
     private void  dealCallerFirstTalk(PushUserUDKey callederKey) {
         if (callData.getStatus()==1||callData.getStatus()==2) {//等同于“被叫者”手工应答
+            callData.setCallederKey(callederKey);
             if (callData.getCallerKey()!=null) {
                 //构造“应答传递ACK”消息，并发送给“呼叫者”
                 MsgNormal toCallerMsg=new MsgNormal();
@@ -692,22 +680,15 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         }
     }
 
-    //=====以下三个为清除和关闭的操作
     //关闭
     private void shutdown() {
         if (callData.getStatus()<9) {
             synchronized(shutdownLock) {
                 callData.setStatus_9();
                 logger.debug("结束进程后1==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
-                cleanData();
+                //callingMem.removeOneCall(callData.getCallId());
+                logger.debug("结束进行后2==清除数据前[callid="+callData.getCallId()+"]:status="+callData.getStatus());
             }
         }
-    }
-
-    //清除数据，把本电话控制的数据从内存数据链中移除
-    private void cleanData() {
-        //把内容写入日志文件
-        logger.debug("结束进行后2==清除数据前[callid="+callData.getCallId()+"]:status="+callData.getStatus());
-        callingMem.removeOneCall(callData.getCallId());
     }
 }

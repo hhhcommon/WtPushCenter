@@ -24,7 +24,7 @@ public class OneCall implements Serializable {
 
     private int callType;//=1是对讲模式；=2是电话模式；若是0，则表明未设置，采用默认值1
 
-    private volatile String speakerId;
+    private volatile PushUserUDKey speaker;
     private volatile Object preMsglock=new Object();
     private volatile Object statuslock=new Object();
     private volatile Object speakerlock=new Object();
@@ -154,7 +154,7 @@ public class OneCall implements Serializable {
      */
     public OneCall(int callType, String callId, String callerId, String callederId) {
         super();
-        this.speakerId=null;
+        this.speaker=null;
         this.callType=callType;
         if (this.callType==0) this.callType=1;//设置为对讲模式
         this.callId=callId;
@@ -266,18 +266,17 @@ public class OneCall implements Serializable {
      *  "-N::描述"——错误的状态：其中N就是状态值，参考status，只有状态3可以通话
      *  "2::当前说话人id"——有人在通话
      */
-    public String setSpeaker(String speakerId) {
+    public String setSpeaker(PushUserUDKey speaker) {
         if (callType!=1) return "0";
         String ret=null;
         if (this.status!=3) {
             ret="-"+this.status+"::目前状态为["+OneCall.convertStatus(this.status)+"],不能对讲通话";
         } else {
             synchronized (speakerlock) {
-                if (this.speakerId==null) {
-                    this.speakerId=speakerId;
+                if (this.speaker==null) {
+                    this.speaker=speaker;
                     ret="1";
-                }
-                else ret="2::"+this.speakerId;
+                } else ret="2::"+this.speaker.getUserId();
             }
         }
         return ret;
@@ -292,18 +291,17 @@ public class OneCall implements Serializable {
      *  "-N::描述"——错误的状态：其中N就是状态值，参考status，只有状态3可以通话
      *  "2"——清除人和当前说话者不一致
      */
-    public String cleanSpeaker(String tobeCleanSpeakerId) {
+    public String cleanSpeaker(PushUserUDKey speaker) {
         if (callType!=1) return "0";
         String ret=null;
         if (this.status!=3) {
             ret="-"+this.status+"::目前状态为["+OneCall.convertStatus(this.status)+"],不能结束对讲通话";
         } else {
             synchronized (speakerlock) {
-                if (this.speakerId.equals(tobeCleanSpeakerId)) {
-                    this.speakerId=null;
+                if (this.speaker.equals(speaker)) {
+                    this.speaker=null;
                     ret="1";
-                }
-                else ret="2::"+this.speakerId;
+                } else ret="2::"+this.speaker.getUserId();
             }
         }
         return ret;

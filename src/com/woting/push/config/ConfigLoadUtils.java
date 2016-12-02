@@ -75,6 +75,12 @@ public abstract class ConfigLoadUtils {
         try {
             cc.set_ExpireTime((int)fel.eval(jc.getString("calling.expireTime")));
         } catch(Exception e) {}
+        try {
+            cc.set_CleanInternal((int)fel.eval(jc.getString("calling.clean.cleanInternal")));
+        } catch(Exception e) {}
+        try {
+            cc.set_CleanDataExpire((int)fel.eval(jc.getString("calling.clean.dataExpire")));
+        } catch(Exception e) {}
         return cc;
     }
 

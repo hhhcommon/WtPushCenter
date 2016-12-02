@@ -12,6 +12,7 @@ import com.spiritdata.framework.core.cache.SystemCache;
 import com.spiritdata.framework.jsonconf.JsonConfig;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.calling.CallingConfig;
+import com.woting.audioSNS.calling.monitor.CleanCalling;
 import com.woting.audioSNS.calling.monitor.DealCalling;
 import com.woting.audioSNS.intercom.IntercomConfig;
 import com.woting.audioSNS.intercom.monitor.DealIntercom;
@@ -76,6 +77,7 @@ public class ServerListener {
     private List<DispatchMessage> dispatchList=null; //分发线程的记录列表
     private List<DealIntercom> dealIntercomList=null; //处理对讲消息线程的记录列表
     private List<DealCalling> dealCallingList=null; //处理电话消息线程的记录列表
+    private CleanCalling cleanCalling=null; //电话数据清理线程
     private List<DealMediaflow> dealMediaFlowList=null; //处理媒体消息线程的记录列表
 
     /**
@@ -269,6 +271,10 @@ public class ServerListener {
             dc.start();
             dealCallingList.add(dc);
         }
+        //4.1-启动{电话清理任务}线程
+        cleanCalling=new CleanCalling(cc);
+        cleanCalling.setDaemon(true);
+        cleanCalling.start();
         //5-启动{流数据处理}线程
         @SuppressWarnings("unchecked")
         MediaflowConfig mfc=((CacheEle<MediaflowConfig>)SystemCache.getCache(PushConstants.MEDIAFLOW_CONF)).getContent();
@@ -287,63 +293,71 @@ public class ServerListener {
         }
     }
     private void stopServers() {
-        boolean allClosed=false;
-        int i=0;
+//        boolean allClosed=false;
+//        int i=0;
         //1-停止{TCP_控制信道}socket监控
         if (tcpCtlServer!=null) {
             tcpCtlServer.stopServer();
-            i=0;
-            while (!tcpCtlServer.isStoped()&&i++<10) {
-                try { Thread.sleep(50); } catch(Exception e) {}
-            }
+//            i=0;
+//            while (!tcpCtlServer.isStoped()&&i++<10) {
+//                try { Thread.sleep(50); } catch(Exception e) {}
+//            }
         }
         //2-停止{接收消息分发}线程
         if (dispatchList!=null&&!dispatchList.isEmpty()) {
             for (DispatchMessage dm: dispatchList) dm.stopServer();
-            while (!allClosed&&i++<10) {
-                allClosed=true;
-                for (DispatchMessage dm: dispatchList) {
-                    allClosed=dm.isStoped();
-                    if (!allClosed) break;
-                }
-                try { Thread.sleep(50); } catch(Exception e) {}
-            }
+//            while (!allClosed&&i++<10) {
+//                allClosed=true;
+//                for (DispatchMessage dm: dispatchList) {
+//                    allClosed=dm.isStoped();
+//                    if (!allClosed) break;
+//                }
+//                try { Thread.sleep(50); } catch(Exception e) {}
+//            }
         }
         //3-停止{处理电话消息}线程
         if (dealIntercomList!=null&&!dealIntercomList.isEmpty()) {
             for (DealIntercom di: dealIntercomList) di.stopServer();
-            while (!allClosed&&i++<10) {
-                allClosed=true;
-                for (DealIntercom di: dealIntercomList) {
-                    allClosed=di.isStoped();
-                    if (!allClosed) break;
-                }
-                try { Thread.sleep(50); } catch(Exception e) {}
-            }
+//            while (!allClosed&&i++<10) {
+//                allClosed=true;
+//                for (DealIntercom di: dealIntercomList) {
+//                    allClosed=di.isStoped();
+//                    if (!allClosed) break;
+//                }
+//                try { Thread.sleep(50); } catch(Exception e) {}
+//            }
         }
         //4-停止{处理电话消息}线程
         if (dealCallingList!=null&&!dealCallingList.isEmpty()) {
             for (DealCalling dc: dealCallingList) dc.stopServer();
-            while (!allClosed&&i++<10) {
-                allClosed=true;
-                for (DealCalling dc: dealCallingList) {
-                    allClosed=dc.isStoped();
-                    if (!allClosed) break;
-                }
-                try { Thread.sleep(50); } catch(Exception e) {}
-            }
+//            while (!allClosed&&i++<10) {
+//                allClosed=true;
+//                for (DealCalling dc: dealCallingList) {
+//                    allClosed=dc.isStoped();
+//                    if (!allClosed) break;
+//                }
+//                try { Thread.sleep(50); } catch(Exception e) {}
+//            }
+        }
+        //4.1-停止{电话清理任务}线程
+        if (cleanCalling!=null) {
+            cleanCalling.stopServer();
+//            i=0;
+//            while (!cleanCalling.isStoped()&&i++<10) {
+//                try { Thread.sleep(50); } catch(Exception e) {}
+//            }
         }
         //5-停止{流数据处理}线程
         if (dealMediaFlowList!=null&&!dealMediaFlowList.isEmpty()) {
             for (DealMediaflow dmf: dealMediaFlowList) dmf.stopServer();
-            while (!allClosed&&i++<10) {
-                allClosed=true;
-                for (DealMediaflow dmf: dealMediaFlowList) {
-                    allClosed=dmf.isStoped();
-                    if (!allClosed) break;
-                }
-                try { Thread.sleep(50); } catch(Exception e) {}
-            }
+//            while (!allClosed&&i++<10) {
+//                allClosed=true;
+//                for (DealMediaflow dmf: dealMediaFlowList) {
+//                    allClosed=dmf.isStoped();
+//                    if (!allClosed) break;
+//                }
+//                try { Thread.sleep(50); } catch(Exception e) {}
+//            }
         }
         _RUN_STATUS=4;//==================成功停止
     }
