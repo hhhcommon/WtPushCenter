@@ -246,9 +246,13 @@ public class PushGlobalMemory {
                 boolean _exist=false;
                 for (Message _msg: _userQueue) {
                     if (_msg instanceof MsgNormal&&msg instanceof MsgNormal) {
-                        _exist=((MsgNormal)_msg).getMsgId().equals(((MsgNormal)msg).getMsgId());
-                    }
-                    else if (_msg instanceof MsgMedia&&msg instanceof MsgMedia) {
+                        if (((MsgNormal)msg).getMsgId()==null) {
+                            if (((MsgNormal)_msg).getMsgId()==null) {
+                                if (((MsgNormal)_msg).getReMsgId()==null) _exist=((MsgNormal)msg).getReMsgId()==null;
+                                else _exist=((MsgNormal)_msg).getReMsgId().equals(((MsgNormal)msg).getReMsgId());
+                            } else _exist=false;
+                        } else _exist=((MsgNormal)msg).getMsgId().equals(((MsgNormal)_msg).getMsgId());
+                    } else if (_msg instanceof MsgMedia&&msg instanceof MsgMedia) {
                         _exist=((MsgMedia)msg).equals(_msg);
                     }
                     if (_exist) break;
