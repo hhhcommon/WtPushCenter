@@ -11,9 +11,9 @@ import com.woting.audioSNS.calling.mem.CallingMemory;
 import com.woting.audioSNS.calling.model.OneCall;
 import com.woting.audioSNS.intercom.mem.IntercomMemory;
 import com.woting.audioSNS.intercom.model.OneMeet;
+import com.woting.audioSNS.mediaflow.CompareAudioFlowMsg;
 import com.woting.audioSNS.mediaflow.MediaflowConfig;
 import com.woting.audioSNS.mediaflow.mem.TalkMemory;
-import com.woting.audioSNS.mediaflow.model.CompareAudioFlowMsg;
 import com.woting.audioSNS.mediaflow.model.TalkSegment;
 import com.woting.audioSNS.mediaflow.model.WholeTalk;
 import com.woting.push.core.mem.PushGlobalMemory;
@@ -29,7 +29,6 @@ public class DealMediaflow extends AbstractLoopMoniter<MediaflowConfig> {
     private IntercomMemory intercomMem=IntercomMemory.getInstance();
     private CallingMemory callingMem=CallingMemory.getInstance();
     private TalkMemory talkMem=TalkMemory.getInstance();
-
 
     /**
      * 给线程起一个名字的构造函数

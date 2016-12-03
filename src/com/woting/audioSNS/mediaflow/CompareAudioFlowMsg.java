@@ -1,4 +1,4 @@
-package com.woting.audioSNS.mediaflow.model;
+package com.woting.audioSNS.mediaflow;
 
 import com.woting.push.core.message.CompareMsg;
 import com.woting.push.core.message.MsgMedia;
