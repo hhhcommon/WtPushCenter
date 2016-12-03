@@ -13,7 +13,7 @@ import com.woting.audioSNS.intercom.CompareGroupMsg;
 import com.woting.audioSNS.intercom.IntercomConfig;
 import com.woting.audioSNS.intercom.mem.IntercomMemory;
 import com.woting.audioSNS.intercom.model.OneMeet;
-import com.woting.audioSNS.mediaflow.mem.TalkMemory;
+//import com.woting.audioSNS.mediaflow.mem.TalkMemory;
 import com.woting.passport.UGA.persis.pojo.UserPo;
 import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.MessageUtils;
@@ -31,7 +31,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
     private SessionService sessionService=null;
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
     private IntercomMemory interMem=IntercomMemory.getInstance();
-    private TalkMemory talkMem=TalkMemory.getInstance();
+    //private TalkMemory talkMem=TalkMemory.getInstance();
 
     private OneMeet meetData=null;
     private volatile Object shutdownLock=new Object();

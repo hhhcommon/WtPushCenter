@@ -37,7 +37,7 @@ public class DealIntercom extends AbstractLoopMoniter<IntercomConfig> {
         MsgNormal sourceMsg=(MsgNormal)globalMem.receiveMem.pollTypeMsg("1");
         if (sourceMsg==null||sourceMsg.getBizType()!=1) return;
 
-        if (sourceMsg.getCmdType()==0) { //进入绑定
+        if (sourceMsg.getCmdType()==0) { //进入绑定，修改组信息
             
         } else {
             String groupId=null;

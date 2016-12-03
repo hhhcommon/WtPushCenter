@@ -112,7 +112,10 @@ public abstract class AbstractLoopMoniter<C extends Config> extends Thread imple
             } catch (Exception e) {
             } finally {
                 _RUN_STATUS=3;
-                destroyServer();
+                try {
+                    destroyServer();
+                } catch(Exception e) {
+                }
                 _RUN_STATUS=4;
             }
         }

@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.intercom.model.OneMeet;
 import com.woting.audioSNS.intercom.monitor.IntercomHandler;
 import com.woting.push.user.PushUserUDKey;
@@ -27,10 +28,12 @@ public class IntercomMemory {
 
     protected ConcurrentHashMap<String, OneMeet> meetMap;//对讲组信息Map
     protected ConcurrentHashMap<String, Map<String, Object>> userTalk;//用户对讲信息，用户正在用那个通道对讲
+    protected ConcurrentHashMap<String, Map<String, Object>> userInMeets;//用户在那个对讲组内，map为key=设备类型;value为设备oneMeet对象的List
 
     private IntercomMemory() {
         meetMap=new ConcurrentHashMap<String, OneMeet>();
         userTalk=new ConcurrentHashMap<String, Map<String, Object>>();
+        userInMeets=new ConcurrentHashMap<String, Map<String, Object>>();
     }
 
     /**
@@ -74,6 +77,122 @@ public class IntercomMemory {
         synchronized(userTalkLck) {
             return userTalk.get(userId);
         }
+    }
+
+    /**
+     * 进入组时加入用户会议数据对照表
+     * @param pUdk 用户信息
+     * @param om 会议数据
+     */
+    @SuppressWarnings("unchecked")
+    public void addUserInMeets(PushUserUDKey pUdk, OneMeet om) {
+        if (pUdk==null||om==null) return;
+        String userId=pUdk.getUserId();
+        if (StringUtils.isNullOrEmptyOrSpace(userId)) return;
+
+        Map<String, Object> userMeets=userInMeets.get(userId);
+        if (userMeets==null) {
+            userMeets=new HashMap<String, Object>();
+            userInMeets.put(userId, userMeets);
+        }
+        List<OneMeet> oml=(List<OneMeet>)userMeets.get(pUdk.getPCDType()+"");
+        if (oml==null) {
+            oml=new ArrayList<OneMeet>();
+            userMeets.put(pUdk.getPCDType()+"", oml);
+        }
+        boolean find=false;
+        if (!oml.isEmpty()) {
+            for (OneMeet _om:oml) {
+                if (_om.getGroupId().equals(om.getGroupId())) {
+                    find=true;
+                    break;
+                }
+            }
+        }
+        if (!find) oml.add(om);
+    }
+
+    /**
+     * 退出组时删除用户会议数据对照表
+     * @param pUdk 用户信息
+     * @param om 会议数据
+     * @return 删除对象个数:-1是处理有异常；0未删除对象
+     */
+    @SuppressWarnings("unchecked")
+    public int removeUserInMeets(PushUserUDKey pUdk, OneMeet om) {
+        int ret=0;
+        if (pUdk==null||om==null) return -1;
+        String userId=pUdk.getUserId();
+        if (StringUtils.isNullOrEmptyOrSpace(userId)) return -1;
+        Map<String, Object> userMeets=userInMeets.get(userId);
+        if (userMeets==null) return 0;
+        List<OneMeet> oml=(List<OneMeet>)userMeets.get(pUdk.getPCDType()+"");
+        if (oml==null||oml.isEmpty()) return 0;
+        if (!oml.isEmpty()) {
+            for (int i=oml.size()-1; i>=0; i--) {
+                OneMeet _om=oml.get(i);
+                if (_om.getGroupId().equals(om.getGroupId())) {
+                    oml.remove(i);
+                    ret++;
+                    break;
+                }
+            }
+            if (oml.isEmpty()) userMeets.remove(pUdk.getPCDType()+"");
+        }
+        if (userMeets.isEmpty()) userInMeets.remove(userId);
+        return ret;
+    }
+    /**
+     * 删除用户会议数据对照表，把该用户设备下的所有对象都删除掉
+     * @param pUdk 用户信息
+     * @return 删除对象个数:-1是处理有异常；0未删除对象
+     */
+    @SuppressWarnings("unchecked")
+    public int removeUserInMeets(PushUserUDKey pUdk) {
+        int ret=0;
+        if (pUdk==null) return -1;
+        String userId=pUdk.getUserId();
+        if (StringUtils.isNullOrEmptyOrSpace(userId)) return -1;
+        Map<String, Object> userMeets=userInMeets.get(userId);
+        if (userMeets==null) return 0;
+        List<OneMeet> oml=(List<OneMeet>)userMeets.get(pUdk.getPCDType()+"");
+        if (oml==null) ret=0;
+        else {
+            ret=oml.size();
+            oml.clear();
+            userMeets.remove(pUdk.getPCDType()+"");
+        }
+        if (userMeets.isEmpty()) userInMeets.remove(userId);
+
+        return ret;
+    }
+    /**
+     * 删除用户会议数据对照表，把该用户下的所有对象都删除掉
+     * @param String userId 用户信息
+     * @return 删除对象个数:-1是处理有异常；0未删除对象
+     */
+    @SuppressWarnings("unchecked")
+    public int removeUserInMeets(String userId) {
+        int ret=0;
+        if (StringUtils.isNullOrEmptyOrSpace(userId)) return -1;
+        Map<String, Object> userMeets=userInMeets.get(userId);
+        if (userMeets==null) return 0;
+        for (String pcdType: userMeets.keySet()) {
+            List<OneMeet> oml=(List<OneMeet>)userMeets.get(pcdType);
+            if (oml==null) ret+=0;
+            else {
+                ret+=oml.size();
+                oml.clear();
+                userMeets.remove(pcdType);
+            }
+        }
+        userInMeets.remove(userId);
+        return ret;
+    }
+
+    public Map<String, Object> getUserInMeets(String userId) {
+        if (StringUtils.isNullOrEmptyOrSpace(userId)) return null;
+        return userInMeets.get(userId);
     }
 
     /**

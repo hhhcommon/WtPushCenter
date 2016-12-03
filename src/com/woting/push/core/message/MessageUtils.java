@@ -184,10 +184,6 @@ public abstract class MessageUtils {
         retMsg.setBizType(msg.getBizType());
         retMsg.setCmdType(msg.getCmdType());
 
-        retMsg.setIMEI(msg.getIMEI());
-        retMsg.setUserId(msg.getUserId());
-        retMsg.setPCDType(msg.getPCDType());
-
         return retMsg;
     }
 

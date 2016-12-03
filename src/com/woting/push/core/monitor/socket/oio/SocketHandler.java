@@ -54,6 +54,8 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
 
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
 
+    public Object stopLck=new Object();
+
     protected SocketHandler(SocketHandleConfig conf, Socket socket) {
         super(conf);
         super.setName("Socket["+socket.getRemoteSocketAddress()+"::"+socket.hashCode()+"]监控主线程");
@@ -140,43 +142,51 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
      */
     @Override
     public void destroyServer() {
-        if (StringUtils.isNullOrEmptyOrSpace(closeCause)) closeCause="未知原因";
-        logger.debug(socketDesc+"关闭::{}", closeCause);
+        synchronized(stopLck) {
+            if (StringUtils.isNullOrEmptyOrSpace(closeCause)) closeCause="未知原因";
+            logger.debug(socketDesc+"关闭::{}", closeCause);
 
-        //1-停止下级服务
-        if (receiveMsg!=null) {try {receiveMsg.__interrupt();} catch(Exception e) {}}
-        if (sendMsg!=null) {try {sendMsg.__interrupt();} catch(Exception e) {}}
+            //1-停止下级服务
+            if (receiveMsg!=null) {try {receiveMsg.__interrupt();} catch(Exception e) {}}
+            if (sendMsg!=null) {try {sendMsg.__interrupt();} catch(Exception e) {}}
 
-        boolean canClose=false;
-        int loopCount=0;
-        while(!canClose) {
-            loopCount++;
-            if (loopCount>conf.get_TryDestoryAllCount()) {
-                canClose=true;
-                continue;
+            boolean canClose=false;
+            int loopCount=0;
+            while(!canClose) {
+                loopCount++;
+                if (loopCount>conf.get_TryDestoryAllCount()) {
+                    canClose=true;
+                    continue;
+                }
+                if (receiveMsg==null&&receiveMsg==null&&fatchMsg==null) {
+                    canClose=true;
+                    continue;
+                } else {
+                    if ((receiveMsg!=null&&!receiveMsg.__isRunning)&&(receiveMsg!=null&&!sendMsg.__isRunning)&&(fatchMsg!=null&&!fatchMsg.__isRunning)) {
+                        canClose=true;
+                        continue;
+                    }
+                }
+                try { sleep(10); } catch (InterruptedException e) {};
             }
-            if (!receiveMsg.__isRunning&&!sendMsg.__isRunning) {
-                canClose=true;
-                continue;
+            receiveMsg=null;
+            sendMsg=null;
+
+            //2-释放Socket的相关资源
+            try {
+                try {_socketIn.close();} catch(Exception e) {};
+                try {_socketOut.close();} catch(Exception e) {};
+                try {_socket.close();} catch(Exception e) {};
+            } finally {
+                _socketIn=null;
+                _socketOut=null;
+                _socket=null;
             }
-            try { sleep(10); } catch (InterruptedException e) {};
-        }
-        receiveMsg=null;
-        sendMsg=null;
 
-        //2-释放Socket的相关资源
-        try {
-            try {_socketIn.close();} catch(Exception e) {};
-            try {_socketOut.close();} catch(Exception e) {};
-            try {_socket.close();} catch(Exception e) {};
-        } finally {
-            _socketIn=null;
-            _socketOut=null;
-            _socket=null;
+            //3-解除用户和服务的绑定
+            globalMem.unbindPushUserANDSocket(_pushUserKey, this);
+            stopLck.notifyAll();
         }
-
-        //3-解除用户和服务的绑定
-        globalMem.unbindPushUserANDSocket(_pushUserKey, this);
     }
 
 //================================子线程

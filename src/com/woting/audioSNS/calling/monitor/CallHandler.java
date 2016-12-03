@@ -686,7 +686,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             synchronized(shutdownLock) {
                 callData.setStatus_9();
                 logger.debug("结束进程后1==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
-                //callingMem.removeOneCall(callData.getCallId());
+                callingMem.removeOneCall(callData.getCallId());
                 logger.debug("结束进行后2==清除数据前[callid="+callData.getCallId()+"]:status="+callData.getStatus());
             }
         }
