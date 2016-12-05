@@ -50,13 +50,17 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         try {
             //首先判断，是否可以继续通话
             int _s=meetData.getStatus();
-            if (_s==9||_s==4) shutdown();//结束进程
+            if (_s==9||_s==4) {
+                shutdown();//结束进程
+                return;
+            }
 
             //一段时间后未收到任何消息，通话过期
             if ((meetData.getStatus()==1||meetData.getStatus()==2||meetData.getStatus()==3)
               &&(System.currentTimeMillis()-meetData.getLastUsedTime()>conf.get_ExpireTime()))
             {
                 shutdown();
+                return;
             }
             MsgNormal m=meetData.pollPreMsg();
             if (m==null) return;
@@ -159,18 +163,18 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                 List<PushUserUDKey> al=sessionService.getActivedUserUDKs(k);
                 if (al!=null&&!al.isEmpty()) {
                     for (PushUserUDKey _pUdk: al) {
-                        globalMem.sendMem.addUnionUserMsg(_pUdk, retMsg, new CompareGroupMsg());
+                        globalMem.sendMem.addUnionUserMsg(_pUdk, bMsg, new CompareGroupMsg());
                     }
                 }
             }
-            //给自己的其他设备也发这样的消息
-            List<PushUserUDKey> al=sessionService.getActivedUserUDKs(pUdk.getUserId());
-            if (al!=null&&!al.isEmpty()) {
-                for (PushUserUDKey _pUdk: al) {
-                    if (_pUdk.equals(pUdk)) continue;
-                    globalMem.sendMem.addUnionUserMsg(_pUdk, retMsg, new CompareGroupMsg());
-                }
-            }
+//            //给自己的其他设备也发这样的消息
+//            List<PushUserUDKey> al=sessionService.getActivedUserUDKs(pUdk.getUserId());
+//            if (al!=null&&!al.isEmpty()) {
+//                for (PushUserUDKey _pUdk: al) {
+//                    if (_pUdk.equals(pUdk)) continue;
+//                    globalMem.sendMem.addUnionUserMsg(_pUdk, retMsg, new CompareGroupMsg());
+//                }
+//            }
         }
         return retFlag==1?1:3;
     }
@@ -226,19 +230,19 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                 List<PushUserUDKey> al=sessionService.getActivedUserUDKs(k);
                 if (al!=null&&!al.isEmpty()) {
                     for (PushUserUDKey _pUdk: al) {
-                        globalMem.sendMem.addUnionUserMsg(_pUdk, retMsg, new CompareGroupMsg());
+                        globalMem.sendMem.addUnionUserMsg(_pUdk, bMsg, new CompareGroupMsg());
                     }
                 }
             }
-            //给自己的其他设备也发这样的消息
-            List<PushUserUDKey> al=sessionService.getActivedUserUDKs(pUdk.getUserId());
-            if (al!=null&&!al.isEmpty()) {
-                for (PushUserUDKey _pUdk: al) {
-                    if (!_pUdk.equals(pUdk)) {
-                        globalMem.sendMem.addUnionUserMsg(_pUdk, retMsg, new CompareGroupMsg());
-                    }
-                }
-            }
+//            //给自己的其他设备也发这样的消息
+//            List<PushUserUDKey> al=sessionService.getActivedUserUDKs(pUdk.getUserId());
+//            if (al!=null&&!al.isEmpty()) {
+//                for (PushUserUDKey _pUdk: al) {
+//                    if (!_pUdk.equals(pUdk)) {
+//                        globalMem.sendMem.addUnionUserMsg(_pUdk, retMsg, new CompareGroupMsg());
+//                    }
+//                }
+//            }
         }
         return retFlag==1?1:3;
     }
@@ -293,7 +297,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                 if (al!=null&&!al.isEmpty()) {
                     for (PushUserUDKey _pUdk: al) {
                         if (_pUdk.equals(pUdk)) continue;
-                        globalMem.sendMem.addUnionUserMsg(_pUdk, retMsg, new CompareGroupMsg());
+                        globalMem.sendMem.addUnionUserMsg(_pUdk, bMsg, new CompareGroupMsg());
                     }
                 }
             }
@@ -346,7 +350,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                 if (al!=null&&!al.isEmpty()) {
                     for (PushUserUDKey _pUdk: al) {
                         if (_pUdk.equals(pUdk)) continue;
-                        globalMem.sendMem.addUnionUserMsg(_pUdk, retMsg, new CompareGroupMsg());
+                        globalMem.sendMem.addUnionUserMsg(_pUdk, bMsg, new CompareGroupMsg());
                     }
                 }
             }

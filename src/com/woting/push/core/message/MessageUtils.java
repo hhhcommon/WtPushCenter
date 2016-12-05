@@ -178,7 +178,7 @@ public abstract class MessageUtils {
         retMsg.setToType(msg.getFromType());
         retMsg.setFromType(msg.getToType());
 
-        retMsg.setMsgType(0);//是应答消息
+        retMsg.setMsgType(1);//是应答消息
         retMsg.setAffirm(0);//不需要回复
 
         retMsg.setBizType(msg.getBizType());

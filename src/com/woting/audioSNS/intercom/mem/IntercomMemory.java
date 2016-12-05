@@ -39,8 +39,10 @@ public class IntercomMemory {
      * @return 成功返回1，若已经存在这个会话返回0，若这个会话不是新会话返回-1
      */
     public int addOneMeet(OneMeet om) {
+        if (om.getStatus()!=0) return -1;//不是新会话
         lock.writeLock().lock();
         try {
+            if (meetMap.get(om.getGroupId())!=null) return 0;
             meetMap.put(om.getMeetId(), om);
         } finally {
             lock.writeLock().unlock();

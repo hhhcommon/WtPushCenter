@@ -170,7 +170,7 @@
   </delete>
 
   <!-- 得到组内用户列表-->
-  <select id="getListUserInGroup" resultType="java.util.HashMap" parameterType="java.lang.String">
+  <select id="getListUserInGroup" resultMap="userMap" parameterType="java.lang.String">
     select <include refid="Base_Column_List_A"/> from plat_User a, plat_GroupUser b where a.id=b.userId and b.groupId=#{groupId,jdbcType=VARCHAR}
   </select>
 </mapper>

@@ -67,27 +67,27 @@ public class OneMeet implements Serializable {
     }
     public void setStatus_1() {//正常，准备组对讲
         synchronized(statusLck) {
-            this.status=1;
+            status=1;
         }
     }
     public void setStatus_2() {//有人申请组通话
         synchronized(statusLck) {
-            this.status=2;
+            status=2;
         }
     }
     public void setStatus_3() {//有某人在通话
         synchronized(statusLck) {
-            this.status=3;//这是通话状态
+            status=3;//这是通话状态
         }
     }
     public void setStatus_4() {//准备关闭
         synchronized(statusLck) {
-            this.status=4;
+            status=4;
         }
     }
     public void setStatus_9() {//已经关闭
         synchronized(statusLck) {
-            this.status=9;
+            status=9;
         }
     }
 
@@ -109,12 +109,13 @@ public class OneMeet implements Serializable {
      */
     public Map<String, Object> setSpeaker(PushUserUDKey pUdk) {
         synchronized(speakerLck) {
+            setStatus_2();
             Map<String, Object> ret=new HashMap<String, Object>();
             int retFlag=0;
             if (meetType==1) { //如果是对讲模式
                 if (entryGroupUserMap.size()==0) retFlag=2;//无人在组
                 else if (entryGroupUserMap.size()<2) retFlag=3;//少于2人，无需通话
-                else if (entryGroupUserMap.get(pUdk)==null) retFlag=4;//设置人不在组
+                else if (entryGroupUserMap.get(pUdk.getUserId())==null) retFlag=4;//设置人不在组
                 else if (speaker!=null) retFlag=5;//有人在通话
                 else if (interMem.getUserTalk(pUdk.getUserId())!=null) retFlag=6;//自己正在用其他设备通话
                 else if (callingMem.isTalk(pUdk.getUserId())) retFlag=7;//自己正在用点对点通话
@@ -125,9 +126,10 @@ public class OneMeet implements Serializable {
             ret.put("retFlag", retFlag);
             if (retFlag==5) ret.put("speakerId", speaker.getUserId());
             if (retFlag==1) {
+               setStatus_3();
                speaker=pUdk;
                interMem.setUserTalk(pUdk, this);
-            }
+            } else setStatus_1();
             return ret;
         }
     }
@@ -142,6 +144,7 @@ public class OneMeet implements Serializable {
             if (speaker.equals(pUdk)) return 3; //停止者与当前对讲人不一致
             speaker=null;
             interMem.removeUserTalk(pUdk.getUserId());
+            setStatus_1();
             return 1;
         }
     }
@@ -182,7 +185,7 @@ public class OneMeet implements Serializable {
     }
     
     //六、进入该组的用户列表
-    private Map<String, UserPo> entryGroupUserMap;
+    private Map<String, UserPo> entryGroupUserMap=new HashMap<String, UserPo>();
     public Map<String, UserPo> getEntryGroupUserMap() {
         return entryGroupUserMap;
     }
@@ -225,7 +228,7 @@ public class OneMeet implements Serializable {
      */
     synchronized public int toggleEntryUser(PushUserUDKey pUdk, int type) {
         UserPo entryUp=null;
-        List<UserPo> _tl=this.group.getUserList();
+        List<UserPo> _tl=group.getUserList();
         if (_tl==null||_tl.size()==0) return 5;
         //判断加入的用户是否属于这个组
         boolean exist=false;
@@ -239,14 +242,14 @@ public class OneMeet implements Serializable {
         if (!exist) return 4;
 
         //用户在加入组Map的状态
-        exist=entryGroupUserMap.containsKey(pUdk);
+        exist=entryGroupUserMap.containsKey(pUdk.getUserId());
 
         if (type==0) {//进入
             if (exist) return 2; //用户已存在进入组，
             entryGroupUserMap.put(pUdk.getUserId(), entryUp);
         }
         if (type==1) {//退出
-            if (exist) entryGroupUserMap.remove(pUdk);
+            if (exist) entryGroupUserMap.remove(pUdk.getUserId());
             else return 3; //用户不在进入组
         }
         return 1;
@@ -283,6 +286,7 @@ public class OneMeet implements Serializable {
 
         status=0;//仅创建，还未处理
         lastTalkTime=System.currentTimeMillis();
+        lastUsedTime=lastTalkTime;
 
         preMsgQueue=new LinkedList<MsgNormal>();
         processedMsgList=new ArrayList<ProcessedMsg>();

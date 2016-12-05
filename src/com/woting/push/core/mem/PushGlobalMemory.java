@@ -77,7 +77,7 @@ public class PushGlobalMemory {
      */
     private ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Message>> notifyMsg;
 
-    private Object LOCK_usersocketMap=new Object();//用户和Sockek对应的临界区的锁，这个锁是读写一致的，虽然慢，但能保证数据一致性
+//    private Object LOCK_usersocketMap=new Object();//用户和Sockek对应的临界区的锁，这个锁是读写一致的，虽然慢，但能保证数据一致性
 
     /**
      * 用户和SocketHandler的对应关系
@@ -121,21 +121,21 @@ public class PushGlobalMemory {
      */
     public void bindPushUserANDSocket(PushUserUDKey pUk, SocketHandler sh) {
         if (pUk==null||sh==null) return;
-        synchronized(LOCK_usersocketMap) {
-            SocketHandler oldSh=REF_udkANDsocket.get(pUk);
-            if (oldSh!=null) {
-                synchronized(oldSh.stopLck) {
-                    oldSh.stopServer();
-                    try {
-                        oldSh.stopLck.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+//        synchronized(LOCK_usersocketMap) {
+//        }
+        SocketHandler oldSh=REF_udkANDsocket.get(pUk);
+        if (oldSh!=null) {
+            synchronized(oldSh.stopLck) {
+                oldSh.stopServer();
+                try {
+                    oldSh.stopLck.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
-            REF_udkANDsocket.put(pUk, sh);
-            REF_socketANDudk.put(sh, pUk);
         }
+        REF_udkANDsocket.put(pUk, sh);
+        REF_socketANDudk.put(sh, pUk);
     }
     /**
      * 删除用户和Socket处理之间的绑定
@@ -147,20 +147,20 @@ public class PushGlobalMemory {
         PushUserUDKey _pUk=null;
         SocketHandler _sh=null;
 
-        synchronized(LOCK_usersocketMap) {
-            if (pUk==null) {
-                _pUk=REF_socketANDudk.get(sh);
-                if (_pUk!=null) REF_udkANDsocket.remove(pUk);
-                REF_socketANDudk.remove(sh);
-            } else if (sh==null) {
-                _sh=REF_udkANDsocket.get(pUk);
-                if (_sh!=null) REF_socketANDudk.remove(_sh);
-                REF_udkANDsocket.remove(sh);
-                _sh.stopServer();
-            } else {
-                REF_udkANDsocket.remove(pUk);
-                REF_socketANDudk.remove(sh);
-            }
+//        synchronized(LOCK_usersocketMap) {
+//        }
+        if (pUk==null) {
+            _pUk=REF_socketANDudk.get(sh);
+            if (_pUk!=null) REF_udkANDsocket.remove(pUk);
+            REF_socketANDudk.remove(sh);
+        } else if (sh==null) {
+            _sh=REF_udkANDsocket.get(pUk);
+            if (_sh!=null) REF_socketANDudk.remove(_sh);
+            REF_udkANDsocket.remove(sh);
+            _sh.stopServer();
+        } else {
+            REF_udkANDsocket.remove(pUk);
+            REF_socketANDudk.remove(sh);
         }
     }
     public PushUserUDKey getPushUserBySocket(SocketHandler sh) {
@@ -310,11 +310,12 @@ public class PushGlobalMemory {
 
             Message m=null;
             //从发送队列取一条消息
-            boolean canRead=true;
-            synchronized(LOCK_usersocketMap) {
-                canRead=sh.equals(REF_udkANDsocket.get(pUdk))||pUdk.equals(REF_socketANDudk.get(sh));
-            }
-            if (canRead) {
+//            boolean canRead=true;
+//            synchronized(LOCK_usersocketMap) {
+//                canRead=sh.equals(REF_udkANDsocket.get(pUdk))||pUdk.equals(REF_socketANDudk.get(sh));
+//            }
+//            if (canRead) {
+            if (sh.equals(REF_udkANDsocket.get(pUdk))||pUdk.equals(REF_socketANDudk.get(sh))) {
                 Queue<Message> mQueue=sendMsg.get(pUdk);
                 if (mQueue!=null) m=mQueue.poll();
             }
