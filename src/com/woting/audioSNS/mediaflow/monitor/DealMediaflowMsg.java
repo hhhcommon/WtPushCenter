@@ -22,8 +22,8 @@ import com.woting.push.core.message.MsgMedia;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
 import com.woting.push.user.PushUserUDKey;
 
-public class DealMediaflow extends AbstractLoopMoniter<MediaflowConfig> {
-    private Logger logger=LoggerFactory.getLogger(DealMediaflow.class);
+public class DealMediaflowMsg extends AbstractLoopMoniter<MediaflowConfig> {
+    private Logger logger=LoggerFactory.getLogger(DealMediaflowMsg.class);
 
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
     private IntercomMemory intercomMem=IntercomMemory.getInstance();
@@ -34,7 +34,7 @@ public class DealMediaflow extends AbstractLoopMoniter<MediaflowConfig> {
      * 给线程起一个名字的构造函数
      * @param name 线程名称
      */
-    public DealMediaflow(MediaflowConfig mfc, int index) {
+    public DealMediaflowMsg(MediaflowConfig mfc, int index) {
         super(mfc);
         super.setName("流数据处理线程"+index);
         this.setLoopDelay(10);

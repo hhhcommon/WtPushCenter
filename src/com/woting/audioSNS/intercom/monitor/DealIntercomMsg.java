@@ -14,13 +14,13 @@ import com.woting.push.core.message.content.MapContent;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
 import com.woting.push.ext.SpringShell;
 
-public class DealIntercom extends AbstractLoopMoniter<IntercomConfig> {
+public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
     private IntercomMemory intercomMem=IntercomMemory.getInstance();
 
     private GroupService groupService;
 
-    public DealIntercom(IntercomConfig conf, int index) {
+    public DealIntercomMsg(IntercomConfig conf, int index) {
         super(conf);
         super.setName("对讲处理线程"+index);
         this.setLoopDelay(10);

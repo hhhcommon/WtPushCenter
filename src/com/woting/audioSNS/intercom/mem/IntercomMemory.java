@@ -28,7 +28,12 @@ public class IntercomMemory {
 
     protected ConcurrentHashMap<String, OneMeet> meetMap;//对讲组信息Map
     protected ConcurrentHashMap<String, Map<String, Object>> userTalk;//用户对讲信息，用户正在用那个通道对讲
-    protected ConcurrentHashMap<String, Map<String, Object>> userInMeets;//用户在那个对讲组内，map为key=设备类型;value为设备oneMeet对象的List
+    /**
+     * 用户在那个对讲组内：记录了那个用户用什么设备在那个用户组内
+     * userInMeets-Map：key为用户id，value为下面描述的Map
+     *             Map：key为设备类型，value为设备oneMeet对象的List
+     */
+    protected ConcurrentHashMap<String, Map<String, Object>> userInMeets;
 
     private IntercomMemory() {
         meetMap=new ConcurrentHashMap<String, OneMeet>();

@@ -13,11 +13,11 @@ import com.spiritdata.framework.jsonconf.JsonConfig;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.calling.CallingConfig;
 import com.woting.audioSNS.calling.monitor.CleanCalling;
-import com.woting.audioSNS.calling.monitor.DealCalling;
+import com.woting.audioSNS.calling.monitor.DealCallingMsg;
 import com.woting.audioSNS.intercom.IntercomConfig;
-import com.woting.audioSNS.intercom.monitor.DealIntercom;
+import com.woting.audioSNS.intercom.monitor.DealIntercomMsg;
 import com.woting.audioSNS.mediaflow.MediaflowConfig;
-import com.woting.audioSNS.mediaflow.monitor.DealMediaflow;
+import com.woting.audioSNS.mediaflow.monitor.DealMediaflowMsg;
 import com.woting.push.config.ConfigLoadUtils;
 import com.woting.push.config.PushConfig;
 import com.woting.push.config.SocketHandleConfig;
@@ -75,10 +75,10 @@ public class ServerListener {
 
     private AbstractLoopMoniter<PushConfig> tcpCtlServer=null; //tcp控制信道监控服务
     private List<DispatchMessage> dispatchList=null; //分发线程的记录列表
-    private List<DealIntercom> dealIntercomList=null; //处理对讲消息线程的记录列表
-    private List<DealCalling> dealCallingList=null; //处理电话消息线程的记录列表
+    private List<DealIntercomMsg> dealIntercomList=null; //处理对讲消息线程的记录列表
+    private List<DealCallingMsg> dealCallingList=null; //处理电话消息线程的记录列表
     private CleanCalling cleanCalling=null; //电话数据清理线程
-    private List<DealMediaflow> dealMediaFlowList=null; //处理媒体消息线程的记录列表
+    private List<DealMediaflowMsg> dealMediaFlowList=null; //处理媒体消息线程的记录列表
 
     /**
      * 获得运行状态
@@ -254,9 +254,9 @@ public class ServerListener {
         //3-启动{处理对讲消息}线程
         @SuppressWarnings("unchecked")
         IntercomConfig ic=((CacheEle<IntercomConfig>)SystemCache.getCache(PushConstants.INTERCOM_CONF)).getContent();
-        dealIntercomList=new ArrayList<DealIntercom>();
+        dealIntercomList=new ArrayList<DealIntercomMsg>();
         for (int i=0;i<ic.get_DealThreadCount(); i++) {
-            DealIntercom di=new DealIntercom(ic, i);
+            DealIntercomMsg di=new DealIntercomMsg(ic, i);
             di.setDaemon(true);
             di.start();
             dealIntercomList.add(di);
@@ -264,9 +264,9 @@ public class ServerListener {
         //4-启动{处理电话消息}线程
         @SuppressWarnings("unchecked")
         CallingConfig cc=((CacheEle<CallingConfig>)SystemCache.getCache(PushConstants.CALLING_CONF)).getContent();
-        dealCallingList=new ArrayList<DealCalling>();
+        dealCallingList=new ArrayList<DealCallingMsg>();
         for (int i=0;i<cc.get_DealThreadCount(); i++) {
-            DealCalling dc=new DealCalling(cc, i);
+            DealCallingMsg dc=new DealCallingMsg(cc, i);
             dc.setDaemon(true);
             dc.start();
             dealCallingList.add(dc);
@@ -278,9 +278,9 @@ public class ServerListener {
         //5-启动{流数据处理}线程
         @SuppressWarnings("unchecked")
         MediaflowConfig mfc=((CacheEle<MediaflowConfig>)SystemCache.getCache(PushConstants.MEDIAFLOW_CONF)).getContent();
-        dealMediaFlowList=new ArrayList<DealMediaflow>();
+        dealMediaFlowList=new ArrayList<DealMediaflowMsg>();
         for (int i=0;i<mfc.get_DealThreadCount(); i++) {
-            DealMediaflow dmf=new DealMediaflow(mfc, i);
+            DealMediaflowMsg dmf=new DealMediaflowMsg(mfc, i);
             dmf.setDaemon(true);
             dmf.start();
             dealMediaFlowList.add(dmf);
@@ -317,7 +317,7 @@ public class ServerListener {
         }
         //3-停止{处理电话消息}线程
         if (dealIntercomList!=null&&!dealIntercomList.isEmpty()) {
-            for (DealIntercom di: dealIntercomList) di.stopServer();
+            for (DealIntercomMsg di: dealIntercomList) di.stopServer();
 //            while (!allClosed&&i++<10) {
 //                allClosed=true;
 //                for (DealIntercom di: dealIntercomList) {
@@ -329,7 +329,7 @@ public class ServerListener {
         }
         //4-停止{处理电话消息}线程
         if (dealCallingList!=null&&!dealCallingList.isEmpty()) {
-            for (DealCalling dc: dealCallingList) dc.stopServer();
+            for (DealCallingMsg dc: dealCallingList) dc.stopServer();
 //            while (!allClosed&&i++<10) {
 //                allClosed=true;
 //                for (DealCalling dc: dealCallingList) {
@@ -349,7 +349,7 @@ public class ServerListener {
         }
         //5-停止{流数据处理}线程
         if (dealMediaFlowList!=null&&!dealMediaFlowList.isEmpty()) {
-            for (DealMediaflow dmf: dealMediaFlowList) dmf.stopServer();
+            for (DealMediaflowMsg dmf: dealMediaFlowList) dmf.stopServer();
 //            while (!allClosed&&i++<10) {
 //                allClosed=true;
 //                for (DealMediaflow dmf: dealMediaFlowList) {

@@ -22,14 +22,14 @@ import com.woting.push.user.PushUserUDKey;
  * 处理电话消息，包括把电话消息分发到每一个具体的处理线程
  * @author wanghui
  */
-public class DealCalling extends AbstractLoopMoniter<CallingConfig> {
+public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
     private CallingMemory callingMem=CallingMemory.getInstance();
 
     private SessionService sessionService=null;
     private UserService userService=null;
 
-    public DealCalling(CallingConfig cc, int index) {
+    public DealCallingMsg(CallingConfig cc, int index) {
         super(cc);
         super.setName("电话消息处理线程"+index);
         this.setLoopDelay(10);

@@ -136,8 +136,9 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         }
         globalMem.sendMem.addUserMsg(pUdk, retMsg);
 
-        //广播消息信息组织
+        //进组成功广播消息信息组织
         if (retFlag==1&&meetData.getEntryGroupUserMap()!=null&&meetData.getEntryGroupUserMap().size()>1) {
+            //组织消息
             MsgNormal bMsg=MessageUtils.clone(retMsg);
             bMsg.setCommand(0x10);
             dataMap=new HashMap<String, Object>();
@@ -160,6 +161,14 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                     for (PushUserUDKey _pUdk: al) {
                         globalMem.sendMem.addUnionUserMsg(_pUdk, retMsg, new CompareGroupMsg());
                     }
+                }
+            }
+            //给自己的其他设备也发这样的消息
+            List<PushUserUDKey> al=sessionService.getActivedUserUDKs(pUdk.getUserId());
+            if (al!=null&&!al.isEmpty()) {
+                for (PushUserUDKey _pUdk: al) {
+                    if (_pUdk.equals(pUdk)) continue;
+                    globalMem.sendMem.addUnionUserMsg(_pUdk, retMsg, new CompareGroupMsg());
                 }
             }
         }
@@ -194,9 +203,6 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             else retMsg.setReturnType(0x01);//正确离开组
         }
         globalMem.sendMem.addUserMsg(pUdk, retMsg);
-        
-        //删除所有通过这个组发给他的消息
-        globalMem.sendMem.cleanMsg4IntercomUser(meetData, pUdk);
 
         //广播消息信息组织
         if (retFlag==1&&meetData.getEntryGroupUserMap()!=null) {
@@ -224,6 +230,16 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                     }
                 }
             }
+            //给自己的其他设备也发这样的消息
+            List<PushUserUDKey> al=sessionService.getActivedUserUDKs(pUdk.getUserId());
+            if (al!=null&&!al.isEmpty()) {
+                for (PushUserUDKey _pUdk: al) {
+                    if (!_pUdk.equals(pUdk)) {
+                        globalMem.sendMem.addUnionUserMsg(_pUdk, retMsg, new CompareGroupMsg());
+                    }
+                }
+            }
+
         }
         return retFlag==1?1:3;
     }
@@ -339,13 +355,12 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         return retFlag==1?1:3;
     }
 
-    //=====以下三个为清除和关闭的操作
+    //=====以下为清除和关闭的操作
     //关闭
     private void shutdown() {
         if (meetData.getStatus()<9) {
             synchronized(shutdownLock) {
                 meetData.setStatus_9();
-                logger.debug("结束进程后1==[callid="+meetData.getGroupId()+"]:status="+meetData.getStatus());
                 cleanData();
             }
         }
@@ -353,7 +368,6 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
 
     //清除数据，把本对讲控制的数据从内存数据链中移除
     private void cleanData() {
-        logger.debug("结束进程后2==[callid="+meetData.getGroupId()+"]:status="+meetData.getStatus());
         //清除未发送消息
         globalMem.sendMem.cleanMsg4Intercom(meetData); //清除本对讲所涉及的未发出的消息
         meetData.clear();
