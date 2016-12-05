@@ -391,34 +391,5 @@ public class PushGlobalMemory {
                 }
             }
         }
-
-        /**
-         * 删除指定对讲(会议)组内，相关用户的消息
-         * @param om 对讲(会议)组对象
-         * @param pUdk 相关用户
-         */
-        public void cleanMsg4IntercomUser(OneMeet om, PushUserUDKey pUdk) {
-            if (om!=null&&!StringUtils.isNullOrEmptyOrSpace(om.getGroupId())&&pUdk!=null) {
-                ConcurrentLinkedQueue<Message> userMsgQueue=sendMsg.get(pUdk);
-                if (userMsgQueue!=null&&!userMsgQueue.isEmpty()) {
-                    synchronized(userMsgQueue) {
-                        for (Message m: userMsgQueue) {
-                            if (m instanceof MsgNormal) {
-                                MsgNormal mn=(MsgNormal)m;
-                                if (om.getGroupId().equals(((MapContent)mn.getMsgContent()).get("GroupId")+"")) {
-                                    userMsgQueue.remove(m);
-                                }
-                            }
-                            if (m instanceof MsgMedia) {
-                                MsgMedia mm=(MsgMedia)m;
-                                if (mm.getBizType()==2&&om.getGroupId().equals(mm.getObjId())) {
-                                    userMsgQueue.remove(m);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 }

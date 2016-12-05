@@ -239,7 +239,6 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                     }
                 }
             }
-
         }
         return retFlag==1?1:3;
     }
@@ -361,16 +360,10 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         if (meetData.getStatus()<9) {
             synchronized(shutdownLock) {
                 meetData.setStatus_9();
-                cleanData();
+                interMem.removeOneMeet(meetData.getGroupId());
+                meetData.clear();
+                globalMem.sendMem.cleanMsg4Intercom(meetData); //清除本对讲所涉及的未发出的消息
             }
         }
-    }
-
-    //清除数据，把本对讲控制的数据从内存数据链中移除
-    private void cleanData() {
-        //清除未发送消息
-        globalMem.sendMem.cleanMsg4Intercom(meetData); //清除本对讲所涉及的未发出的消息
-        meetData.clear();
-        interMem.removeOneMeet(meetData.getGroupId());
     }
 }
