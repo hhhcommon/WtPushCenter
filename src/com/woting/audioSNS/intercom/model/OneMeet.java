@@ -119,7 +119,7 @@ public class OneMeet implements Serializable {
                 else if (speaker!=null) retFlag=5;//有人在通话
                 else if (interMem.getUserTalk(pUdk.getUserId())!=null) retFlag=6;//自己正在用其他设备通话
                 else if (callingMem.isTalk(pUdk.getUserId())) retFlag=7;//自己正在用点对点通话
-                retFlag=1;
+                else retFlag=1;
             } else {
                 retFlag=1; //如果是会议模式，总是允许说话
             }
@@ -138,10 +138,10 @@ public class OneMeet implements Serializable {
      * @param pUdk 对讲者
      * @return 
      */
-    public int relaseSpeaker(PushUserUDKey pUdk) {
+    public int releaseSpeaker(PushUserUDKey pUdk) {
         synchronized(speakerLck) {
             if (speaker==null) return 2;//不存在对讲者
-            if (speaker.equals(pUdk)) return 3; //停止者与当前对讲人不一致
+            if (!speaker.equals(pUdk)) return 3; //停止者与当前对讲人不一致
             speaker=null;
             interMem.removeUserTalk(pUdk.getUserId());
             setStatus_1();
@@ -151,9 +151,8 @@ public class OneMeet implements Serializable {
 
     //五、消息相关
     private LinkedList<MsgNormal> preMsgQueue=null;//预处理(还未处理)的本对讲(会议)消息
-    private List<ProcessedMsg> processedMsgList;//已经处理过的消息
-    private List<MsgNormal> sendedMsgList;//已经发出的消息，这里记录仅仅是作为日志的材料
-    private Map<PushUserUDKey, List<WholeTalk>> WtsMap=null; //本次对讲所涉及的通话数据
+    private List<ProcessedMsg> processedMsgList=null;//已经处理过的消息
+    private Map<PushUserUDKey, List<WholeTalk>> wtsMap=null; //本次对讲所涉及的通话数据
     /**
      * 向预处理队列加入消息
      * @param msg 消息
@@ -177,11 +176,25 @@ public class OneMeet implements Serializable {
     public List<ProcessedMsg> getProcessedMsgList() {
         return processedMsgList;
     }
-    public void addSendedMsg(MsgNormal msg) {
-        this.sendedMsgList.add(msg);
-    }
-    public List<MsgNormal> getSendedMsgList() {
-        return sendedMsgList;
+
+    /**
+     * 添加对讲语音控制信息
+     * @param pUdk
+     * @param callerWt
+     */
+    public void addWt(PushUserUDKey pUdk, WholeTalk wt) {
+        List<WholeTalk> pl=wtsMap.get(pUdk);
+        if (pl==null) pl=new ArrayList<WholeTalk>();
+        boolean find=false;
+        if (!pl.isEmpty()) {
+            for (WholeTalk _wt: pl) {
+                if (_wt.getTalkId().equals(wt.getTalkId())) {
+                    find=true;
+                    break;
+                }
+            }
+        }
+        if (!find) pl.add(wt);
     }
     
     //六、进入该组的用户列表
@@ -290,16 +303,16 @@ public class OneMeet implements Serializable {
 
         preMsgQueue=new LinkedList<MsgNormal>();
         processedMsgList=new ArrayList<ProcessedMsg>();
-        WtsMap=new HashMap<PushUserUDKey, List<WholeTalk>>();
+        wtsMap=new HashMap<PushUserUDKey, List<WholeTalk>>();
     }
 
     /**
      * 清除数据
      */
     public void clear() {
-        if (WtsMap!=null&&!WtsMap.isEmpty()) {
-            for (PushUserUDKey pUdk: WtsMap.keySet()) {
-               WtsMap.get(pUdk).clear(); 
+        if (wtsMap!=null&&!wtsMap.isEmpty()) {
+            for (PushUserUDKey pUdk: wtsMap.keySet()) {
+                wtsMap.get(pUdk).clear(); 
             }
         }
     }

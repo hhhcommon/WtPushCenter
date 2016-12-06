@@ -4,6 +4,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+
+import com.spiritdata.framework.core.lock.BlockLockConfig;
+import com.spiritdata.framework.core.lock.ExpirableBlockKey;
+import com.spiritdata.framework.ext.redis.lock.RedisBlockLock;
+import com.spiritdata.framework.ext.spring.redis.RedisOperService;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.intercom.IntercomConfig;
 import com.woting.audioSNS.intercom.mem.IntercomMemory;
@@ -21,12 +27,14 @@ import com.woting.push.user.PushUserUDKey;
 public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
     private IntercomMemory intercomMem=IntercomMemory.getInstance();
+    private JedisConnectionFactory redisConn;
 
     private GroupService groupService;
 
     public DealIntercomMsg(IntercomConfig conf, int index) {
         super(conf);
         super.setName("对讲处理线程"+index);
+        redisConn=(JedisConnectionFactory) SpringShell.getBean("redisConnFactory");
         this.setLoopDelay(10);
     }
 
@@ -49,46 +57,56 @@ public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
         if (StringUtils.isNullOrEmptyOrSpace(groupId)) return;
 
         OneMeet om=intercomMem.getOneMeet(groupId);
-        if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==1) {//进入组
-            if (om==null) {
-                //创建组对象
-                Group g=groupService.getGroup(groupId);
-                if (g==null) {
-                    MsgNormal retMsg=MessageUtils.buildRetMsg(sourceMsg);
-                    PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(sourceMsg);
-                    retMsg.setCommand(9);
-                    retMsg.setReturnType(0x20);
-                    Map<String, Object> dataMap=new HashMap<String, Object>();
-                    dataMap.put("GroupId", groupId);
-                    MapContent mc=new MapContent(dataMap);
-                    retMsg.setMsgContent(mc);
-                    globalMem.sendMem.addUserMsg(pUdk, retMsg);
-                    return;
+        if (om==null) {
+            if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==1) {//进入组
+                RedisOperService roService=new RedisOperService(redisConn, 4);
+                ExpirableBlockKey rLock=RedisBlockLock.lock(groupId, roService, new BlockLockConfig(5, 2, 0, 50));
+                try {
+                    om=intercomMem.getOneMeet(groupId);
+                    if (om!=null) om.addPreMsg(sourceMsg);
+                    else {
+                        //创建组对象
+                        Group g=groupService.getGroup(groupId);
+                        if (g==null) {
+                            MsgNormal retMsg=MessageUtils.buildRetMsg(sourceMsg);
+                            PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(sourceMsg);
+                            retMsg.setCommand(9);
+                            retMsg.setReturnType(0x20);
+                            Map<String, Object> dataMap=new HashMap<String, Object>();
+                            dataMap.put("GroupId", groupId);
+                            MapContent mc=new MapContent(dataMap);
+                            retMsg.setMsgContent(mc);
+                            globalMem.sendMem.addUserMsg(pUdk, retMsg);
+                            return;
+                        }
+                        om=new OneMeet(1, g);
+                        om.addPreMsg(sourceMsg);
+                        //加入内存
+                        int addFlag=intercomMem.addOneMeet(om);
+                        if (addFlag!=1) {
+                            MsgNormal retMsg=MessageUtils.buildRetMsg(sourceMsg);
+                            PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(sourceMsg);
+                            retMsg.setCommand(9);
+                            retMsg.setReturnType(addFlag==0?0x81:0x82);
+                            Map<String, Object> dataMap=new HashMap<String, Object>();
+                            dataMap.put("GroupId", groupId);
+                            MapContent mc=new MapContent(dataMap);
+                            retMsg.setMsgContent(mc);
+                            globalMem.sendMem.addUserMsg(pUdk, retMsg);
+                            return;
+                        }
+                        om.setStatus_1();
+                        //启动处理进程
+                        IntercomHandler interHandler=new IntercomHandler(conf, om);
+                        interHandler.setDaemon(true);
+                        interHandler.start();
+                    }
+                } finally {
+                    rLock.unlock();
+                    if (roService!=null) roService.close();
+                    roService=null;
                 }
-                om=new OneMeet(1, g);
-                om.addPreMsg(sourceMsg);
-                //加入内存
-                int addFlag=intercomMem.addOneMeet(om);
-                if (addFlag!=1) {
-                    MsgNormal retMsg=MessageUtils.buildRetMsg(sourceMsg);
-                    PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(sourceMsg);
-                    retMsg.setCommand(9);
-                    retMsg.setReturnType(addFlag==0?0x81:0x82);
-                    Map<String, Object> dataMap=new HashMap<String, Object>();
-                    dataMap.put("GroupId", groupId);
-                    MapContent mc=new MapContent(dataMap);
-                    retMsg.setMsgContent(mc);
-                    globalMem.sendMem.addUserMsg(pUdk, retMsg);
-                    return;
-                }
-                om.setStatus_1();
-                //启动处理进程
-                IntercomHandler interHandler=new IntercomHandler(conf, om);
-                interHandler.setDaemon(true);
-                interHandler.start();
-            } else om.addPreMsg(sourceMsg);
-        } else {
-            if (om==null) {
+            } else { //不是进入组，则抛弃这个消息，并返回结果
                 MsgNormal retMsg=MessageUtils.buildRetMsg(sourceMsg);
                 PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(sourceMsg);
                 retMsg.setCmdType(3);
@@ -99,8 +117,8 @@ public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
                 MapContent mc=new MapContent(dataMap);
                 retMsg.setMsgContent(mc);
                 globalMem.sendMem.addUserMsg(pUdk, retMsg);
-            } else om.addPreMsg(sourceMsg);
-        }
+            }
+        } else om.addPreMsg(sourceMsg);
     }
 
     @Override

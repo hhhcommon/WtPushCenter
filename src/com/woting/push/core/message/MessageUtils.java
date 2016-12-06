@@ -196,10 +196,10 @@ public abstract class MessageUtils {
         MsgNormal retMsg=new MsgNormal();
 
         retMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-        retMsg.setReMsgId(msg.getMsgId());
+        retMsg.setReMsgId(msg.getReMsgId());
 
-        retMsg.setToType(msg.getFromType());
-        retMsg.setFromType(msg.getToType());
+        retMsg.setToType(msg.getToType());
+        retMsg.setFromType(msg.getFromType());
 
         retMsg.setMsgType(msg.getMsgType());//是应答消息
         retMsg.setAffirm(msg.getAffirm());//不需要回复

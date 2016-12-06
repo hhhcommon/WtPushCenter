@@ -144,6 +144,8 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         if (retFlag==1&&meetData.getEntryGroupUserMap()!=null&&meetData.getEntryGroupUserMap().size()>1) {
             //组织消息
             MsgNormal bMsg=MessageUtils.clone(retMsg);
+            bMsg.setReMsgId(null);
+            bMsg.setMsgType(0);
             bMsg.setCommand(0x10);
             dataMap=new HashMap<String, Object>();
             dataMap.put("GroupId", groupId);
@@ -211,6 +213,8 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         //广播消息信息组织
         if (retFlag==1&&meetData.getEntryGroupUserMap()!=null) {
             MsgNormal bMsg=MessageUtils.clone(retMsg);
+            bMsg.setReMsgId(null);
+            bMsg.setMsgType(0);
             bMsg.setCommand(0x10);
             dataMap=new HashMap<String, Object>();
             dataMap.put("GroupId", groupId);
@@ -285,10 +289,12 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
 
         if (retFlag==1&&meetData.getEntryGroupUserMap()!=null&&meetData.getEntryGroupUserMap().size()>1) {
             MsgNormal bMsg=MessageUtils.clone(retMsg);
+            bMsg.setReMsgId(null);
+            bMsg.setMsgType(0);
             bMsg.setCommand(0x10);
             dataMap=new HashMap<String, Object>();
             dataMap.put("GroupId", groupId);
-            dataMap.put("TalkUserId", pUdk.getUserId());
+            dataMap.put("SpeakerId", pUdk.getUserId());
             MapContent _mc=new MapContent(dataMap);
             bMsg.setMsgContent(_mc);
             //发送广播消息
@@ -327,8 +333,8 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         if (!pUdk.isUser()) retMsg.setReturnType(0x00);
         else if (meetData==null) retMsg.setReturnType(0x02);
         else {
-            retFlag=meetData.relaseSpeaker(pUdk);
-            if (retFlag==2) retMsg.setReturnType(0x40);//该用户不在指定组
+            retFlag=meetData.releaseSpeaker(pUdk);
+            if (retFlag==2) retMsg.setReturnType(0x04);//该用户不在指定组
             else if (retFlag==3) retMsg.setReturnType(0x08);//该用户和当前对讲用户不匹配
             else retMsg.setReturnType(0x01);//正确离开组
             //删除语音内容
@@ -338,10 +344,12 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
 
         if (retFlag==1) {
             MsgNormal bMsg=MessageUtils.clone(retMsg);
+            bMsg.setReMsgId(null);
+            bMsg.setMsgType(0);
             bMsg.setCommand(0x20);
             dataMap=new HashMap<String, Object>();
             dataMap.put("GroupId", groupId);
-            dataMap.put("TalkUserId", pUdk.getUserId());
+            dataMap.put("SpeakerId", pUdk.getUserId());
             MapContent _mc=new MapContent(dataMap);
             bMsg.setMsgContent(_mc);
             //发送广播消息

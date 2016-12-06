@@ -99,14 +99,14 @@ public class CallingMemory {
      * @param callId 通话Id
      * @return 若有人在通话，返回true
      */
-    public boolean isTalk(String callederId, String callId) {
+    public boolean isTalk(String talkId, String callId) {
         OneCall oc=null;
         lock.readLock().lock();
         try {
             for (String k: callMap.keySet()) {
                 oc=callMap.get(k);
                 if (oc.getStatus()==9||oc.getCallId().equals(callId)) continue;
-                if (oc.getCallerId().equals(callederId)||oc.getCallederId().equals(callederId)) return true;
+                if (oc.getCallerId().equals(talkId)||oc.getCallederId().equals(talkId)) return true;
             }
         } finally {
             lock.readLock().unlock();

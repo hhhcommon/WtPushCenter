@@ -15,13 +15,19 @@ public class CompareAudioFlowMsg implements CompareMsg<Message> {
         MsgMedia _msg2=(MsgMedia)msg2;
         if (_msg1.getFromType()==_msg2.getFromType()
           &&_msg1.getToType()==_msg2.getToType()
-          &&_msg1.getBizType()==_msg2.getBizType()) {
-            if (_msg1.getMediaData()==null&&_msg2.getMediaData()==null) return true;
-            if (((_msg1.getMediaData()!=null&&_msg2.getMediaData()!=null))
-              &&_msg1.getObjId()==_msg2.getObjId()
-              &&_msg1.getTalkId()==_msg2.getTalkId()
-              &&_msg1.getSeqNo()==_msg2.getSeqNo()) return true;
+          &&_msg1.getBizType()==_msg2.getBizType()
+          &&((_msg1.getObjId()!=null&&_msg1.getObjId().equals(_msg2.getObjId()))||(_msg2.getObjId()!=null&&_msg2.getObjId().equals(_msg1.getObjId()))||(_msg1.getObjId()!=null&&_msg2.getObjId()!=null))
+          &&((_msg1.getTalkId()!=null&&_msg1.getTalkId().equals(_msg2.getTalkId()))||(_msg2.getTalkId()!=null&&_msg2.getTalkId().equals(_msg1.getTalkId()))||(_msg1.getTalkId()!=null&&_msg2.getTalkId()!=null))
+          &&_msg1.getSeqNo()==_msg2.getSeqNo()) {
+            if ((_msg1.getMediaData()==null&&_msg2.getMediaData()==null)) return true;
+            if ((_msg1.getMediaData()!=null&&_msg2.getMediaData()!=null)) {
+                if (_msg1.getMediaData().length!=_msg2.getMediaData().length) return false;
+                for (int i=0; i<_msg1.getMediaData().length; i++) {
+                    if (_msg1.getMediaData()[i]!=_msg2.getMediaData()[i]) return false;
+                }
+            }
         }
         return false;
     }
+
 }

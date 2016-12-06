@@ -28,7 +28,7 @@ import com.woting.push.user.PushUserUDKey;
 @Service
 public class SessionService {
     @Resource
-    JedisConnectionFactory redisConn;
+    private JedisConnectionFactory redisConn;
     @Resource
     private UserService userService;
     @Resource

@@ -291,7 +291,7 @@ public class OneCall implements Serializable {
      *  "-N::描述"——错误的状态：其中N就是状态值，参考status，只有状态3可以通话
      *  "2"——清除人和当前说话者不一致
      */
-    public String cleanSpeaker(PushUserUDKey speaker) {
+    public String releaseSpeaker(PushUserUDKey speaker) {
         if (callType!=1) return "0";
         String ret=null;
         if (this.status!=3) {

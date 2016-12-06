@@ -1,6 +1,7 @@
 package com.woting.audioSNS.mediaflow.monitor;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -20,6 +21,8 @@ import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MsgMedia;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
+import com.woting.push.core.service.SessionService;
+import com.woting.push.ext.SpringShell;
 import com.woting.push.user.PushUserUDKey;
 
 public class DealMediaflowMsg extends AbstractLoopMoniter<MediaflowConfig> {
@@ -30,6 +33,9 @@ public class DealMediaflowMsg extends AbstractLoopMoniter<MediaflowConfig> {
     private CallingMemory callingMem=CallingMemory.getInstance();
     private TalkMemory talkMem=TalkMemory.getInstance();
 
+    private SessionService sessionService=null;
+    private CompareAudioFlowMsg compareMedia=new CompareAudioFlowMsg();
+
     /**
      * 给线程起一个名字的构造函数
      * @param name 线程名称
@@ -38,6 +44,7 @@ public class DealMediaflowMsg extends AbstractLoopMoniter<MediaflowConfig> {
         super(mfc);
         super.setName("流数据处理线程"+index);
         this.setLoopDelay(10);
+        sessionService=(SessionService)SpringShell.getBean("sessionService");
     }
 
     @Override
@@ -90,25 +97,33 @@ public class DealMediaflowMsg extends AbstractLoopMoniter<MediaflowConfig> {
 
             int talkType=sourceMsg.getBizType();
 
+            //组织回执消息
+            MsgMedia retMm=new MsgMedia();
+            retMm.setFromType(1);
+            retMm.setToType(0);
+            retMm.setMsgType(0);
+            retMm.setAffirm(0);
+            retMm.setBizType(sourceMsg.getBizType());
+            retMm.setTalkId(talkId);
+            retMm.setObjId(objId);
+            retMm.setSeqNo(seqNum);
+
             OneMeet om=null;
             OneCall oc=null;
             if (talkType==1) {//组对讲
                 om=intercomMem.getOneMeet(objId);
-                if (om==null) return;
-//                gic=gmm.getGroupInterCom(objId);
-//                if (gic==null||gic.getSpeaker()==null||!gic.getSpeaker().getUserId().equals(talkerId)) {
-////                    if (gic==null||gic.getSpeaker()==null||!gic.getSpeaker().getUserId().equals(talkerId)) {
-////                    retMsg.setReturnType("1002");
-////                    pmm.getSendMemory().addUniqueMsg2Queue(mk, retMsg, new CompareAudioFlowMsg());
-//                    return;
-//                }
+                if (om==null) {
+                    retMm.setReturnType(0x10);//对讲组内存数据不存在
+                    globalMem.sendMem.addUnionUserMsg(pUdk, retMm, compareMedia);
+                    return;
+                }
             } else {//电话
                 oc=callingMem.getOneCall(objId);
-                if (oc==null) return;
-//                    retMsg.setReturnType("1003");
-//                    pmm.getSendMemory().addUniqueMsg2Queue(mk, retMsg, new CompareAudioFlowMsg());
-                    
-                //}
+                if (oc==null) {
+                    retMm.setReturnType(0x10);//电话内存数据不存在
+                    globalMem.sendMem.addUnionUserMsg(pUdk, retMm, compareMedia);
+                    return;
+                }
             }
             WholeTalk wt=null;
             wt=talkMem.getWholeTalk(talkId);
@@ -126,12 +141,26 @@ public class DealMediaflowMsg extends AbstractLoopMoniter<MediaflowConfig> {
                     else
                     if (talkerId.equals(oc.getCallederId())) oc.addCallederWt(wt);//被叫者
                 }
+                //加入对讲中
+                if (talkType==1) om.addWt(pUdk, wt);
             }
             TalkSegment ts=new TalkSegment();
             ts.setWt(wt);
             ts.setData(sourceMsg.getMediaData());
-            if (talkType==1) ;//ts.setSendUserMap(gic.getEntryGroupUserMap());//组对讲
-            else {//电话
+            if (talkType==1) {//对讲
+                if (om.getEntryGroupUserMap()!=null&&!om.getEntryGroupUserMap().isEmpty()) {
+                    Map<String, PushUserUDKey> um=new HashMap<String, PushUserUDKey>();
+                    for (String k: om.getEntryGroupUserMap().keySet()) {
+                        List<PushUserUDKey> al=sessionService.getActivedUserUDKs(k);
+                        if (al!=null&&!al.isEmpty()) {
+                            for (PushUserUDKey _pUdk: al) {
+                                um.put(_pUdk.toString(), _pUdk);
+                            }
+                        }
+                    }
+                    if (!um.isEmpty()) ts.setSendUserMap(um);
+                }
+            } else {//电话
                 PushUserUDKey otherUdk=oc.getOtherUdk(talkerId);
                 if (otherUdk!=null) {
                     Map<String, PushUserUDKey> um=new HashMap<String, PushUserUDKey>();
@@ -141,12 +170,16 @@ public class DealMediaflowMsg extends AbstractLoopMoniter<MediaflowConfig> {
             }
             ts.setSeqNum(seqNum);
             wt.addSegment(ts);
-            if (talkType==1) ;//gic.setLastTalkTime(talkerId);
-            else oc.setLastUsedTime();
+            if (talkType==1) {
+                om.setLastTalkTime(pUdk.getUserId());
+                om.setLastUsedTime();
+            } else oc.setLastUsedTime();
 
             //发送正常回执
-//            retMsg.setReturnType("1001");
-//            pmm.getSendMemory().addUniqueMsg2Queue(mk, retMsg, new CompareAudioFlowMsg());
+            if (sourceMsg.isAffirm()) {
+                retMm.setReturnType(0x01);
+                globalMem.sendMem.addUnionUserMsg(pUdk, retMm, compareMedia);
+            }
 
 //            if (new String(ts.getData()).equals("####")) System.out.println("deCode:::====="+new String(ts.getData()));
             //发送广播消息，简单处理，只把这部分消息发给目的地，是声音数据文件
@@ -160,20 +193,11 @@ public class DealMediaflowMsg extends AbstractLoopMoniter<MediaflowConfig> {
             bMsg.setObjId(objId);
             bMsg.setSeqNo(seqNum);
             bMsg.setMediaData(sourceMsg.getMediaData());
-
             for (String k: ts.getSendUserMap().keySet()) {
-                globalMem.sendMem.addUnionUserMsg(ts.getSendUserMap().get(k), bMsg, new CompareAudioFlowMsg());
+                globalMem.sendMem.addUnionUserMsg(ts.getSendUserMap().get(k), bMsg, compareMedia);
                 //处理流数据
                 ts.getSendFlagMap().put(k, 0);
                 ts.getSendTimeMap().get(k).add(System.currentTimeMillis());
-            }
-
-            //看是否是结束包
-            if (wt.isReceiveCompleted()) {
-                if (talkType==1) {
-                    //gic.sendEndPTT();
-                    //gic.delSpeaker(talkerId);
-                }
             }
         }
     }
@@ -195,26 +219,13 @@ public class DealMediaflowMsg extends AbstractLoopMoniter<MediaflowConfig> {
             if (seqNum<0) return;
             String groupId=sourceMsg.getObjId();
             if (StringUtils.isEmptyOrWhitespaceOnly(groupId)) return;
-
-            int talkType=sourceMsg.getBizType();
-
             WholeTalk wt=talkMem.getWholeTalk(talkId);
             if (wt!=null) {
                 if (sourceMsg.getReturnType()==1) {
                     TalkSegment ts=wt.getTalkData().get(Math.abs(seqNum));
                     if (ts!=null&&ts.getSendFlagMap().get(pUdk.toString())!=null) ts.getSendFlagMap().put(pUdk.toString(), 2);
                 }
-                if (wt.isSendCompleted()) {
-                    talkMem.removeWholeTalk(wt);
-                    //发送结束对讲消息
-                    if (talkType==1)  {
-//                        GroupInterCom gic=gmm.getGroupInterCom(groupId);
-//                        if (gic!=null&&gic.getSpeaker()!=null) {
-//                            gic.sendEndPTT();
-//                            gic.delSpeaker(talkerId);
-//                        }
-                    }
-                }
+                if (wt.isSendCompleted()) talkMem.removeWholeTalk(wt);
             }
         }
     }

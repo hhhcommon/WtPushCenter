@@ -420,7 +420,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         if (speaker==null) {
             toSpeakerMsg.setReturnType(0);
         } else {
-            String ret=callData.cleanSpeaker(speaker);
+            String ret=callData.releaseSpeaker(speaker);
             if (ret.equals("1")) {
                 toSpeakerMsg.setReturnType(1);
             } else if (ret.equals("0")) {
