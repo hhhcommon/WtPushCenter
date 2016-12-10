@@ -5,9 +5,6 @@ import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MsgMedia;
 
 public class CompareAudioFlowMsg implements CompareMsg<Message> {
-    /**
-     * 
-     */
     public boolean compare(Message msg1, Message msg2) {
         if (!(msg1 instanceof MsgMedia)) return false;
         if (!(msg2 instanceof MsgMedia)) return false;

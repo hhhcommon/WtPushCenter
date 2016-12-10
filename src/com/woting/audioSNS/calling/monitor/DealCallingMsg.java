@@ -86,7 +86,7 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
             oneCall=callingMem.getOneCall(callId);
             if (oneCall==null) {//没有对应的内存数据，告诉被叫者，对方已挂断
                 retMsg.setCommand(0x30);
-                retMsg.setMsgType(1);
+                retMsg.setReturnType(0x20);
                 Map<String, Object> dataMap=new HashMap<String, Object>();
                 dataMap.put("HangupType", "0");
                 dataMap.put("ServerMsg", "服务器处理进程不存在");
@@ -102,9 +102,8 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
         //销毁所有消息处理线程
         List<CallHandler> chL=callingMem.getCallHanders();
         if (chL!=null&&!chL.isEmpty()) {
-            for (CallHandler ch:chL) {
-                ch.stopServer();
-            }
+            for (CallHandler ch:chL) ch.stopServer();
+
             boolean allClosed=false;
             int i=0;
             while (i++<10&&!allClosed) {

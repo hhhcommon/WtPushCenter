@@ -43,14 +43,11 @@ public class DealMediaflowMsg extends AbstractLoopMoniter<MediaflowConfig> {
     public DealMediaflowMsg(MediaflowConfig mfc, int index) {
         super(mfc);
         super.setName("流数据处理线程"+index);
-        this.setLoopDelay(10);
-        sessionService=(SessionService)SpringShell.getBean("sessionService");
     }
 
     @Override
     public boolean initServer() {
-//        userService=(UserService)SpringShell.getBean("userService");
-//        return userService!=null;
+        sessionService=(SessionService)SpringShell.getBean("sessionService");
         return true;
     }
 
@@ -151,6 +148,7 @@ public class DealMediaflowMsg extends AbstractLoopMoniter<MediaflowConfig> {
                 if (om.getEntryGroupUserMap()!=null&&!om.getEntryGroupUserMap().isEmpty()) {
                     Map<String, PushUserUDKey> um=new HashMap<String, PushUserUDKey>();
                     for (String k: om.getEntryGroupUserMap().keySet()) {
+                        if (k.equals(pUdk.getUserId())) continue;
                         List<PushUserUDKey> al=sessionService.getActivedUserUDKs(k);
                         if (al!=null&&!al.isEmpty()) {
                             for (PushUserUDKey _pUdk: al) {

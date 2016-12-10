@@ -36,4 +36,12 @@
   "mediaflow":{
     "dealThread":"1"
   }
+  //以下为通知控制参数
+  "notify":{
+    "dealThread":"1"
+  }
+  //以下为同步控制参数
+  "sync":{
+    "dealThread":"1"
+  }
 }

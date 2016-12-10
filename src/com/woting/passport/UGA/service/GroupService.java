@@ -31,6 +31,7 @@ public class GroupService {
      */
     public Group getGroup(String groupId) {
         GroupPo gp=groupDao.getInfoObject("getGroupById", groupId);
+        if (gp==null) return null;
         Group g=new Group();
         g.buildFromPo(gp);
         List<UserPo> upl=userDao.queryForList("getListUserInGroup", groupId);
