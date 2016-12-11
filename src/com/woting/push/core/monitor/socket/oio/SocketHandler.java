@@ -148,6 +148,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
 
             //1-停止下级服务
             if (receiveMsg!=null) {try {receiveMsg.__interrupt();} catch(Exception e) {}}
+            if (fatchMsg!=null) {try {fatchMsg.__interrupt();} catch(Exception e) {}}
             if (sendMsg!=null) {try {sendMsg.__interrupt();} catch(Exception e) {}}
 
             boolean canClose=false;
@@ -170,6 +171,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                 try { sleep(10); } catch (InterruptedException e) {};
             }
             receiveMsg=null;
+            fatchMsg=null;
             sendMsg=null;
 
             //2-释放Socket的相关资源

@@ -5,6 +5,8 @@ import com.greenpineyu.fel.FelEngineImpl;
 import com.spiritdata.framework.jsonconf.JsonConfig;
 import com.woting.audioSNS.calling.CallingConfig;
 import com.woting.audioSNS.mediaflow.MediaflowConfig;
+import com.woting.audioSNS.notify.NotifyMessageConfig;
+import com.woting.audioSNS.sync.SyncMessageConfig;
 import com.woting.audioSNS.intercom.IntercomConfig;
 
 public abstract class ConfigLoadUtils {
@@ -90,5 +92,21 @@ public abstract class ConfigLoadUtils {
             mfc.set_DealThreadCount((int)fel.eval(jc.getString("mediaflow.dealThread")));
         } catch(Exception e) {}
         return mfc;
+    }
+
+    public static NotifyMessageConfig getNotifyMessageConfig(JsonConfig jc) {
+        NotifyMessageConfig nmc=new NotifyMessageConfig();
+        try {
+            nmc.set_DealThreadCount((int)fel.eval(jc.getString("notify.dealThread")));
+        } catch(Exception e) {}
+        return nmc;
+    }
+
+    public static SyncMessageConfig getSyncMessageConfig(JsonConfig jc) {
+        SyncMessageConfig smc=new SyncMessageConfig();
+        try {
+            smc.set_DealThreadCount((int)fel.eval(jc.getString("notify.dealThread")));
+        } catch(Exception e) {}
+        return smc;
     }
 }

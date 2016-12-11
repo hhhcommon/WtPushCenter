@@ -25,7 +25,7 @@ public class GroupService {
         groupDao.setNamespace("WT_GROUP");
     }
     /**
-     * 根据用户组Id获得用户组信息
+     * 根据用户组Id获得用户组信息，包括组下人员
      * @param groupId
      * @return
      */
@@ -37,5 +37,13 @@ public class GroupService {
         List<UserPo> upl=userDao.queryForList("getListUserInGroup", groupId);
         if (upl!=null&&!upl.isEmpty()) g.setUserList(upl);
         return g;
+    }
+    /**
+     * 根据用户组Id获得用户组信息(不包括下级人员信息)
+     * @param groupId
+     * @return
+     */
+    public GroupPo getGroupPo(String groupId) {
+        return groupDao.getInfoObject("getGroupById", groupId);
     }
 }

@@ -68,14 +68,6 @@ public class PushGlobalMemory {
      * </pre>
      */
     private ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Message>> sendMsg;
-    /**
-     * 给用户的广播消息队列
-     * <pre>
-     * Key    用户设备标识
-     * Value  消息队列
-     * </pre>
-     */
-    private ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Message>> notifyMsg;
 
 //    private Object LOCK_usersocketMap=new Object();//用户和Sockek对应的临界区的锁，这个锁是读写一致的，虽然慢，但能保证数据一致性
 
@@ -117,7 +109,7 @@ public class PushGlobalMemory {
     /**
      * 绑定用户和Socket
      * @param pUk 用户key
-     * @param sh  SocketHandler处理线程
+     * @param sh SocketHandler处理线程
      */
     public void bindPushUserANDSocket(PushUserUDKey pUk, SocketHandler sh) {
         if (pUk==null||sh==null) return;
@@ -136,7 +128,7 @@ public class PushGlobalMemory {
         }
         REF_udkANDsocket.put(pUk, sh);
         REF_socketANDudk.put(sh, pUk);
-    }
+        }
     /**
      * 删除用户和Socket处理之间的绑定
      * @param pUk 用户key，可为空

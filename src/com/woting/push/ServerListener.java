@@ -18,6 +18,10 @@ import com.woting.audioSNS.intercom.IntercomConfig;
 import com.woting.audioSNS.intercom.monitor.DealIntercomMsg;
 import com.woting.audioSNS.mediaflow.MediaflowConfig;
 import com.woting.audioSNS.mediaflow.monitor.DealMediaflowMsg;
+import com.woting.audioSNS.notify.NotifyMessageConfig;
+import com.woting.audioSNS.notify.monitor.DealNotifyMsg;
+import com.woting.audioSNS.sync.SyncMessageConfig;
+import com.woting.audioSNS.sync.monitor.DealSyncMsg;
 import com.woting.push.config.ConfigLoadUtils;
 import com.woting.push.config.PushConfig;
 import com.woting.push.config.SocketHandleConfig;
@@ -79,6 +83,8 @@ public class ServerListener {
     private List<DealCallingMsg> dealCallingList=null; //处理电话消息线程的记录列表
     private CleanCalling cleanCalling=null; //电话数据清理线程
     private List<DealMediaflowMsg> dealMediaFlowList=null; //处理媒体消息线程的记录列表
+    private List<DealNotifyMsg> dealNotifyList=null; //处理通知消息线程的记录列表
+    private List<DealSyncMsg> dealSyncList=null; //处理同步消息线程的记录列表
 
     /**
      * 获得运行状态
@@ -205,6 +211,12 @@ public class ServerListener {
 
         MediaflowConfig mfc=ConfigLoadUtils.getMediaFlowConfig(jc);
         SystemCache.setCache(new CacheEle<MediaflowConfig>(PushConstants.MEDIAFLOW_CONF, "语音控制配置", mfc));
+
+        NotifyMessageConfig nmc=ConfigLoadUtils.getNotifyMessageConfig(jc);
+        SystemCache.setCache(new CacheEle<NotifyMessageConfig>(PushConstants.NOTIFY_CONF, "通知消息控制配置", nmc));
+
+        SyncMessageConfig smc=ConfigLoadUtils.getSyncMessageConfig(jc);
+        SystemCache.setCache(new CacheEle<SyncMessageConfig>(PushConstants.SYNC_CONF, "同步消息控制配置", smc));
     }
 
     private void begin() {
@@ -232,9 +244,9 @@ public class ServerListener {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void startServers() {
         //1-启动{TCP_控制信道}socket监控
-        @SuppressWarnings("unchecked")
         PushConfig pc=((CacheEle<PushConfig>)SystemCache.getCache(PushConstants.PUSH_CONF)).getContent();
         if (socketType==0) {
             tcpCtlServer=new OioServer(pc);
@@ -252,7 +264,6 @@ public class ServerListener {
             dispatchList.add(dm);
         }
         //3-启动{处理对讲消息}线程
-        @SuppressWarnings("unchecked")
         IntercomConfig ic=((CacheEle<IntercomConfig>)SystemCache.getCache(PushConstants.INTERCOM_CONF)).getContent();
         dealIntercomList=new ArrayList<DealIntercomMsg>();
         for (int i=0;i<ic.get_DealThreadCount(); i++) {
@@ -262,7 +273,6 @@ public class ServerListener {
             dealIntercomList.add(di);
         }
         //4-启动{处理电话消息}线程
-        @SuppressWarnings("unchecked")
         CallingConfig cc=((CacheEle<CallingConfig>)SystemCache.getCache(PushConstants.CALLING_CONF)).getContent();
         dealCallingList=new ArrayList<DealCallingMsg>();
         for (int i=0;i<cc.get_DealThreadCount(); i++) {
@@ -276,7 +286,6 @@ public class ServerListener {
         cleanCalling.setDaemon(true);
         cleanCalling.start();
         //5-启动{流数据处理}线程
-        @SuppressWarnings("unchecked")
         MediaflowConfig mfc=((CacheEle<MediaflowConfig>)SystemCache.getCache(PushConstants.MEDIAFLOW_CONF)).getContent();
         dealMediaFlowList=new ArrayList<DealMediaflowMsg>();
         for (int i=0;i<mfc.get_DealThreadCount(); i++) {
@@ -284,6 +293,24 @@ public class ServerListener {
             dmf.setDaemon(true);
             dmf.start();
             dealMediaFlowList.add(dmf);
+        }
+        //6-启动{通知消息处理}线程
+        NotifyMessageConfig nmc=((CacheEle<NotifyMessageConfig>)SystemCache.getCache(PushConstants.NOTIFY_CONF)).getContent();
+        dealNotifyList=new ArrayList<DealNotifyMsg>();
+        for (int i=0;i<nmc.get_DealThreadCount(); i++) {
+            DealNotifyMsg dn=new DealNotifyMsg(nmc, i);
+            dn.setDaemon(true);
+            dn.start();
+            dealNotifyList.add(dn);
+        }
+        //7-启动{同步消息处理}线程
+        SyncMessageConfig smc=((CacheEle<SyncMessageConfig>)SystemCache.getCache(PushConstants.SYNC_CONF)).getContent();
+        dealSyncList=new ArrayList<DealSyncMsg>();
+        for (int i=0;i<smc.get_DealThreadCount(); i++) {
+            DealSyncMsg ds=new DealSyncMsg(smc, i);
+            ds.setDaemon(true);
+            ds.start();
+            dealSyncList.add(ds);
         }
         _RUN_STATUS=2;//==================启动成功
     }
@@ -358,6 +385,14 @@ public class ServerListener {
 //                }
 //                try { Thread.sleep(50); } catch(Exception e) {}
 //            }
+        }
+        //6-停止{通知消息处理}线程
+        if (dealNotifyList!=null&&!dealNotifyList.isEmpty()) {
+            for (DealNotifyMsg dn: dealNotifyList) dn.stopServer();
+        }
+        //7-停止{同步消息处理}线程
+        if (dealSyncList!=null&&!dealSyncList.isEmpty()) {
+            for (DealSyncMsg ds: dealSyncList) ds.stopServer();
         }
         _RUN_STATUS=4;//==================成功停止
     }

@@ -148,6 +148,13 @@ public class OneMeet implements Serializable {
             return 1;
         }
     }
+    /**
+     * 获得讲话者
+     * @return 讲话者UdKey
+     */
+    public PushUserUDKey getSpeaker() {
+        return speaker;
+    }
 
     //五、消息相关
     private LinkedList<MsgNormal> preMsgQueue=null;//预处理(还未处理)的本对讲(会议)消息

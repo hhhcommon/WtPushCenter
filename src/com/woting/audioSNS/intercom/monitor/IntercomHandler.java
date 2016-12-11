@@ -42,7 +42,12 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         setLoopDelay(10);
         meetData=om;
         meetData.setIntercomHandler(this);
+    }
+
+    @Override
+    public boolean initServer() {
         sessionService=(SessionService)SpringShell.getBean("sessionService");
+        return sessionService!=null;
     }
 
     @Override

@@ -26,10 +26,12 @@ public class IntercomMemory {
     //java的占位单例模式===end
 
     protected ConcurrentHashMap<String, OneMeet> meetMap;//对讲组信息Map
+    protected ConcurrentHashMap<String, OneMeet> tobeDelMeetMap;//将要删除的用户组
     protected ConcurrentHashMap<String, Map<String, Object>> userTalk;//用户对讲信息，用户正在用那个通道对讲
 
     private IntercomMemory() {
         meetMap=new ConcurrentHashMap<String, OneMeet>();
+        tobeDelMeetMap=new ConcurrentHashMap<String, OneMeet>();
         userTalk=new ConcurrentHashMap<String, Map<String, Object>>();
     }
 
@@ -44,6 +46,22 @@ public class IntercomMemory {
         try {
             if (meetMap.get(om.getGroupId())!=null) return 0;
             meetMap.put(om.getMeetId(), om);
+        } finally {
+            lock.writeLock().unlock();
+        }
+        return 1;
+    }
+
+    /**
+     * 把一个新的会议处理控制数据加入内存Map
+     * @param oc 新的会议处理控制数据
+     * @return 成功返回1，若已经存在这个会话返回0，若这个会话不是新会话返回-1
+     */
+    public int addToBeDelOneMeet(OneMeet om) {
+        lock.writeLock().lock();
+        try {
+            if (tobeDelMeetMap.get(om.getGroupId())!=null) return 0;
+            tobeDelMeetMap.put(om.getMeetId(), om);
         } finally {
             lock.writeLock().unlock();
         }
