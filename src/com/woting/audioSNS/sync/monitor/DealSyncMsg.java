@@ -65,7 +65,9 @@ public class DealSyncMsg extends AbstractLoopMoniter<SyncMessageConfig> {
         @SuppressWarnings("unchecked")
         public void run() {
             try {
-                String groupId=((MapContent)sourceMsg.getMsgContent()).get("GroupId")+"";
+                MapContent mc=(MapContent)sourceMsg.getMsgContent();
+                if (mc==null||mc.getContentMap()==null||mc.getContentMap().size()==0) return;
+                String groupId=mc.get("GroupId")+"";
                 if (!StringUtils.isNullOrEmptyOrSpace(groupId)) {
                     OneMeet om=interMem.getOneMeet(groupId);
                     if (om!=null) {
@@ -79,11 +81,11 @@ public class DealSyncMsg extends AbstractLoopMoniter<SyncMessageConfig> {
                         }
                         if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==4) { //加入组内成员
                             UserPo up=new UserPo();
-                            up.fromHashMap((Map<String, Object>)((MapContent)sourceMsg.getMsgContent()).get("UserInfo"));
+                            up.fromHashMap((Map<String, Object>)mc.get("UserInfo"));
                             om.getGroup().addOneUser(up);
                         }
                         if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==5) { //删除组内成员
-                            String userId=((MapContent)sourceMsg.getMsgContent()).get("UserId")+"";
+                            String userId=mc.get("UserId")+"";
                             if (!StringUtils.isNullOrEmptyOrSpace(userId)) om.getGroup().delOneUser(userId);
                         }
                     }

@@ -68,6 +68,14 @@ public class PushGlobalMemory {
      * </pre>
      */
     private ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Message>> sendMsg;
+    /**
+     * 给用户的广播消息队列
+     * <pre>
+     * Key    用户Id
+     * Value  消息队列
+     * </pre>
+     */
+    private ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>> notifyMsg;
 
 //    private Object LOCK_usersocketMap=new Object();//用户和Sockek对应的临界区的锁，这个锁是读写一致的，虽然慢，但能保证数据一致性
 
@@ -90,6 +98,7 @@ public class PushGlobalMemory {
        pureMsgQueue=new ConcurrentLinkedQueue<Message>();
        typeMsg=new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
        sendMsg=new ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Message>>();
+       notifyMsg=new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
        REF_udkANDsocket=new HashMap<PushUserUDKey, SocketHandler>();
        REF_socketANDudk=new HashMap<SocketHandler, PushUserUDKey>();
        receiveMem=new ReceiveMemory();
@@ -175,6 +184,26 @@ public class PushGlobalMemory {
         return ret.isEmpty()?null:ret;
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public boolean addNotifyMsg(String userId, Message msg, CompareMsg compMsg) {
+        if (msg==null||userId==null||userId.trim().length()==0) return false;
+        ConcurrentLinkedQueue<Message> _userQueue=notifyMsg.get(userId);
+        if (_userQueue==null) {
+            _userQueue=new ConcurrentLinkedQueue<Message>();
+            notifyMsg.put(userId, _userQueue);
+        }
+        synchronized(_userQueue) {
+            List<Message> removeMsg=new ArrayList<Message>();
+            for (Message m: _userQueue) {
+                if (compMsg!=null&&compMsg.compare(m, msg)) removeMsg.add(m);
+            }
+            for (Message m: removeMsg) {
+                _userQueue.remove(m);
+            }
+            if (msg.getSendTime()==0) msg.setSendTime(System.currentTimeMillis());
+            return _userQueue.add(msg);
+        }
+    }
     /**
      * 内部类，接受消息处理类
      * @author wanghui
@@ -309,6 +338,29 @@ public class PushGlobalMemory {
 //            if (canRead) {
             if (sh.equals(REF_udkANDsocket.get(pUdk))||pUdk.equals(REF_socketANDudk.get(sh))) {
                 Queue<Message> mQueue=sendMsg.get(pUdk);
+                if (mQueue!=null) m=mQueue.poll();
+            }
+            if (m==null) { //从未发布成功的消息中获取消息
+                /*
+                SendMessageList hasSl=sm.getSendedMessagList(mk);
+                if (hasSl.size()>0) {
+                    m=hasSl.get(0);
+                }*/
+            }
+            return m;
+        }
+        public Message getUserNotifyMsg(PushUserUDKey pUdk, SocketHandler sh) {
+            if (pUdk==null||sh==null) return null;
+
+            Message m=null;
+            //从发送队列取一条消息
+//            boolean canRead=true;
+//            synchronized(LOCK_usersocketMap) {
+//                canRead=sh.equals(REF_udkANDsocket.get(pUdk))||pUdk.equals(REF_socketANDudk.get(sh));
+//            }
+//            if (canRead) {
+            if (sh.equals(REF_udkANDsocket.get(pUdk))||pUdk.equals(REF_socketANDudk.get(sh))) {
+                Queue<Message> mQueue=notifyMsg.get(pUdk.getUserId());
                 if (mQueue!=null) m=mQueue.poll();
             }
             if (m==null) { //从未发布成功的消息中获取消息

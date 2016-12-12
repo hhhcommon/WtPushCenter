@@ -67,6 +67,25 @@ public class IntercomMemory {
         }
         return 1;
     }
+    public OneMeet getDelData(String id) {
+        lock.writeLock().lock();
+        try {
+            return tobeDelMeetMap.get(id);
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+    public void removeToDelData(String id) {
+        lock.writeLock().lock();
+        try {
+            if (tobeDelMeetMap!=null) {
+                if (tobeDelMeetMap.get(id)!=null) meetMap.get(id).setStatus_9();
+                meetMap.remove(id);
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
 
     /**
      * 设置正在对讲的用户
@@ -119,16 +138,17 @@ public class IntercomMemory {
      * @param gId 组通话Id
      * @return 组对讲对象
      */
-    public void removeOneMeet(String gId) {
+    public OneMeet removeOneMeet(String gId) {
         lock.writeLock().lock();
         try {
             if (meetMap!=null) {
                 if (meetMap.get(gId)!=null) meetMap.get(gId).setStatus_9();
-                meetMap.remove(gId);
+                return meetMap.remove(gId);
             }
         } finally {
             lock.writeLock().unlock();
         }
+        return null;
     }
 
     /**

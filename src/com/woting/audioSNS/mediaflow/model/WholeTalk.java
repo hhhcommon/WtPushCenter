@@ -3,6 +3,8 @@ package com.woting.audioSNS.mediaflow.model;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.woting.audioSNS.intercom.mem.IntercomMemory;
+import com.woting.audioSNS.intercom.model.OneMeet;
 import com.woting.push.user.PushUserUDKey;
 
 /**
@@ -25,6 +27,7 @@ public class WholeTalk {
         talkData=new HashMap<Integer, TalkSegment>();
     }
 
+    private IntercomMemory interMem=IntercomMemory.getInstance();
     private String talkId; //通话的Id
     private int talkType; //通话类型，目前仅有两类：1=对讲；2=电话
     private String objId; //通话所对应的对讲的Id，当为对讲时是groupId，当为电话时是callId
@@ -107,12 +110,6 @@ public class WholeTalk {
         }
     }
 
-    /**
-     * 结束传输
-     */
-    public void completedSend() {
-        this.sendAll=true;
-    }
     /**
      * 是否传输完成
      * @return
@@ -215,20 +212,18 @@ public class WholeTalk {
                                 if (wt.getTalkType()==1) {//对讲
                                     String delKeys="";
                                     //找到
-//                                    for (String k: ts.getSendUserMap().keySet()) {
-//                                        GroupInterCom gic=gmm.getGroupInterCom(_wt.getObjId());
-//                                        if (gic!=null) {
-//                                            if (gic.getEntryGroupUserMap()==null||gic.getEntryGroupUserMap().isEmpty()) {
-//                                                _wt.completedReceive();
-//                                                _wt.completedSend();
-//                                            } else {
-//                                                if (gic.getEntryGroupUserMap().get(k)==null) delKeys+=";"+k;
-//                                            }
-//                                        } else {
-//                                            _wt.completedReceive();
-//                                            _wt.completedSend();
-//                                        }
-//                                    }
+                                    OneMeet om=interMem.getOneMeet(_wt.getObjId());
+                                    if (om!=null) {
+                                        if (om.getEntryGroupUserMap()==null||om.getEntryGroupUserMap().isEmpty()) {
+                                            _wt.completedReceive();
+                                        } else {
+                                            for (String k: ts.getSendUserMap().keySet()) {
+                                                if (om.getEntryGroupUserMap().get(k)==null) delKeys+=";"+k;
+                                            }
+                                        }
+                                    } else {
+                                        _wt.completedReceive();
+                                    }
                                     //删除
                                     if (!delKeys.equals("")) {
                                         String[] _delk=(delKeys.substring(1)).split(";");
@@ -280,10 +275,17 @@ public class WholeTalk {
                                     }
                                 }
                             }
-                            sleep(10);//休息10毫秒
                         } catch(Exception e) {
                             e.printStackTrace();
                         }
+                    }
+                }
+                if (_wt.isSendCompleted()) {
+                    OneMeet om=interMem.getDelData(_wt.getObjId());
+                    if (om!=null) {
+                        om.releaseSpeaker(_wt.getTalkerMk());
+                        Object o=interMem.removeOneMeet(_wt.getTalkerId());
+                        if (o!=null) interMem.removeToDelData(_wt.getTalkerId());
                     }
                 }
             }

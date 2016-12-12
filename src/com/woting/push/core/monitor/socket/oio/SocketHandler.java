@@ -526,6 +526,22 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                         _sendMsgQueue.add(m.toBytes());
                     }
                 }
+                canAdd=true;
+                Message nm=globalMem.sendMem.getUserNotifyMsg(_pushUserKey, SocketHandler.this);
+                if (nm!=null) {
+                    if (nm instanceof MsgMedia) canAdd=false;
+                    if (canAdd) {
+                        try {
+                            byte[] aa=JsonUtils.objToJson(m).getBytes();
+                            fos.write(aa, 0, aa.length);
+                            fos.write(13);
+                            fos.write(10);
+                            fos.flush();
+                        } catch (IOException e) {
+                        }
+                        _sendMsgQueue.add(nm.toBytes());
+                    }
+                }
             }
         }
         @Override
