@@ -1,6 +1,6 @@
 package com.woting.push.core.monitor;
 
-import com.woting.push.config.PushConfig;
+import com.woting.push.PushConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MessageUtils;

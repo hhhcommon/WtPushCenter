@@ -1,4 +1,6 @@
-package com.woting.push.config;
+package com.woting.push;
+
+import com.woting.push.config.Config;
 
 /**
  * 服务端配置信息
@@ -21,21 +23,21 @@ public class PushConfig implements Config {
     public int get_ControlTcpPort() {
         return _ControlTcpPort;
     }
-    protected void set_ControlTcpPort(int port) {
+    public void set_ControlTcpPort(int port) {
         this._ControlTcpPort=port;
     }
 
     public int get_CleanInterval() {
         return _CleanInterval;
     }
-    protected void set_CleanInterval(int cleanInterval) {
+    public void set_CleanInterval(int cleanInterval) {
         this._CleanInterval=cleanInterval;
     }
 
     public int get_DispatchThreadCount() {
         return _DispatchThreadCount;
     }
-    protected void set_DsispatchThreadCount(int dispatchThreadCount) {
+    public void set_DsispatchThreadCount(int dispatchThreadCount) {
         this._DispatchThreadCount=dispatchThreadCount;
     }
 }

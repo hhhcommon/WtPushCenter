@@ -1,4 +1,4 @@
-package com.woting.push.config;
+package com.woting.push;
 
 import com.greenpineyu.fel.FelEngine;
 import com.greenpineyu.fel.FelEngineImpl;
@@ -7,6 +7,7 @@ import com.woting.audioSNS.calling.CallingConfig;
 import com.woting.audioSNS.mediaflow.MediaflowConfig;
 import com.woting.audioSNS.notify.NotifyMessageConfig;
 import com.woting.audioSNS.sync.SyncMessageConfig;
+import com.woting.push.core.SocketHandleConfig;
 import com.woting.audioSNS.intercom.IntercomConfig;
 
 public abstract class ConfigLoadUtils {
