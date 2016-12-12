@@ -8,6 +8,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.spiritdata.framework.util.SequenceUUID;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.intercom.mem.IntercomMemory;
 import com.woting.audioSNS.intercom.model.OneMeet;
@@ -148,6 +149,14 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
                 MsgNormal nm=new MsgNormal();
                 MapContent newMc=new MapContent(newMsgContentMap);
                 nm.setMsgContent(newMc);
+                nm.setBizType(4);
+                nm.setMsgId(SequenceUUID.getUUIDSubSegment(4));
+                nm.setMsgType(1);
+                nm.setAffirm(1);
+                nm.setFromType(1);
+                nm.setToType(0);
+                nm.setCmdType(sourceMsg.getCmdType());
+                nm.setCommand(sourceMsg.getCommand());
 
                 //4-发送消息
                 for (String userId: userIdL) {
