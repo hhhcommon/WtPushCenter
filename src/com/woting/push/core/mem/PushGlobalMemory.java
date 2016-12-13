@@ -86,6 +86,7 @@ public class PushGlobalMemory {
      * Value  Socket处理线程类
      * </pre>
      */
+    private Map<String, PushUserUDKey> REF_userdtypeANDudk;
     private Map<PushUserUDKey, SocketHandler> REF_udkANDsocket;
     private Map<SocketHandler, PushUserUDKey> REF_socketANDudk;
 
@@ -99,8 +100,11 @@ public class PushGlobalMemory {
        typeMsg=new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
        sendMsg=new ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Message>>();
        notifyMsg=new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
+
+       REF_userdtypeANDudk=new HashMap<String, PushUserUDKey>();
        REF_udkANDsocket=new HashMap<PushUserUDKey, SocketHandler>();
        REF_socketANDudk=new HashMap<SocketHandler, PushUserUDKey>();
+
        receiveMem=new ReceiveMemory();
        sendMem=new SendMemory();
        sessionService=(SessionService)SpringShell.getBean("sessionService");
@@ -120,11 +124,11 @@ public class PushGlobalMemory {
      * @param pUk 用户key
      * @param sh SocketHandler处理线程
      */
-    public void bindPushUserANDSocket(PushUserUDKey pUk, SocketHandler sh) {
-        if (pUk==null||sh==null) return;
+    public void bindPushUserANDSocket(PushUserUDKey pUdk, SocketHandler sh) {
+        if (pUdk==null||sh==null) return;
 //        synchronized(LOCK_usersocketMap) {
 //        }
-        SocketHandler oldSh=REF_udkANDsocket.get(pUk);
+        SocketHandler oldSh=REF_udkANDsocket.get(pUdk);
         if (oldSh!=null) {
             synchronized(oldSh.stopLck) {
                 oldSh.stopServer();
@@ -135,33 +139,54 @@ public class PushGlobalMemory {
                 }
             }
         }
-        REF_udkANDsocket.put(pUk, sh);
-        REF_socketANDudk.put(sh, pUk);
+        //剔除相同用户同一设备登录
+        PushUserUDKey _pUdk=REF_userdtypeANDudk.get(pUdk.getUserId()+"::"+pUdk.getPCDType());
+        if (_pUdk!=null) {
+            oldSh=REF_udkANDsocket.get(_pUdk);
+            if (oldSh!=null) {
+                synchronized(oldSh.stopLck) {
+                    oldSh.stopServer();
+                    try {
+                        oldSh.stopLck.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
         }
+        REF_udkANDsocket.put(pUdk, sh);
+        REF_socketANDudk.put(sh, pUdk);
+        REF_userdtypeANDudk.put(pUdk.getUserId()+"::"+pUdk.getPCDType(), pUdk);
+    }
     /**
      * 删除用户和Socket处理之间的绑定
      * @param pUk 用户key，可为空
      * @param sh  SocketHandler处理线程，可为空
      */
-    public void unbindPushUserANDSocket(PushUserUDKey pUk, SocketHandler sh) {
-        if (pUk==null&&sh==null) return;
-        PushUserUDKey _pUk=null;
+    public void unbindPushUserANDSocket(PushUserUDKey pUdk, SocketHandler sh) {
+        if (pUdk==null&&sh==null) return;
+        PushUserUDKey _pUdk=null;
         SocketHandler _sh=null;
 
 //        synchronized(LOCK_usersocketMap) {
 //        }
-        if (pUk==null) {
-            _pUk=REF_socketANDudk.get(sh);
-            if (_pUk!=null) REF_udkANDsocket.remove(pUk);
+        if (pUdk==null) {
+            _pUdk=REF_socketANDudk.get(sh);
+            if (_pUdk!=null) {
+                REF_udkANDsocket.remove(_pUdk);
+                REF_userdtypeANDudk.remove(_pUdk.getUserId()+"::"+_pUdk.getPCDType());
+            }
             REF_socketANDudk.remove(sh);
         } else if (sh==null) {
-            _sh=REF_udkANDsocket.get(pUk);
+            _sh=REF_udkANDsocket.get(pUdk);
             if (_sh!=null) REF_socketANDudk.remove(_sh);
             REF_udkANDsocket.remove(sh);
             _sh.stopServer();
+            REF_userdtypeANDudk.remove(pUdk.getUserId()+"::"+pUdk.getPCDType());
         } else {
-            REF_udkANDsocket.remove(pUk);
+            REF_udkANDsocket.remove(pUdk);
             REF_socketANDudk.remove(sh);
+            REF_userdtypeANDudk.remove(pUdk.getUserId()+"::"+pUdk.getPCDType());
         }
     }
     public PushUserUDKey getPushUserBySocket(SocketHandler sh) {

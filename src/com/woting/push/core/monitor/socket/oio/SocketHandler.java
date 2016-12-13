@@ -383,31 +383,42 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
 
                     if (ms!=null&&!ms.isAck()) {
                         if (ms instanceof MsgNormal) {
-                            PushUserUDKey _puUdk=PushUserUDKey.buildFromMsg(ms);
-                            //处理注册
-                            Map<String, Object> retM=sessionService.dealUDkeyEntry(_puUdk, "socket/entry");
-                            if (!(""+retM.get("ReturnType")).equals("1001")) {
-                                MsgNormal ackM=MessageUtils.buildAckMsg((MsgNormal)ms);
-                                ackM.setBizType(15);
-                                ackM.setReturnType(0);//失败
-                                ackM.setSendTime(System.currentTimeMillis());
-                                _sendMsgQueue.add(ackM.toBytes());
-                            } else {//登录成功
-                                _puUdk.setUserId(""+retM.get("UserId"));
-                                _pushUserKey=_puUdk;
-                                if (((MsgNormal)ms).getBizType()==15) {//是注册消息
-                                    MsgNormal ackM=MessageUtils.buildAckMsg((MsgNormal)ms);
-                                    ackM.setBizType(15);
-                                    ackM.setReturnType(1);//成功
-                                    ackM.setSendTime(System.currentTimeMillis());
-                                    globalMem.bindPushUserANDSocket(_pushUserKey, SocketHandler.this);
-                                    _sendMsgQueue.add(ackM.toBytes());
-//                                    //发送注册成功的消息给组对讲——以便他处理组在线的功能，
-//                                    //TODO 注意，这里似乎应该有一个机制，能够方便的扩充
-//                                    ((MsgNormal) ms).setAffirm(0);//设置为不需要回复
-//                                    ((MsgNormal) ms).setBizType(1);//设置为组消息
-//                                    ((MsgNormal) ms).setCmdType(0);//进入消息
-                                } else globalMem.receiveMem.addPureMsg(ms);
+                            MsgNormal _ms=(MsgNormal)ms;
+                            PushUserUDKey _pUdk=PushUserUDKey.buildFromMsg(_ms);
+                            if (_pUdk.equals(_pushUserKey)&&_ms.getBizType()!=15) globalMem.receiveMem.addPureMsg(_ms);
+                            else {
+                                //处理注册
+                                if (_ms.getBizType()==15) globalMem.bindPushUserANDSocket(_pUdk, SocketHandler.this);
+
+                                if (_ms.getFromType()==1) {//从服务器来的消息
+                                    if (_ms.getBizType()==15) {//是注册消息
+                                        _pushUserKey=_pUdk;
+                                    } else globalMem.receiveMem.addPureMsg(_ms);
+                                } else {
+                                    Map<String, Object> retM=sessionService.dealUDkeyEntry(_pUdk, "socket/entry");
+                                    if (!(""+retM.get("ReturnType")).equals("1001")) {
+                                        MsgNormal ackM=MessageUtils.buildAckMsg(_ms);
+                                        ackM.setBizType(15);
+                                        ackM.setReturnType(0);//失败
+                                        ackM.setSendTime(System.currentTimeMillis());
+                                        _sendMsgQueue.add(ackM.toBytes());
+                                    } else {//登录成功
+                                        _pUdk.setUserId(""+retM.get("UserId"));
+                                        _pushUserKey=_pUdk;
+                                        if (_ms.getBizType()==15) {//是注册消息
+                                            MsgNormal ackM=MessageUtils.buildAckMsg(_ms);
+                                            ackM.setBizType(15);
+                                            ackM.setReturnType(1);//成功
+                                            ackM.setSendTime(System.currentTimeMillis());
+                                            _sendMsgQueue.add(ackM.toBytes());
+//                                            //发送注册成功的消息给组对讲——以便他处理组在线的功能，
+//                                            //TODO 注意，这里似乎应该有一个机制，能够方便的扩充
+//                                            ((MsgNormal) ms).setAffirm(0);//设置为不需要回复
+//                                            ((MsgNormal) ms).setBizType(1);//设置为组消息
+//                                            ((MsgNormal) ms).setCmdType(0);//进入消息
+                                        } else globalMem.receiveMem.addPureMsg(_ms);
+                                    }
+                                }
                             }
                         } else {//数据流
                             _pushUserKey=globalMem.getPushUserBySocket(SocketHandler.this);

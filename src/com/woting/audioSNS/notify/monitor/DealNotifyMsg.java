@@ -76,13 +76,13 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
                 String toGroups=(m.get("_TOGROUPS")==null?"":m.get("_TOGROUP")+"");
                 String toUsers=(m.get("_TOUSERS")==null?"":m.get("_TOUSERS")+"");
                 String noUsers=(m.get("_NOUSERS")==null?"":m.get("_NOUSERS")+"");
-                if (StringUtils.isNullOrEmptyOrSpace(toGroups)||StringUtils.isNullOrEmptyOrSpace(toUsers)) return;
+                if (StringUtils.isNullOrEmptyOrSpace(toGroups)&&StringUtils.isNullOrEmptyOrSpace(toUsers)) return;
                 //2.2-计算目的用户
                 List<String> userIdL=new ArrayList<String>();
                 String[] _tempSplit=null;
                 boolean find=false;
                 //2.2.1-处理组
-                if (StringUtils.isNullOrEmptyOrSpace(toGroups)) {
+                if (!StringUtils.isNullOrEmptyOrSpace(toGroups)) {
                     _tempSplit=toGroups.split(",");
                     for (String _ts: _tempSplit) {
                         //从内存取用户
@@ -115,7 +115,7 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
                     }
                 }
                 //2.2.2-处理用户
-                if (StringUtils.isNullOrEmptyOrSpace(toUsers)) {
+                if (!StringUtils.isNullOrEmptyOrSpace(toUsers)) {
                     _tempSplit=toUsers.split(",");
                     for (String _ts: _tempSplit) {
                         find=false;
@@ -129,7 +129,7 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
                     }
                 }
                 //2.2.3-处理排除用户
-                if (StringUtils.isNullOrEmptyOrSpace(noUsers)) {
+                if (!StringUtils.isNullOrEmptyOrSpace(noUsers)) {
                     _tempSplit=toUsers.split(",");
                     for (String _ts: _tempSplit) {
                         for (int i=userIdL.size()-1; i>=0; i--) {
@@ -151,7 +151,7 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
                 nm.setMsgContent(newMc);
                 nm.setBizType(4);
                 nm.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-                nm.setMsgType(1);
+                nm.setMsgType(0);
                 nm.setAffirm(1);
                 nm.setFromType(1);
                 nm.setToType(0);
