@@ -61,6 +61,9 @@ public abstract class ConfigLoadUtils {
         try {
             ic.set_ExpireTime((int)fel.eval(jc.getString("intercom.expireTime")));
         } catch(Exception e) {}
+        try {
+            ic.set_ExpireSpeakerTime((int)fel.eval(jc.getString("intercom.expireSpeakerTime")));
+        } catch(Exception e) {}
         return ic;
     }
 

@@ -137,10 +137,10 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
     }
 
     /**
-     * 停止某一Socket连接的服务端进程
-     * @param 
+     * 加入一组消息到队列的尾部
+     * @param msgList 消息列表
      */
-    public void stopServer(List<Message> msgList) {
+    public void addMessages(List<Message> msgList) {
         if (msgList!=null&&!msgList.isEmpty()) {
             for (Message msg: msgList) {
                 try {
@@ -148,7 +148,6 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                 } catch(Exception e) {}
             }
         }
-        stopServer();
     }
 
     /**

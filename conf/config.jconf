@@ -19,7 +19,8 @@
   //以下为对讲控制参数
   "intercom":{
     "dealThread":"1",
-    "expireTime":"120*60*1000" //检多长时间没有处理就删除对讲控制，毫秒
+    "expireTime":"120*60*1000", //检多长时间没有处理就删除对讲控制，毫秒
+    "expireSpeakerTime":"5*1000" //多长时间未通话，删除speaker
   },
   //以下为电话控制参数
   "calling": {

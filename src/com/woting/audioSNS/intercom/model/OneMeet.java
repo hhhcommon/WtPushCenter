@@ -7,7 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import com.woting.audioSNS.calling.mem.CallingMemory;
+//import com.woting.audioSNS.calling.mem.CallingMemory;
 import com.woting.audioSNS.intercom.mem.IntercomMemory;
 import com.woting.audioSNS.intercom.monitor.IntercomHandler;
 import com.woting.audioSNS.mediaflow.model.WholeTalk;
@@ -30,7 +30,7 @@ public class OneMeet implements Serializable {
     private static final long serialVersionUID=-2635864824531924446L;
 
     private IntercomMemory interMem=IntercomMemory.getInstance();
-    private CallingMemory callingMem=CallingMemory.getInstance();
+    //private CallingMemory callingMem=CallingMemory.getInstance();
 
     private volatile Object statusLck=new Object();
     private volatile Object preMsgLck=new Object();
@@ -117,8 +117,8 @@ public class OneMeet implements Serializable {
                 else if (entryGroupUserMap.size()<2) retFlag=3;//少于2人，无需通话
                 else if (entryGroupUserMap.get(pUdk.getUserId())==null) retFlag=4;//设置人不在组
                 else if (speaker!=null) retFlag=5;//有人在通话
-                else if (interMem.getUserTalk(pUdk.getUserId())!=null) retFlag=6;//自己正在用其他设备通话
-                else if (callingMem.isTalk(pUdk.getUserId())) retFlag=7;//自己正在用点对点通话
+                //else if (interMem.getUserTalk(pUdk.getUserId())!=null) retFlag=6;//自己正在用其他设备通话
+                //else if (callingMem.isTalk(pUdk.getUserId())) retFlag=7;//自己正在用点对点通话
                 else retFlag=1;
             } else {
                 retFlag=1; //如果是会议模式，总是允许说话
@@ -154,6 +154,13 @@ public class OneMeet implements Serializable {
      */
     public PushUserUDKey getSpeaker() {
         return speaker;
+    }
+    /**
+     * 获得讲话者
+     * @return 讲话者UdKey
+     */
+    public void clearSpeaker() {
+        speaker=null;
     }
 
     //五、消息相关
@@ -319,6 +326,7 @@ public class OneMeet implements Serializable {
      * 清除数据
      */
     public void clear() {
+        this.speaker=null;
         if (entryGroupUserMap!=null&&!entryGroupUserMap.isEmpty()) {
             for (String userId: entryGroupUserMap.keySet()) {
                 interMem.removeUserInMeet(userId, this);

@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.calling.model.OneCall;
 import com.woting.audioSNS.calling.monitor.CallHandler;
 
@@ -133,6 +134,7 @@ public class CallingMemory {
     }
 
     public List<Map<String, Object>> getActiveCallingList(String userId) {
+        if (StringUtils.isNullOrEmptyOrSpace(userId)) return null;
         List<OneCall> ul=userInCallMap.get(userId);
         if (ul==null) return null;
 
@@ -147,6 +149,7 @@ public class CallingMemory {
         return rt;
     }
     public void addUserInCall(String userId, OneCall oc) {
+        if (StringUtils.isNullOrEmptyOrSpace(userId)||oc==null) return;
         List<OneCall> ul=userInCallMap.get(userId);
         if (ul==null) {
             ul=new ArrayList<OneCall>();
@@ -163,6 +166,7 @@ public class CallingMemory {
         if (canIAdd) ul.add(oc);
     }
     public void removeUserInCall(String userId, OneCall oc) {
+        if (StringUtils.isNullOrEmptyOrSpace(userId)||oc==null) return;
         List<OneCall> ul=userInCallMap.get(userId);
         if (ul==null||ul.isEmpty()) return;
 

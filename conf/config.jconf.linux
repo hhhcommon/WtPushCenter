@@ -1,0 +1,48 @@
+﻿{
+  //以下三项为Socket处理参数
+  "pushserver":{
+    "ctlTcpPort":"16789",     //控制端配置
+    "dispatchThread":"3",     //分发接收消息的线程个数
+    "cleanInterval":"60*1000" //清理内存间隔时间
+  },
+  "socketenviron": {//socket监控环境参数——对所有服务都有效的环境信息
+    "logPath":"/opt/logs/Push/socket"  //日志文件存储目录，若不设置或为空，则不进行日志存储
+  },
+  "socketmonitor":{//socket监控参数——某一个监控服务需要的参数
+    "expireTime":"10*60*1000",       //4分钟，多长时间没有收到信息，若大于此时间没有获得信息，则系统认为Socket已经失效，将关闭相应的处理
+    "monitorDelay":"1000",          //1秒钟，主监控进程监控周期
+    "tryDestoryAllCount":"5",       //5次，尝试销毁次数，大于此数量仍未达到销毁条件，则强制销毁
+    "beatDelay":"43*1000",          //43秒，多长时间发送一次心跳
+    "errContinueCount":"1",         //3次，消息处理中，连续错误|异常消息的次数，若大于这个数量，则系统将认为此Socket为恶意连接，将关闭相应的处理
+    "errSumCount":"1000"            //1000次，消息处理中，总共错误|异常消息的次数，若大于这个数量，则系统将认为此Socket为恶意连接，将关闭相应的处理
+  },
+  //以下为对讲控制参数
+  "intercom":{
+    "dealThread":"3",
+    "expireTime":"120*60*1000", //检多长时间没有处理就删除对讲控制，毫秒
+    "expireSpeakerTime":"5*1000" //多长时间未通话，删除speaker
+  },
+  //以下为电话控制参数
+  "calling": {
+    "dealThread":"3",    //处理原生接收队列线程的个数，从原生队列中获取与电话处理的相关消息，并进行处理的线程的个数。此线程包括分发和创建处理线程
+    "expireOnline":"100*1000", //检查是否在线的过期时间，毫秒
+    "expireAck":"3000*1000",  //检查无应答的过期时间，毫秒
+    "expireTime":"6000*1000", //检查一次通话的过期时间，毫秒
+    "clean":{
+      "cleanInternal":"13*1000",
+      "dataExpire":"19*1000"
+    }
+  },
+  //以下为语音控制参数
+  "mediaflow":{
+    "dealThread":"6"
+  },
+  //以下为通知控制参数
+  "notify":{
+    "dealThread":"3"
+  },
+  //以下为同步控制参数
+  "sync":{
+    "dealThread":"3"
+  }
+}

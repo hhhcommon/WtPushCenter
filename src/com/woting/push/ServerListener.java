@@ -312,7 +312,6 @@ public class ServerListener {
             ds.start();
             dealSyncList.add(ds);
         }
-        logger.info("启动Push服务:二、监控服务启动=[完成]======================");
         _RUN_STATUS=2;//==================启动成功
     }
     private void listener() {

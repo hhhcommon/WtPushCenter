@@ -11,6 +11,10 @@ public class IntercomConfig implements Config {
      * 检查是否在线的过期时间，毫秒
      */
     private long _ExpireTime=120*60*1000;
+    /**
+     * Speaker过期时间，毫秒
+     */
+    private long _ExpireSpeakerTime=5*1000;
 
     public int get_DealThreadCount() {
         return _DealThreadCount;
@@ -21,7 +25,13 @@ public class IntercomConfig implements Config {
     public long get_ExpireTime() {
         return _ExpireTime;
     }
-    public void set_ExpireTime(long _ExpireTime) {
-        this._ExpireTime=_ExpireTime;
+    public void set_ExpireTime(long _ExpireSpeakerTime) {
+        this._ExpireSpeakerTime=_ExpireSpeakerTime;
+    }
+    public long get_ExpireSpeakerTime() {
+        return _ExpireTime;
+    }
+    public void set_ExpireSpeakerTime(long _ExpireSpeakerTime) {
+        this._ExpireSpeakerTime=_ExpireSpeakerTime;
     }
 }

@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.intercom.model.OneMeet;
 import com.woting.audioSNS.intercom.monitor.IntercomHandler;
 import com.woting.passport.UGA.model.Group;
@@ -169,6 +170,7 @@ public class IntercomMemory {
     }
 
     public List<Map<String, Object>> getActiveGroupList(String userId) {
+        if (StringUtils.isNullOrEmptyOrSpace(userId)) return null;
         List<OneMeet> ul=userInMeetMap.get(userId);
         if (ul==null) return null;
 
@@ -186,6 +188,7 @@ public class IntercomMemory {
         return rt;
     }
     public void addUserInMeet(String userId, OneMeet om) {
+        if (StringUtils.isNullOrEmptyOrSpace(userId)||om==null) return;
         List<OneMeet> ul=userInMeetMap.get(userId);
         if (ul==null) {
             ul=new ArrayList<OneMeet>();
@@ -202,6 +205,7 @@ public class IntercomMemory {
         if (canIAdd) ul.add(om);
     }
     public void removeUserInMeet(String userId, OneMeet om) {
+        if (StringUtils.isNullOrEmptyOrSpace(userId)||om==null) return;
         List<OneMeet> ul=userInMeetMap.get(userId);
         if (ul==null||ul.isEmpty()) return;
 

@@ -31,7 +31,6 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
     private SessionService sessionService=null;
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
     private IntercomMemory interMem=IntercomMemory.getInstance();
-    //private TalkMemory talkMem=TalkMemory.getInstance();
 
     private OneMeet meetData=null;
     private volatile Object shutdownLock=new Object();
@@ -66,6 +65,13 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             {
                 shutdown();
                 return;
+            }
+            //一段时间后未通话，删除通话者
+            if ((meetData.getStatus()==2||meetData.getStatus()==3)
+              &&(meetData.getSpeaker()!=null)
+              &&(System.currentTimeMillis()-meetData.getLastTalkTime()>conf.get_ExpireSpeakerTime()))
+            {
+                meetData.clearSpeaker();
             }
             MsgNormal m=meetData.pollPreMsg();
             if (m==null) return;
@@ -217,41 +223,45 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
 
         //广播消息信息组织
         if (retFlag==1&&meetData.getEntryGroupUserMap()!=null) {
-            MsgNormal bMsg=MessageUtils.clone(retMsg);
-            bMsg.setReMsgId(null);
-            bMsg.setMsgType(0);
-            bMsg.setCommand(0x10);
-            dataMap=new HashMap<String, Object>();
-            dataMap.put("GroupId", groupId);
-            List<Map<String, Object>> inGroupUsers=new ArrayList<Map<String,Object>>();
-            for (String k: meetData.getEntryGroupUserMap().keySet()) {
-                Map<String, Object> um;
-                UserPo up=meetData.getEntryGroupUserMap().get(k);
-                um=new HashMap<String, Object>();
-                um.put("UserId", up.getUserId());
-                inGroupUsers.add(um);
-            }
-            dataMap.put("InGroupUsers", inGroupUsers);
-            MapContent _mc=new MapContent(dataMap);
-            bMsg.setMsgContent(_mc);
-            //发送广播消息
-            for (String k: meetData.getEntryGroupUserMap().keySet()) {
-                List<PushUserUDKey> al=sessionService.getActivedUserUDKs(k);
-                if (al!=null&&!al.isEmpty()) {
-                    for (PushUserUDKey _pUdk: al) {
-                        globalMem.sendMem.addUnionUserMsg(_pUdk, bMsg, new CompareGroupMsg());
+            if (meetData.getEntryGroupUserMap().isEmpty()) {
+                meetData.clearSpeaker();
+            } else {
+                MsgNormal bMsg=MessageUtils.clone(retMsg);
+                bMsg.setReMsgId(null);
+                bMsg.setMsgType(0);
+                bMsg.setCommand(0x10);
+                dataMap=new HashMap<String, Object>();
+                dataMap.put("GroupId", groupId);
+                List<Map<String, Object>> inGroupUsers=new ArrayList<Map<String,Object>>();
+                for (String k: meetData.getEntryGroupUserMap().keySet()) {
+                    Map<String, Object> um;
+                    UserPo up=meetData.getEntryGroupUserMap().get(k);
+                    um=new HashMap<String, Object>();
+                    um.put("UserId", up.getUserId());
+                    inGroupUsers.add(um);
+                }
+                dataMap.put("InGroupUsers", inGroupUsers);
+                MapContent _mc=new MapContent(dataMap);
+                bMsg.setMsgContent(_mc);
+                //发送广播消息
+                for (String k: meetData.getEntryGroupUserMap().keySet()) {
+                    List<PushUserUDKey> al=sessionService.getActivedUserUDKs(k);
+                    if (al!=null&&!al.isEmpty()) {
+                        for (PushUserUDKey _pUdk: al) {
+                            globalMem.sendMem.addUnionUserMsg(_pUdk, bMsg, new CompareGroupMsg());
+                        }
                     }
                 }
-            }
-//            //给自己的其他设备也发这样的消息
-//            List<PushUserUDKey> al=sessionService.getActivedUserUDKs(pUdk.getUserId());
-//            if (al!=null&&!al.isEmpty()) {
-//                for (PushUserUDKey _pUdk: al) {
-//                    if (!_pUdk.equals(pUdk)) {
-//                        globalMem.sendMem.addUnionUserMsg(_pUdk, retMsg, new CompareGroupMsg());
+//                //给自己的其他设备也发这样的消息
+//                List<PushUserUDKey> al=sessionService.getActivedUserUDKs(pUdk.getUserId());
+//                if (al!=null&&!al.isEmpty()) {
+//                    for (PushUserUDKey _pUdk: al) {
+//                        if (!_pUdk.equals(pUdk)) {
+//                            globalMem.sendMem.addUnionUserMsg(_pUdk, retMsg, new CompareGroupMsg());
+//                        }
 //                    }
 //                }
-//            }
+            }
         }
         return retFlag==1?1:3;
     }
@@ -286,12 +296,14 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             else if (retFlag==5) {//已经有人通话
                 retMsg.setReturnType(0x08);
                 dataMap.put("SpeakerId", retMap.get("speakerId"));
-            } else if (retFlag==6) retMsg.setReturnType(0x06);//自己在用其他设备通话
+            }
+            else if (retFlag==6) retMsg.setReturnType(0x06);//自己在用其他设备通话
             else if (retFlag==7) retMsg.setReturnType(0x07);//自己在电话通话
             else retMsg.setReturnType(0x01);//正确加入组
         }
         globalMem.sendMem.addUserMsg(pUdk, retMsg);
 
+        if (retFlag==1) meetData.setStatus_3();
         if (retFlag==1&&meetData.getEntryGroupUserMap()!=null&&meetData.getEntryGroupUserMap().size()>1) {
             MsgNormal bMsg=MessageUtils.clone(retMsg);
             bMsg.setReMsgId(null);
