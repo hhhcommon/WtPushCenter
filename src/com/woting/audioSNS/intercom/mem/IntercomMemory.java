@@ -10,6 +10,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.woting.audioSNS.intercom.model.OneMeet;
 import com.woting.audioSNS.intercom.monitor.IntercomHandler;
+import com.woting.passport.UGA.model.Group;
+import com.woting.passport.UGA.persis.pojo.GroupPo;
 import com.woting.push.user.PushUserUDKey;
 
 public class IntercomMemory {
@@ -28,11 +30,13 @@ public class IntercomMemory {
     protected ConcurrentHashMap<String, OneMeet> meetMap;//对讲组信息Map
     protected ConcurrentHashMap<String, OneMeet> tobeDelMeetMap;//将要删除的用户组
     protected ConcurrentHashMap<String, Map<String, Object>> userTalk;//用户对讲信息，用户正在用那个通道对讲
+    protected ConcurrentHashMap<String, List<OneMeet>> userInMeetMap;//用户对讲信息，用户正在用那个通道对讲
 
     private IntercomMemory() {
         meetMap=new ConcurrentHashMap<String, OneMeet>();
         tobeDelMeetMap=new ConcurrentHashMap<String, OneMeet>();
         userTalk=new ConcurrentHashMap<String, Map<String, Object>>();
+        userInMeetMap=new ConcurrentHashMap<String, List<OneMeet>>();
     }
 
     /**
@@ -162,5 +166,51 @@ public class IntercomMemory {
             if (om!=null&&om.getIntercomHandler()!=null) ret.add(om.getIntercomHandler());
         }
         return ret.isEmpty()?null:ret;
+    }
+
+    public List<Map<String, Object>> getActiveGroupList(String userId) {
+        List<OneMeet> ul=userInMeetMap.get(userId);
+        if (ul==null) return null;
+
+        List<Map<String, Object>> rt=new ArrayList<Map<String, Object>>();
+        for (OneMeet om: ul) {
+            Map<String, Object> m=new HashMap<String, Object>();
+            m.put("GroupId", om.getGroupId());
+            Group g=om.getGroup();
+            if (g==null) continue;
+            m.put("GroupInfo", ((GroupPo)g.convert2Po()).toHashMap4View());
+            m.put("GroupUserList", g.getUserList());
+            m.put("GroupEntryUsers", om.getEntryGroupUserMap());
+            rt.add(m);
+        }
+        return rt;
+    }
+    public void addUserInMeet(String userId, OneMeet om) {
+        List<OneMeet> ul=userInMeetMap.get(userId);
+        if (ul==null) {
+            ul=new ArrayList<OneMeet>();
+            userInMeetMap.put(userId, ul);
+        }
+
+        boolean canIAdd=true;
+        for (OneMeet _om: ul) {
+            if (_om.equals(om)) {
+                canIAdd=false;
+                break;
+            }
+        }
+        if (canIAdd) ul.add(om);
+    }
+    public void removeUserInMeet(String userId, OneMeet om) {
+        List<OneMeet> ul=userInMeetMap.get(userId);
+        if (ul==null||ul.isEmpty()) return;
+
+        for (int i=ul.size()-1; i>=0; i--) {
+            if (ul.get(i).equals(om)) {
+                ul.remove(i);
+                break;
+            }
+        }
+        if (ul.isEmpty()) userInMeetMap.remove(userId);
     }
 }

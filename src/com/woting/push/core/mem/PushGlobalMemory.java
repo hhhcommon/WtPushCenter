@@ -128,32 +128,43 @@ public class PushGlobalMemory {
         if (pUdk==null||sh==null) return;
 //        synchronized(LOCK_usersocketMap) {
 //        }
-        SocketHandler oldSh=REF_udkANDsocket.get(pUdk);
-        if (oldSh!=null) {
-            synchronized(oldSh.stopLck) {
-                oldSh.stopServer();
-                try {
-                    oldSh.stopLck.wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        //剔除相同用户同一设备登录
-        PushUserUDKey _pUdk=REF_userdtypeANDudk.get(pUdk.getUserId()+"::"+pUdk.getPCDType());
-        if (_pUdk!=null) {
-            oldSh=REF_udkANDsocket.get(_pUdk);
-            if (oldSh!=null) {
-                synchronized(oldSh.stopLck) {
-                    oldSh.stopServer();
-                    try {
-                        oldSh.stopLck.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
+
+        //        SocketHandler oldSh=REF_udkANDsocket.get(pUdk);
+//        if (oldSh!=null) {
+//            if (!oldSh.equals(sh)) {
+//                synchronized(oldSh.stopLck) {
+//                    List<Message> ml=new ArrayList<Message>();
+//                    ml.add(buildKickOutMsg(pUdk));
+//                    
+//                    oldSh.stopServer(ml);
+//                    try {
+//                        oldSh.stopLck.wait();
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }
+//        }
+//
+//        //剔除相同用户同一设备登录
+//        PushUserUDKey _pUdk=REF_userdtypeANDudk.get(pUdk.getUserId()+"::"+pUdk.getPCDType());
+//        if (_pUdk!=null&&!_pUdk.equals(pUdk)) {
+//            oldSh=REF_udkANDsocket.get(_pUdk);
+//            if (oldSh!=null) {
+//                if (oldSh.equals(sh)) {
+//                    synchronized(oldSh.stopLck) {
+//                        List<Message> ml=new ArrayList<Message>();
+//                        ml.add(buildKickOutMsg(_pUdk));
+//                        oldSh.stopServer(ml);
+//                        try {
+//                            oldSh.stopLck.wait();
+//                        } catch (InterruptedException e) {
+//                            e.printStackTrace();
+//                        }
+//                    }
+//                }
+//            }
+//        }
         REF_udkANDsocket.put(pUdk, sh);
         REF_socketANDudk.put(sh, pUdk);
         REF_userdtypeANDudk.put(pUdk.getUserId()+"::"+pUdk.getPCDType(), pUdk);
@@ -181,7 +192,6 @@ public class PushGlobalMemory {
             _sh=REF_udkANDsocket.get(pUdk);
             if (_sh!=null) REF_socketANDudk.remove(_sh);
             REF_udkANDsocket.remove(sh);
-            _sh.stopServer();
             REF_userdtypeANDudk.remove(pUdk.getUserId()+"::"+pUdk.getPCDType());
         } else {
             REF_udkANDsocket.remove(pUdk);
@@ -229,6 +239,23 @@ public class PushGlobalMemory {
             return _userQueue.add(msg);
         }
     }
+
+//    private Message buildKickOutMsg(PushUserUDKey pUdk) {
+//        MsgNormal msg=new MsgNormal();
+//        msg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
+//        msg.setFromType(1);
+//        msg.setToType(0);
+//        msg.setMsgType(0);
+//        msg.setAffirm(0);
+//        msg.setBizType(0x04);
+//        msg.setCmdType(3);
+//        msg.setCommand(1);
+//        Map<String, Object> dataMap=pUdk.toHashMap();
+//        MapContent mc=new MapContent(dataMap);
+//        msg.setMsgContent(mc);
+//
+//        return msg;
+//    }
     /**
      * 内部类，接受消息处理类
      * @author wanghui

@@ -1,6 +1,7 @@
 package com.woting.audioSNS.calling.mem;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,14 +23,14 @@ public class CallingMemory {
     }
     //java的占位单例模式===end
 
-    protected ConcurrentHashMap<String, OneCall> callMap;//对讲组信息Map
-    protected ConcurrentHashMap<String, Map<String, Object>> userTalk;//用户对讲信息，某个用户正在用那个通道对讲
-    protected ConcurrentHashMap<String, OneCall> delMap;//将要被删除的对讲信息，key值是oneCall的id+当前的毫秒数
+    private ConcurrentHashMap<String, OneCall> callMap;//对讲组信息Map
+    private ConcurrentHashMap<String, List<OneCall>> userInCallMap;//用户对讲信息，某个用户正在用那个通道对讲
+    private ConcurrentHashMap<String, OneCall> delMap;//将要被删除的对讲信息，key值是oneCall的id+当前的毫秒数
 
     private CallingMemory() {
         callMap=new ConcurrentHashMap<String, OneCall>();
         delMap=new ConcurrentHashMap<String, OneCall>();
-        userTalk=new ConcurrentHashMap<String, Map<String, Object>>();
+        userInCallMap=new ConcurrentHashMap<String, List<OneCall>>();
     }
 
     /**
@@ -128,7 +129,49 @@ public class CallingMemory {
     }
 
     public boolean isTalk(String userId) {
-        // TODO Auto-generated method stub
         return false;
+    }
+
+    public List<Map<String, Object>> getActiveCallingList(String userId) {
+        List<OneCall> ul=userInCallMap.get(userId);
+        if (ul==null) return null;
+
+        List<Map<String, Object>> rt=new ArrayList<Map<String, Object>>();
+        for (OneCall oc: ul) {
+            Map<String, Object> m=new HashMap<String, Object>();
+            m.put("CallId", oc.getCallId());
+            m.put("CallerId", oc.getCallerId());
+            m.put("CallederId", oc.getCallederId());
+            rt.add(m);
+        }
+        return rt;
+    }
+    public void addUserInCall(String userId, OneCall oc) {
+        List<OneCall> ul=userInCallMap.get(userId);
+        if (ul==null) {
+            ul=new ArrayList<OneCall>();
+            userInCallMap.put(userId, ul);
+        }
+
+        boolean canIAdd=true;
+        for (OneCall _oc: ul) {
+            if (_oc.equals(oc)) {
+                canIAdd=false;
+                break;
+            }
+        }
+        if (canIAdd) ul.add(oc);
+    }
+    public void removeUserInCall(String userId, OneCall oc) {
+        List<OneCall> ul=userInCallMap.get(userId);
+        if (ul==null||ul.isEmpty()) return;
+
+        for (int i=ul.size()-1; i>=0; i--) {
+            if (ul.get(i).equals(oc)) {
+                ul.remove(i);
+                break;
+            }
+        }
+        if (ul.isEmpty()) userInCallMap.remove(userId);
     }
 }

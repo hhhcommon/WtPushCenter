@@ -150,7 +150,7 @@ public class ServerListener {
         }
         try {
             logger=LoggerFactory.getLogger(ServerListener.class);
-            logger.info("启动Push服务=======================");
+            logger.info("启动Push服务:一、环境加载=======================");
             logger.info("一、环境加载");
             logger.info("加载运行目录，用时[{}]毫秒", System.currentTimeMillis()-_begin);
             //读取系统配置
@@ -183,6 +183,7 @@ public class ServerListener {
 
         if (initOk) logger.info("Push服务环境加载成功，共用时[{}]毫秒", System.currentTimeMillis()-beginTime);
         else logger.info("Push服务环境加载错误，启动失败。共用时[{}]毫秒", System.currentTimeMillis()-beginTime);
+        logger.info("启动Push服务:环境加载=[完成]======================");
         return initOk;
     }
 
@@ -244,6 +245,7 @@ public class ServerListener {
 
     @SuppressWarnings("unchecked")
     private void startServers() {
+        logger.info("启动Push服务:二、监控服务启动=======================");
         //1-启动{TCP_控制信道}socket监控
         PushConfig pc=((CacheEle<PushConfig>)SystemCache.getCache(PushConstants.PUSH_CONF)).getContent();
         if (socketType==0) {
@@ -310,6 +312,7 @@ public class ServerListener {
             ds.start();
             dealSyncList.add(ds);
         }
+        logger.info("启动Push服务:二、监控服务启动=[完成]======================");
         _RUN_STATUS=2;//==================启动成功
     }
     private void listener() {

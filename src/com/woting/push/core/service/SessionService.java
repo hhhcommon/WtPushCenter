@@ -87,7 +87,7 @@ public class SessionService {
                             map.put("Message", "不能找到相应的用户");
                             return map;
                         }
-                        roService.set(rUdk.getKey_DeviceType_UserInfo(), JsonUtils.objToJson(up.toHashMap4Mobile()), 30*60*1000);
+                        roService.set(rUdk.getKey_DeviceType_UserInfo(), JsonUtils.objToJson(up.toHashMap4View()), 30*60*1000);
                     }
                     
                 } catch(Exception e) {
@@ -159,13 +159,13 @@ public class SessionService {
                         roService.pExpire(rUdk.getKey_UserLoginDeviceType(), 30*60*1000);//30分钟后过期
                         roService.set(rUdk.getKey_DeviceType_UserId(), upo.getUserId());
                         roService.pExpire(rUdk.getKey_DeviceType_UserId(), 30*60*1000);//30分钟后过期
-                        roService.set(rUdk.getKey_DeviceType_UserInfo(), (JsonUtils.objToJson(upo.toHashMap4Mobile())));
+                        roService.set(rUdk.getKey_DeviceType_UserInfo(), (JsonUtils.objToJson(upo.toHashMap4View())));
                         roService.pExpire(rUdk.getKey_DeviceType_UserInfo(), 30*60*1000);//30分钟后过期
 
                         map.put("ReturnType", "1001");
                         map.put("UserId", upo.getUserId());
                         try {
-                            map.put("UserInfo", upo.toHashMap4Mobile());
+                            map.put("UserInfo", upo.toHashMap4View());
                         } catch(Exception e) {
                         }
                         map.put("Message", "用户已登录");

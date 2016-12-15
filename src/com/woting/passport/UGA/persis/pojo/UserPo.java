@@ -82,7 +82,7 @@ public class UserPo extends UgaUser {
         this.lmTime=lmTime;
     }
 
-    public Map<String, Object> toHashMap4Mobile() {
+    public Map<String, Object> toHashMap4View() {
         Map<String, Object> retM=new HashMap<String, Object>();
         if (!StringUtils.isNullOrEmptyOrSpace(this.userId)) retM.put("UserId", this.userId);
         if (!StringUtils.isNullOrEmptyOrSpace(this.userName)) retM.put("RealName", this.userName);

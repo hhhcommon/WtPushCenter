@@ -9,6 +9,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 
@@ -55,6 +56,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
 
     public Object stopLck=new Object();
+    private Object sendQueueLck=new Object();
 
     protected SocketHandler(SocketHandleConfig conf, Socket socket) {
         super(conf);
@@ -135,6 +137,21 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
     }
 
     /**
+     * 停止某一Socket连接的服务端进程
+     * @param 
+     */
+    public void stopServer(List<Message> msgList) {
+        if (msgList!=null&&!msgList.isEmpty()) {
+            for (Message msg: msgList) {
+                try {
+                    _sendMsgQueue.put(msg.toBytes());
+                } catch(Exception e) {}
+            }
+        }
+        stopServer();
+    }
+
+    /**
      * 销毁某一Socket监控服务，包括：<br/>
      * 1-停止下级线程服务
      * 2-释放socket相关的资源
@@ -149,6 +166,16 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
             //1-停止下级服务
             if (receiveMsg!=null) {try {receiveMsg.__interrupt();} catch(Exception e) {}}
             if (fatchMsg!=null) {try {fatchMsg.__interrupt();} catch(Exception e) {}}
+
+            while (_sendMsgQueue.size()>0) {
+                synchronized(sendQueueLck) {
+                    try {
+                        sendQueueLck.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
             if (sendMsg!=null) {try {sendMsg.__interrupt();} catch(Exception e) {}}
 
             boolean canClose=false;
@@ -203,8 +230,6 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         }
         protected void __interrupt(){
             __isInterrupted=true;
-            this.interrupt();
-            super.interrupt();
         }
 
         abstract protected void __loopProcess() throws Exception;
@@ -394,7 +419,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                     if (_ms.getBizType()==15) {//是注册消息
                                         _pushUserKey=_pUdk;
                                     } else globalMem.receiveMem.addPureMsg(_ms);
-                                } else {
+                                } else {//从客户端来的消息
                                     Map<String, Object> retM=sessionService.dealUDkeyEntry(_pUdk, "socket/entry");
                                     if (!(""+retM.get("ReturnType")).equals("1001")) {
                                         MsgNormal ackM=MessageUtils.buildAckMsg(_ms);
@@ -411,11 +436,15 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                             ackM.setReturnType(1);//成功
                                             ackM.setSendTime(System.currentTimeMillis());
                                             _sendMsgQueue.add(ackM.toBytes());
-//                                            //发送注册成功的消息给组对讲——以便他处理组在线的功能，
-//                                            //TODO 注意，这里似乎应该有一个机制，能够方便的扩充
-//                                            ((MsgNormal) ms).setAffirm(0);//设置为不需要回复
-//                                            ((MsgNormal) ms).setBizType(1);//设置为组消息
-//                                            ((MsgNormal) ms).setCmdType(0);//进入消息
+                                            //发送注册成功的消息给组对讲——以便他处理组在线的功能
+                                            _ms.setAffirm(0);//设置为不需要回复
+                                            _ms.setBizType(1);//设置为组消息
+                                            _ms.setCmdType(3);//组通知
+                                            _ms.setCommand(0);//进入消息
+                                            globalMem.receiveMem.addPureMsg(_ms);
+                                            MsgNormal msc=MessageUtils.clone(_ms);
+                                            msc.setBizType(2);//设置为电话息
+                                            globalMem.receiveMem.addPureMsg(msc);
                                         } else globalMem.receiveMem.addPureMsg(_ms);
                                     }
                                 }
@@ -472,10 +501,13 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         protected void __loopProcess() throws Exception {
             //发送信息
             if (_socketOut!=null&&!_socket.isOutputShutdown()) {
-                mBytes=_sendMsgQueue.poll();
-                if (mBytes==null||mBytes.length<=2) return;
-                _socketOut.write(mBytes);
-                _socketOut.flush();
+                synchronized(sendQueueLck) {
+                    mBytes=_sendMsgQueue.poll();
+                    if (mBytes==null||mBytes.length<=2) return;
+                    _socketOut.write(mBytes);
+                    _socketOut.flush();
+                    sendQueueLck.notifyAll();
+                }
                 if (mBytes.length==3&&mBytes[0]=='b'&&mBytes[1]=='|'&&mBytes[2]=='^') return;
                 if (fos!=null) {
                     try {

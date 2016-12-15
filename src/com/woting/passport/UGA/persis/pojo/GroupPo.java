@@ -1,7 +1,11 @@
 package com.woting.passport.UGA.persis.pojo;
 
 import java.sql.Timestamp;
+import java.util.HashMap;
+import java.util.Map;
+
 import com.spiritdata.framework.core.model.BaseObject;
+import com.spiritdata.framework.util.StringUtils;
 
 public class GroupPo extends BaseObject {
     private static final long serialVersionUID=-4171166651180143388L;
@@ -111,5 +115,22 @@ public class GroupPo extends BaseObject {
     }
     public void setGroupCount(int groupCount) {
         this.groupCount=groupCount;
+    }
+
+    public Map<String, Object> toHashMap4View() {
+        Map<String, Object> retM=new HashMap<String, Object>();
+
+        retM.put("GroupId", this.groupId);
+        if (!StringUtils.isNullOrEmptyOrSpace(this.groupNum)) retM.put("GroupNum", this.groupNum);
+        retM.put("GroupType", this.groupType);
+        if (!StringUtils.isNullOrEmptyOrSpace(this.groupImg)) retM.put("GroupImg", this.groupImg);
+        if (!StringUtils.isNullOrEmptyOrSpace(this.groupName)) retM.put("GroupName", this.groupName);
+        if (!StringUtils.isNullOrEmptyOrSpace(this.groupSignature)) retM.put("GroupSignature", this.groupSignature);
+        if (!StringUtils.isNullOrEmptyOrSpace(this.createUserId)) retM.put("GroupCreator", this.createUserId);
+        if (!StringUtils.isNullOrEmptyOrSpace(this.adminUserIds)) retM.put("GroupManager", this.adminUserIds);
+        retM.put("GroupCount", this.groupCount);
+        if (!StringUtils.isNullOrEmptyOrSpace(this.descn)) retM.put("GroupOriDescn", this.descn);
+
+        return retM;
     }
 }

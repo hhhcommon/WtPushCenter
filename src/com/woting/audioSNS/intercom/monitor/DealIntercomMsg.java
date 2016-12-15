@@ -56,6 +56,22 @@ public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
         //不管任何消息，若groupId为空，则都认为是非法的消息，这类消息不进行任何处理，丢弃掉
         if (StringUtils.isNullOrEmptyOrSpace(groupId)) return;
 
+        //进入处理
+        if (sourceMsg.getCmdType()==3&&sourceMsg.getCommand()==0) {
+            PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(sourceMsg);
+            List<Map<String, Object>> glm=intercomMem.getActiveGroupList(pUdk.getUserId());
+            MsgNormal retMsg=MessageUtils.buildRetMsg(sourceMsg);
+            retMsg.setBizType(1);
+            retMsg.setCommand(9);
+            if (glm==null||glm.isEmpty()) retMsg.setReturnType(0x00);//无内容
+            else {
+                Map<String, Object> dataMap=new HashMap<String, Object>();
+                dataMap.put("GroupList", glm);
+                retMsg.setReturnType(0x01);
+            }
+            globalMem.sendMem.addUserMsg(pUdk, retMsg);
+            return ;
+        }
         OneMeet om=intercomMem.getOneMeet(groupId);
         if (om==null) {
             if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==1) {//进入组

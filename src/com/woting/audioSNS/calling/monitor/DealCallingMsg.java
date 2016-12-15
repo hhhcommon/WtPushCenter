@@ -58,6 +58,21 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
         PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(sourceMsg);
 
         MsgNormal retMsg=MessageUtils.buildRetMsg(sourceMsg);
+        //进入处理
+        if (sourceMsg.getCmdType()==3&&sourceMsg.getCommand()==0) {
+            List<Map<String, Object>> glm=callingMem.getActiveCallingList(pUdk.getUserId());
+            retMsg.setBizType(1);
+            retMsg.setCommand(9);
+            if (glm==null||glm.isEmpty()) retMsg.setReturnType(0x00);//无内容
+            else {
+                Map<String, Object> dataMap=new HashMap<String, Object>();
+                dataMap.put("CallingList", glm);
+                retMsg.setReturnType(0x01);
+            }
+            globalMem.sendMem.addUserMsg(pUdk, retMsg);
+            return ;
+        }
+
         if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==1) {//发起呼叫过程
             String callerId=pUdk.getUserId();
             String callederId=((MapContent)sourceMsg.getMsgContent()).get("CallederId")+"";

@@ -267,10 +267,12 @@ public class OneMeet implements Serializable {
         if (type==0) {//进入
             if (exist) return 2; //用户已存在进入组，
             entryGroupUserMap.put(pUdk.getUserId(), entryUp);
+            interMem.addUserInMeet(pUdk.getUserId(), this);
         }
         if (type==1) {//退出
-            if (exist) entryGroupUserMap.remove(pUdk.getUserId());
-            else return 3; //用户不在进入组
+            if (!exist) return 3; //用户不在进入组
+            entryGroupUserMap.remove(pUdk.getUserId());
+            interMem.removeUserInMeet(pUdk.getUserId(), this);
         }
         return 1;
     }
@@ -317,6 +319,11 @@ public class OneMeet implements Serializable {
      * 清除数据
      */
     public void clear() {
+        if (entryGroupUserMap!=null&&!entryGroupUserMap.isEmpty()) {
+            for (String userId: entryGroupUserMap.keySet()) {
+                interMem.removeUserInMeet(userId, this);
+            }
+        }
         if (wtsMap!=null&&!wtsMap.isEmpty()) {
             for (PushUserUDKey pUdk: wtsMap.keySet()) {
                 wtsMap.get(pUdk).clear(); 

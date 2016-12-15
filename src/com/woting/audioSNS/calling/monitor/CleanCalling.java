@@ -36,6 +36,8 @@ public class CleanCalling extends AbstractLoopMoniter<CallingConfig> {
                         OneCall oc=delM.remove(k);
                         if (oc!=null) {
                             oc.clear();//清除对象本身
+                            callingMem.removeUserInCall(oc.getCallerId(), oc);
+                            callingMem.removeUserInCall(oc.getCallederId(), oc);
                             //清除会话数据
                             globalMem.sendMem.cleanMsg4Call(oc.getCallerKey(), oc.getCallId());
                             globalMem.sendMem.cleanMsg4Call(oc.getCallederKey(), oc.getCallId());
