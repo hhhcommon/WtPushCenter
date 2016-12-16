@@ -11,7 +11,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.intercom.model.OneMeet;
 import com.woting.passport.UGA.persis.pojo.UserPo;
-import com.woting.push.core.message.CompareMsg;
 import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MsgMedia;
 import com.woting.push.core.message.MsgNormal;
@@ -45,6 +44,24 @@ public class PushGlobalMemory {
         return InstanceHolder.instance;
     }
     //java的占位单例模式===end
+
+    /*
+     * 初始化，创建两个主要的对象
+     */
+    private PushGlobalMemory() {
+       pureMsgQueue=new ConcurrentLinkedQueue<Message>();
+       typeMsg=new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
+       sendMsg=new ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Message>>();
+       notifyMsg=new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
+
+       REF_userdtypeANDudk=new HashMap<String, PushUserUDKey>();
+       REF_udkANDsocket=new HashMap<PushUserUDKey, SocketHandler>();
+       REF_socketANDudk=new HashMap<SocketHandler, PushUserUDKey>();
+
+       receiveMem=new ReceiveMemory();
+       sendMem=new SendMemory();
+       sessionService=(SessionService)SpringShell.getBean("sessionService");
+    }
 
     //==========接收消息内存
     /**
@@ -89,26 +106,6 @@ public class PushGlobalMemory {
     private Map<String, PushUserUDKey> REF_userdtypeANDudk;
     private Map<PushUserUDKey, SocketHandler> REF_udkANDsocket;
     private Map<SocketHandler, PushUserUDKey> REF_socketANDudk;
-
-    public ReceiveMemory receiveMem=null;
-    public SendMemory sendMem=null;
-    /*
-     * 初始化，创建两个主要的对象
-     */
-    private PushGlobalMemory() {
-       pureMsgQueue=new ConcurrentLinkedQueue<Message>();
-       typeMsg=new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
-       sendMsg=new ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Message>>();
-       notifyMsg=new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
-
-       REF_userdtypeANDudk=new HashMap<String, PushUserUDKey>();
-       REF_udkANDsocket=new HashMap<PushUserUDKey, SocketHandler>();
-       REF_socketANDudk=new HashMap<SocketHandler, PushUserUDKey>();
-
-       receiveMem=new ReceiveMemory();
-       sendMem=new SendMemory();
-       sessionService=(SessionService)SpringShell.getBean("sessionService");
-    }
 
     /**
      * 绑定用户和Socket
@@ -219,25 +216,24 @@ public class PushGlobalMemory {
         return ret.isEmpty()?null:ret;
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public boolean addNotifyMsg(String userId, Message msg, CompareMsg compMsg) {
+    public boolean addNotifyMsg(String userId, Message msg) {
         if (msg==null||userId==null||userId.trim().length()==0) return false;
         ConcurrentLinkedQueue<Message> _userQueue=notifyMsg.get(userId);
         if (_userQueue==null) {
             _userQueue=new ConcurrentLinkedQueue<Message>();
             notifyMsg.put(userId, _userQueue);
         }
-        synchronized(_userQueue) {
-            List<Message> removeMsg=new ArrayList<Message>();
-            for (Message m: _userQueue) {
-                if (compMsg!=null&&compMsg.compare(m, msg)) removeMsg.add(m);
-            }
-            for (Message m: removeMsg) {
-                _userQueue.remove(m);
-            }
-            if (msg.getSendTime()==0) msg.setSendTime(System.currentTimeMillis());
-            return _userQueue.add(msg);
+//        synchronized(_userQueue) {
+//        }
+        List<Message> removeMsg=new ArrayList<Message>();
+        for (Message m: _userQueue) {
+            if (m.equals(msg)) removeMsg.add(m);
         }
+        for (Message m: removeMsg) {
+            _userQueue.remove(m);
+        }
+        if (msg.getSendTime()==0) msg.setSendTime(System.currentTimeMillis());
+        return _userQueue.add(msg);
     }
 
 //    private Message buildKickOutMsg(PushUserUDKey pUdk) {
@@ -256,6 +252,9 @@ public class PushGlobalMemory {
 //
 //        return msg;
 //    }
+
+    public ReceiveMemory receiveMem=null;
+    public SendMemory sendMem=null;
     /**
      * 内部类，接受消息处理类
      * @author wanghui
@@ -319,26 +318,24 @@ public class PushGlobalMemory {
                 _userQueue=new ConcurrentLinkedQueue<Message>();
                 sendMsg.put(pUDkey, _userQueue);
             }
-            synchronized(_userQueue) {
-                if (msg.getSendTime()==0) msg.setSendTime(System.currentTimeMillis());
-                //查找相同的消息是否存在
-                boolean _exist=false;
-                for (Message _msg: _userQueue) {
-                    if (_msg instanceof MsgNormal&&msg instanceof MsgNormal) {
-                        if (((MsgNormal)msg).getMsgId()==null) {
-                            if (((MsgNormal)_msg).getMsgId()==null) {
-                                if (((MsgNormal)_msg).getReMsgId()==null) _exist=((MsgNormal)msg).getReMsgId()==null;
-                                else _exist=((MsgNormal)_msg).getReMsgId().equals(((MsgNormal)msg).getReMsgId());
-                            } else _exist=false;
-                        } else _exist=((MsgNormal)msg).getMsgId().equals(((MsgNormal)_msg).getMsgId());
-                    } else if (_msg instanceof MsgMedia&&msg instanceof MsgMedia) {
-                        _exist=((MsgMedia)msg).equals(_msg);
-                    }
-                    if (_exist) break;
+            if (msg.getSendTime()==0) msg.setSendTime(System.currentTimeMillis());
+            //查找相同的消息是否存在
+            boolean _exist=false;
+            for (Message _msg: _userQueue) {
+                if (_msg instanceof MsgNormal&&msg instanceof MsgNormal) {
+                    if (((MsgNormal)msg).getMsgId()==null) {
+                        if (((MsgNormal)_msg).getMsgId()==null) {
+                            if (((MsgNormal)_msg).getReMsgId()==null) _exist=((MsgNormal)msg).getReMsgId()==null;
+                            else _exist=((MsgNormal)_msg).getReMsgId().equals(((MsgNormal)msg).getReMsgId());
+                        } else _exist=false;
+                    } else _exist=((MsgNormal)msg).getMsgId().equals(((MsgNormal)_msg).getMsgId());
+                } else if (_msg instanceof MsgMedia&&msg instanceof MsgMedia) {
+                    _exist=((MsgMedia)msg).equals(_msg);
                 }
-                if (_exist) return true;
-                return _userQueue.offer(msg);
+                if (_exist) break;
             }
+            if (_exist) return true;
+            return _userQueue.offer(msg);
         }
 
         /**
@@ -347,8 +344,7 @@ public class PushGlobalMemory {
          * @param msg 消息数据
          * @return 加入成功返回true(若消息已经存在，也放回true)，否则返回false
          */
-        @SuppressWarnings({ "rawtypes", "unchecked" })
-        public boolean addUnionUserMsg(PushUserUDKey pUdk, Message msg, CompareMsg compMsg) {
+        public boolean addUnionUserMsg(PushUserUDKey pUdk, Message msg) {
             if (sendMsg==null||msg==null||pUdk==null) return false;
             //唯一化处理
             //1-首先把一已发送列表中的同类消息删除
@@ -365,17 +361,17 @@ public class PushGlobalMemory {
                 _userQueue=new ConcurrentLinkedQueue<Message>();
                 sendMsg.put(pUdk, _userQueue);
             }
-            synchronized(_userQueue) {
-                List<Message> removeMsg=new ArrayList<Message>();
-                for (Message m: _userQueue) {
-                    if (compMsg!=null&&compMsg.compare(m, msg)) removeMsg.add(m);
-                }
-                for (Message m: removeMsg) {
-                    _userQueue.remove(m);
-                }
-                if (msg.getSendTime()==0) msg.setSendTime(System.currentTimeMillis());
-                return _userQueue.add(msg);
+//            synchronized(_userQueue) {
+//            }
+            List<Message> removeMsg=new ArrayList<Message>();
+            for (Message m: _userQueue) {
+                if (m.equals(msg)) removeMsg.add(m);
             }
+            for (Message m: removeMsg) {
+                _userQueue.remove(m);
+            }
+            if (msg.getSendTime()==0) msg.setSendTime(System.currentTimeMillis());
+            return _userQueue.add(msg);
         }
 
         public Message getUserMsg(PushUserUDKey pUdk, SocketHandler sh) {

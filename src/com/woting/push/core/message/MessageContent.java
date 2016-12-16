@@ -23,4 +23,6 @@ public interface MessageContent {
      * @throws UnsupportedEncodingException 
      */
     public abstract byte[] toBytes() throws UnsupportedEncodingException;
+
+    public abstract boolean equals(MessageContent mc);
 }

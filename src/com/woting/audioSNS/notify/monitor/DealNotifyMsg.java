@@ -12,7 +12,6 @@ import com.spiritdata.framework.util.SequenceUUID;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.intercom.mem.IntercomMemory;
 import com.woting.audioSNS.intercom.model.OneMeet;
-import com.woting.audioSNS.notify.CompareNotifyMsg;
 import com.woting.audioSNS.notify.NotifyMessageConfig;
 import com.woting.passport.UGA.model.Group;
 import com.woting.passport.UGA.persis.pojo.UserPo;
@@ -160,7 +159,7 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
 
                 //4-发送消息
                 for (String userId: userIdL) {
-                    globalMem.addNotifyMsg(userId, nm, new CompareNotifyMsg());
+                    globalMem.addNotifyMsg(userId, nm);
                 }
             } catch(Exception e) {
                 logger.debug(StringUtils.getAllMessage(e));

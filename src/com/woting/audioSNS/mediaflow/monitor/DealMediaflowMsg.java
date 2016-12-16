@@ -12,7 +12,6 @@ import com.woting.audioSNS.calling.mem.CallingMemory;
 import com.woting.audioSNS.calling.model.OneCall;
 import com.woting.audioSNS.intercom.mem.IntercomMemory;
 import com.woting.audioSNS.intercom.model.OneMeet;
-import com.woting.audioSNS.mediaflow.CompareAudioFlowMsg;
 import com.woting.audioSNS.mediaflow.MediaflowConfig;
 import com.woting.audioSNS.mediaflow.mem.TalkMemory;
 import com.woting.audioSNS.mediaflow.model.TalkSegment;
@@ -34,7 +33,6 @@ public class DealMediaflowMsg extends AbstractLoopMoniter<MediaflowConfig> {
     private TalkMemory talkMem=TalkMemory.getInstance();
 
     private SessionService sessionService=null;
-    private CompareAudioFlowMsg compareMedia=new CompareAudioFlowMsg();
 
     /**
      * 给线程起一个名字的构造函数
@@ -111,14 +109,14 @@ public class DealMediaflowMsg extends AbstractLoopMoniter<MediaflowConfig> {
                 om=intercomMem.getOneMeet(objId);
                 if (om==null) {
                     retMm.setReturnType(0x10);//对讲组内存数据不存在
-                    globalMem.sendMem.addUnionUserMsg(pUdk, retMm, compareMedia);
+                    globalMem.sendMem.addUnionUserMsg(pUdk, retMm);
                     return;
                 }
             } else {//电话
                 oc=callingMem.getOneCall(objId);
                 if (oc==null) {
                     retMm.setReturnType(0x10);//电话内存数据不存在
-                    globalMem.sendMem.addUnionUserMsg(pUdk, retMm, compareMedia);
+                    globalMem.sendMem.addUnionUserMsg(pUdk, retMm);
                     return;
                 }
             }
@@ -176,7 +174,7 @@ public class DealMediaflowMsg extends AbstractLoopMoniter<MediaflowConfig> {
             //发送正常回执
             if (sourceMsg.isAffirm()) {
                 retMm.setReturnType(0x01);
-                globalMem.sendMem.addUnionUserMsg(pUdk, retMm, compareMedia);
+                globalMem.sendMem.addUnionUserMsg(pUdk, retMm);
             }
 
 //            if (new String(ts.getData()).equals("####")) System.out.println("deCode:::====="+new String(ts.getData()));
@@ -192,7 +190,7 @@ public class DealMediaflowMsg extends AbstractLoopMoniter<MediaflowConfig> {
             bMsg.setSeqNo(seqNum);
             bMsg.setMediaData(sourceMsg.getMediaData());
             for (String k: ts.getSendUserMap().keySet()) {
-                globalMem.sendMem.addUnionUserMsg(ts.getSendUserMap().get(k), bMsg, compareMedia);
+                globalMem.sendMem.addUnionUserMsg(ts.getSendUserMap().get(k), bMsg);
                 //处理流数据
                 ts.getSendFlagMap().put(k, 0);
                 ts.getSendTimeMap().get(k).add(System.currentTimeMillis());

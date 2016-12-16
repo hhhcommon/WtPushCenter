@@ -113,25 +113,25 @@ public class MsgNormal extends Message {
 
         //二、类型
         byte f1=binaryMsg[_offset++];
-        this.setMsgType(((f1&0x80)==0x80)?1:0);
-        this.setAffirm(((f1&0x08)==0x08)?1:0);
+        setMsgType(((f1&0x80)==0x80)?1:0);
+        setAffirm(((f1&0x08)==0x08)?1:0);
         //三、时间
         byte[] _tempBytes=Arrays.copyOfRange(binaryMsg, _offset, _offset+8);
-        this.setSendTime(ByteConvert.bytes2long(_tempBytes));
+        setSendTime(ByteConvert.bytes2long(_tempBytes));
         _offset+=8;
         //四、命令
         f1=binaryMsg[_offset++];
-        this.setBizType((f1>>4)&0x0F);
-        this.setCmdType(f1&0x0F);
+        setBizType((f1>>4)&0x0F);
+        setCmdType(f1&0x0F);
         _tempBytes=new byte[4];
         if (bizType!=0&&bizType!=15) {
             _tempBytes[0]=binaryMsg[_offset++];
-            this.setCommand(ByteConvert.bytes2int(_tempBytes));
+            setCommand(ByteConvert.bytes2int(_tempBytes));
         }
         //五、回复
         if (bizType!=0&&msgType==1) {
             _tempBytes[0]=binaryMsg[_offset++];
-            this.setReturnType(ByteConvert.bytes2int(_tempBytes));
+            setReturnType(ByteConvert.bytes2int(_tempBytes));
         }
         //六、消息Id
         if (!isAck()) {
@@ -144,7 +144,7 @@ public class MsgNormal extends Message {
                 if (_sa.length!=2) throw new Exception("消息字节数组异常！");
                 if (Integer.parseInt(_sa[0])==-1) throw new Exception("消息字节数组异常！");
                 _offset=Integer.parseInt(_sa[0]);
-                this.setMsgId(_sa[1]);
+                setMsgId(_sa[1]);
             } else {
                 if (bizType!=15) {
                     try {
@@ -155,7 +155,7 @@ public class MsgNormal extends Message {
                     if (_sa.length!=2) throw new Exception("消息字节数组异常！");
                     if (Integer.parseInt(_sa[0])==-1) throw new Exception("消息字节数组异常！");
                     _offset=Integer.parseInt(_sa[0]);
-                    this.setMsgId(_sa[1]);
+                    setMsgId(_sa[1]);
                 }
                 try {
                     _tempStr=MessageUtils.parse_String(binaryMsg, _offset, 32, null);
@@ -165,7 +165,7 @@ public class MsgNormal extends Message {
                 if (_sa.length!=2) throw new Exception("消息字节数组异常！");
                 if (Integer.parseInt(_sa[0])==-1) throw new Exception("消息字节数组异常！");
                 _offset=Integer.parseInt(_sa[0]);
-                this.setReMsgId(_sa[1]);
+                setReMsgId(_sa[1]);
             }
         } else {
             try {
@@ -176,25 +176,25 @@ public class MsgNormal extends Message {
             if (_sa.length!=2) throw new Exception("消息字节数组异常！");
             if (Integer.parseInt(_sa[0])==-1) throw new Exception("消息字节数组异常！");
             _offset=Integer.parseInt(_sa[0]);
-            this.setReMsgId(_sa[1]);
+            setReMsgId(_sa[1]);
         }
         //七，邮递类型
         f1=binaryMsg[_offset++];
-        if ((f1&0xf0)==0x10) this.setFromType(1);
-        else if ((f1&0xf0)==0x00) this.setFromType(0);
+        if ((f1&0xf0)==0x10) setFromType(1);
+        else if ((f1&0xf0)==0x00) setFromType(0);
         else throw new Exception("消息来源异常！");
-        if ((f1&0x0f)==0x01) this.setToType(1);
-        else if ((f1&0x0f)==0x00) this.setToType(0);
+        if ((f1&0x0f)==0x01) setToType(1);
+        else if ((f1&0x0f)==0x00) setToType(0);
         else throw new Exception("消息目标异常！");
         if (!isAck()) {
             //八、用户类型
             if (fromType==0||(fromType==1&&bizType==15)) {
                 f1=binaryMsg[_offset++];
-                this.setPCDType(f1);
+                setPCDType(f1);
                 f1=binaryMsg[_offset];
                 if (f1==0x00) {
                     _offset++;
-                    this.setUserId(null);
+                    setUserId(null);
                 } else {
                     try {
                         _tempStr=MessageUtils.parse_String(binaryMsg, _offset, 12, null);
@@ -204,7 +204,7 @@ public class MsgNormal extends Message {
                     if (_sa.length!=2) throw new Exception("消息字节串异常！");
                     if (Integer.parseInt(_sa[0])==-1) throw new Exception("消息字节串异常！");
                     _offset=Integer.parseInt(_sa[0]);
-                    this.setUserId(_sa[1]);
+                    setUserId(_sa[1]);
                 }
                 try {
                     _tempStr=MessageUtils.parse_String(binaryMsg, _offset, 32, null);
@@ -214,7 +214,7 @@ public class MsgNormal extends Message {
                 if (_sa.length!=2) throw new Exception("消息字节串异常！");
                 if (Integer.parseInt(_sa[0])==-1) throw new Exception("消息字节串异常！");
                 _offset=Integer.parseInt(_sa[0]);
-                this.setIMEI(_sa[1]);
+                setIMEI(_sa[1]);
             }
             //九、实体数据
             if (bizType!=15) {
@@ -224,18 +224,18 @@ public class MsgNormal extends Message {
                 byte[] binaryCnt=Arrays.copyOfRange(binaryMsg, _offset, _offset+_dataLen);
                 MapContent mc=new MapContent();
                 mc.fromBytes(binaryCnt);
-                this.setMsgContent(mc);
+                setMsgContent(mc);
             }
         } else {
             if (bizType==15) {
                 //八、用户类型
                 if (fromType==0||(fromType==1&&bizType==15)) {
                     f1=binaryMsg[_offset++];
-                    this.setPCDType(f1);
+                    setPCDType(f1);
                     f1=binaryMsg[_offset];
                     if (f1==0x00) {
                         _offset++;
-                        this.setUserId(null);
+                        setUserId(null);
                     } else {
                         try {
                             _tempStr=MessageUtils.parse_String(binaryMsg, _offset, 12, null);
@@ -245,7 +245,7 @@ public class MsgNormal extends Message {
                         if (_sa.length!=2) throw new Exception("消息字节串异常！");
                         if (Integer.parseInt(_sa[0])==-1) throw new Exception("消息字节串异常！");
                         _offset=Integer.parseInt(_sa[0]);
-                        this.setUserId(_sa[1]);
+                        setUserId(_sa[1]);
                     }
                     try {
                         _tempStr=MessageUtils.parse_String(binaryMsg, _offset, 32, null);
@@ -255,7 +255,7 @@ public class MsgNormal extends Message {
                     if (_sa.length!=2) throw new Exception("消息字节串异常！");
                     if (Integer.parseInt(_sa[0])==-1) throw new Exception("消息字节串异常！");
                     _offset=Integer.parseInt(_sa[0]);
-                    this.setIMEI(_sa[1]);
+                    setIMEI(_sa[1]);
                 }
             }
         }
@@ -325,7 +325,7 @@ public class MsgNormal extends Message {
             //八、用户类型
             if (StringUtils.isNullOrEmptyOrSpace(IMEI)&&fromType==0) throw new Exception("IMEI为空");
             if (!StringUtils.isNullOrEmptyOrSpace(IMEI)) {
-                ret[_offset++]=(byte)this.PCDType;
+                ret[_offset++]=(byte)PCDType;
                 if (StringUtils.isNullOrEmptyOrSpace(userId)) ret[_offset++]=0x00;
                 else {
                     try {
@@ -358,7 +358,7 @@ public class MsgNormal extends Message {
                 //八、用户类型
                 if (StringUtils.isNullOrEmptyOrSpace(IMEI)&&fromType==0) throw new Exception("IMEI为空");
                 if (!StringUtils.isNullOrEmptyOrSpace(IMEI)) {
-                    ret[_offset++]=(byte)this.PCDType;
+                    ret[_offset++]=(byte)PCDType;
                     if (StringUtils.isNullOrEmptyOrSpace(userId)) ret[_offset++]=0x00;
                     else {
                         try {
@@ -384,5 +384,37 @@ public class MsgNormal extends Message {
      */
     public boolean isAck() {
         return affirm==0&&msgType==1&&(bizType==0||bizType==15);
+    }
+
+    @Override
+    public boolean equals(Message msg) {
+        if (!(msg instanceof MsgNormal)) return false;
+        if (msgId==null) return false;
+
+        if (!equalsMsg(msg)) return false;
+        MsgNormal _m=(MsgNormal)msg;
+        if (!msgId.equals(_m.msgId)) return false;
+        if (reMsgId!=null) {
+            if (!reMsgId.equals(_m.reMsgId)) return false;
+        } else if (_m.reMsgId!=null) return false;
+        if (bizType!=_m.bizType) return false;
+        if (cmdType!=_m.cmdType) return false;
+        if (command!=_m.command) return false;
+        if (!msgId.equals(_m.msgId)) return false;
+        if (returnType!=_m.returnType) return false;
+
+        if (IMEI!=null) {
+            if (!IMEI.equals(_m.IMEI)) return false;
+        } else if (_m.IMEI!=null) return false;
+        if (userId!=null) {
+            if (!userId.equals(_m.userId)) return false;
+        } else if (_m.userId!=null) return false;
+        if (PCDType!=_m.PCDType) return false;
+
+        if (msgContent==null&&_m.msgContent==null) return true;
+        if (msgContent!=null&&_m.msgContent==null) return false;
+        if (msgContent==null&&_m.msgContent!=null) return false;
+
+        return msgContent.equals(_m.msgContent);
     }
 }

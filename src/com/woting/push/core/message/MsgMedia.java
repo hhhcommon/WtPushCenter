@@ -50,7 +50,7 @@ public class MsgMedia extends Message {
      * @throws Exception 
      */
     public MsgMedia(byte[] binaryMsg) throws Exception {
-        this.fromBytes(binaryMsg);
+        fromBytes(binaryMsg);
     }
 
     public int getMediaType() {
@@ -101,34 +101,34 @@ public class MsgMedia extends Message {
 
         int _offset=2;
         byte f1=binaryMsg[_offset++];
-        this.setMsgType(((f1&0x80)==0x80)?1:0);
-        this.setAffirm(((f1&0x40)==0x40)?1:0);
+        setMsgType(((f1&0x80)==0x80)?1:0);
+        setAffirm(((f1&0x40)==0x40)?1:0);
 
         if (affirm==1&&msgType==1) throw new Exception("消息格式异常：回复消息不需要确认！");
         if (msgType==1&&binaryMsg.length!=COMPACT_LEN+1) throw new Exception("消息格式异常：回复消息长度错误！");
 
-        if ((f1&0x30)==0x10) this.setFromType(1);//服务器
+        if ((f1&0x30)==0x10) setFromType(1);//服务器
         else
-        if ((f1&0x30)==0x20) this.setFromType(0);//设备
+        if ((f1&0x30)==0x20) setFromType(0);//设备
         else
         throw new Exception("消息from位异常！");
 
-        if ((f1&0x0C)==0x04) this.setToType(1);//服务器
+        if ((f1&0x0C)==0x04) setToType(1);//服务器
         else
-        if ((f1&0x0C)==0x08) this.setToType(0);//设备
+        if ((f1&0x0C)==0x08) setToType(0);//设备
         else
         throw new Exception("消息to位异常！");
 
-        if ((f1&0x03)==0x01) this.setMediaType(1);//音频
+        if ((f1&0x03)==0x01) setMediaType(1);//音频
         else
-        if ((f1&0x02)==0x02) this.setMediaType(2);//视频
+        if ((f1&0x02)==0x02) setMediaType(2);//视频
         else
         throw new Exception("消息媒体类型位异常！");
 
-        this.setBizType(binaryMsg[_offset++]);
+        setBizType(binaryMsg[_offset++]);
 
         byte[] _tempBytes=Arrays.copyOfRange(binaryMsg, _offset, _offset+8);//ByteBuffer.wrap(binaryMsg, _offset, 8).array();
-        this.setSendTime(ByteConvert.bytes2long(_tempBytes));
+        setSendTime(ByteConvert.bytes2long(_tempBytes));
 
         _offset+=8;
         String _tempStr;
@@ -141,10 +141,10 @@ public class MsgMedia extends Message {
         if (_sa.length!=2) throw new Exception("消息会话Id异常！");
         if (Integer.parseInt(_sa[0])==-1) throw new Exception("消息会话Id异常！");
         _offset=Integer.parseInt(_sa[0]);
-        this.setTalkId(_sa[1]);
+        setTalkId(_sa[1]);
 
         _tempBytes=Arrays.copyOfRange(binaryMsg, _offset, _offset+4);
-        this.setSeqNo(ByteConvert.bytes2int(_tempBytes));
+        setSeqNo(ByteConvert.bytes2int(_tempBytes));
 
         _offset+=4;
         //objId，可能需要删除掉
@@ -157,10 +157,10 @@ public class MsgMedia extends Message {
         if (_sa.length!=2) throw new Exception("对象Id异常！");
         if (Integer.parseInt(_sa[0])==-1) throw new Exception("对象Id异常！");
         _offset=Integer.parseInt(_sa[0]);
-        this.setObjId(_sa[1]);
+        setObjId(_sa[1]);
         //删除结束
 
-        if (isAck()) this.setReturnType(binaryMsg[_offset]);
+        if (isAck()) setReturnType(binaryMsg[_offset]);
         else {
             short len=(short)(((binaryMsg[_offset+1]<<8)|binaryMsg[_offset]&0xff));
             if (len>0) mediaData=Arrays.copyOfRange(binaryMsg, _offset+2, _offset+2+len);
@@ -233,25 +233,28 @@ public class MsgMedia extends Message {
     public boolean equals(Message msg) {
         if (!(msg instanceof MsgMedia)) return false;
 
+        if (!equalsMsg(msg)) return false;
+
         MsgMedia _m=(MsgMedia)msg;
-        if (this.affirm!=_m.getAffirm()) return false;
-        if (this.bizType!=_m.getBizType()) return false;
-        if (this.mediaType!=_m.getMediaType()) return false;
-        if (this.talkId!=null) {
-            if (!this.talkId.equals(_m.getTalkId())) return false;
-        } else if (_m.getTalkId()==null) return false;
-        if (this.returnType!=_m.getReturnType()) return false;
-        if (this.fromType!=_m.getFromType()) return false;
-        if (this.toType!=_m.getToType()) return false;
-        if (this.getMediaData()!=null&&_m.getMediaData()!=null) {
-            if (this.getMediaData().length!=_m.getMediaData().length) return false;
-            for (int i=0; i<this.getMediaData().length; i++) {
-                if (this.getMediaData()[i]!=_m.getMediaData()[i]) return false;
+        if (bizType!=_m.bizType) return false;
+        if (mediaType!=_m.mediaType) return false;
+        if (talkId!=null) {
+            if (!talkId.equals(_m.talkId)) return false;
+        } else if (_m.talkId!=null) return false;
+        if (returnType!=_m.returnType) return false;
+        if (objId!=null) {
+            if (!objId.equals(_m.objId)) return false;
+        } else if (_m.objId!=null) return false;
+        if (seqNo!=_m.seqNo) return false;
+
+        if (mediaData!=null&&_m.mediaData!=null) {
+            if (mediaData.length!=_m.mediaData.length) return false;
+            for (int i=0; i<mediaData.length; i++) {
+                if (mediaData[i]!=_m.mediaData[i]) return false;
             }
         }
-        else if (this.getMediaData()==null&&_m.getMediaData()!=null) return false;
-        else if (this.getMediaData()!=null&&_m.getMediaData()==null) return false;
-
+        else if (mediaData==null&&_m.mediaData!=null) return false;
+        else if (mediaData!=null&&_m.mediaData==null) return false;
         return true;
     }
 }

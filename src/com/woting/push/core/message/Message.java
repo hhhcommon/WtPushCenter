@@ -93,4 +93,17 @@ public abstract class Message implements Comparable<Message>, Serializable {
      * 判断是否是应答消息
      */
     public abstract boolean isAck();
+
+    /**
+     * 判断是否是应答消息
+     */
+    protected abstract boolean equals(Message msg);
+
+    protected boolean equalsMsg(Message msg) {
+        if (msgType!=msg.msgType) return false;
+        if (affirm!=msg.affirm) return false;
+        if (fromType!=msg.fromType) return false;
+        if (toType!=msg.toType) return false;
+        return true;
+    }
 }

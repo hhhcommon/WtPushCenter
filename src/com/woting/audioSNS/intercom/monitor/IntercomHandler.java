@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.spiritdata.framework.util.StringUtils;
-import com.woting.audioSNS.intercom.CompareGroupMsg;
 import com.woting.audioSNS.intercom.IntercomConfig;
 import com.woting.audioSNS.intercom.mem.IntercomMemory;
 import com.woting.audioSNS.intercom.model.OneMeet;
@@ -176,7 +175,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                 List<PushUserUDKey> al=sessionService.getActivedUserUDKs(k);
                 if (al!=null&&!al.isEmpty()) {
                     for (PushUserUDKey _pUdk: al) {
-                        globalMem.sendMem.addUnionUserMsg(_pUdk, bMsg, new CompareGroupMsg());
+                        globalMem.sendMem.addUnionUserMsg(_pUdk, bMsg);
                     }
                 }
             }
@@ -248,7 +247,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                     List<PushUserUDKey> al=sessionService.getActivedUserUDKs(k);
                     if (al!=null&&!al.isEmpty()) {
                         for (PushUserUDKey _pUdk: al) {
-                            globalMem.sendMem.addUnionUserMsg(_pUdk, bMsg, new CompareGroupMsg());
+                            globalMem.sendMem.addUnionUserMsg(_pUdk, bMsg);
                         }
                     }
                 }
@@ -320,7 +319,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                 if (al!=null&&!al.isEmpty()) {
                     for (PushUserUDKey _pUdk: al) {
                         if (_pUdk.equals(pUdk)) continue;
-                        globalMem.sendMem.addUnionUserMsg(_pUdk, bMsg, new CompareGroupMsg());
+                        globalMem.sendMem.addUnionUserMsg(_pUdk, bMsg);
                     }
                 }
             }
@@ -375,7 +374,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                 if (al!=null&&!al.isEmpty()) {
                     for (PushUserUDKey _pUdk: al) {
                         if (_pUdk.equals(pUdk)) continue;
-                        globalMem.sendMem.addUnionUserMsg(_pUdk, bMsg, new CompareGroupMsg());
+                        globalMem.sendMem.addUnionUserMsg(_pUdk, bMsg);
                     }
                 }
             }

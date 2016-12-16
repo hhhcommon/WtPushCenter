@@ -181,8 +181,6 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         if (returnType==0&&callingMem.isTalk(callederId, callId)) returnType=4;
         if (returnType==0) returnType=1;
         toCallerMsg.setReturnType(returnType);
-        boolean t=globalMem.sendMem.addUserMsg(callData.getCallerKey(), toCallerMsg);
-        System.out.println(t);
         globalMem.sendMem.addUserMsg(callData.getCallerKey(), toCallerMsg);
         //记录到已发送列表
         callData.addSendedMsg(toCallerMsg);
@@ -616,7 +614,6 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 }
             }
         }
-
         System.out.println("通话检测到超时==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
     }
 
