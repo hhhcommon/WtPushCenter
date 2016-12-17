@@ -59,8 +59,14 @@ public class OioServer extends AbstractLoopMoniter<PushConfig> {
         List<SocketHandler> shL=globalMem.getSochekHanders();
         if (shL!=null&&!shL.isEmpty()) {
             for (SocketHandler sh:shL) {
-                globalMem.unbindPushUserANDSocket(null, sh);
-                sh.stopServer();
+                synchronized(sh.stopLck) {
+                    sh.stopServer();
+                    try {
+                        sh.stopLck.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
             boolean allClosed=false;
             int i=0;

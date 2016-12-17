@@ -54,6 +54,7 @@ public class PushGlobalMemory {
        sendMsg=new ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Message>>();
        notifyMsg=new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
 
+       REF_deviceANDsocket=new HashMap<String, SocketHandler>();
        REF_userdtypeANDudk=new HashMap<String, PushUserUDKey>();
        REF_udkANDsocket=new HashMap<PushUserUDKey, SocketHandler>();
        REF_socketANDudk=new HashMap<SocketHandler, PushUserUDKey>();
@@ -104,6 +105,7 @@ public class PushGlobalMemory {
      * </pre>
      */
     private Map<String, PushUserUDKey> REF_userdtypeANDudk;
+    private Map<String, SocketHandler> REF_deviceANDsocket;//设备和Socket连接的对应表； Key——设备标识：DeviceId::PCDType；Value——Socket处理线程
     private Map<PushUserUDKey, SocketHandler> REF_udkANDsocket;
     private Map<SocketHandler, PushUserUDKey> REF_socketANDudk;
 
@@ -116,6 +118,53 @@ public class PushGlobalMemory {
         if (sh==null) return;
         REF_socketANDudk.put(sh, null);
     }
+    /**
+     * 绑定设备和Socket
+     * @param pUk 用户key
+     * @param sh SocketHandler处理线程
+     * @param force 是否强制绑定
+     * @return 若绑定成功返回true，否则返回false(若所给sh与系统记录的不一致，则不进行绑定，返回false，除非force==true)
+     */
+    public boolean bindDeviceANDsocket(PushUserUDKey pUdk, SocketHandler sh, boolean force) {
+        if (pUdk==null||sh==null) return false;
+        if (force) {
+            REF_deviceANDsocket.put(pUdk.getDeviceId()+"::"+pUdk.getPCDType(), sh);
+            return true;
+        } else {
+            SocketHandler _sh=REF_deviceANDsocket.get(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
+            if (_sh!=null) {
+                if (!sh.equals(_sh)) return false;
+                return true;
+            } else {
+                REF_deviceANDsocket.put(pUdk.getDeviceId()+"::"+pUdk.getPCDType(), sh);
+                return true;
+            }
+        }
+    }
+    /**
+     * 解除设备和Socket的绑定，只在Socket停止时使用
+     * @param pUk 用户key
+     * @param sh SocketHandler处理线程
+     * @param 若给定的sh和系统中记录的sh不一致，则不进行删除
+     */
+    public boolean unbindDeviceANDsocket(PushUserUDKey pUdk, SocketHandler sh) {
+        if (pUdk==null||sh==null) return true;
+        SocketHandler _sh=REF_deviceANDsocket.get(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
+        if (_sh==null) return true;
+        if (!_sh.equals(sh)) return false;
+        REF_deviceANDsocket.remove(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
+        return true;
+    }
+    /**
+     * 解除设备和Socket的绑定，只在Socket停止时使用
+     * @param pUk 用户key
+     * @param sh SocketHandler处理线程
+     * @param 若给定的sh和系统中记录的sh不一致，则不进行删除
+     */
+    public SocketHandler getSocketByDevice(PushUserUDKey pUdk) {
+        return REF_deviceANDsocket.get(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
+    }
+
     /**
      * 绑定用户和Socket
      * @param pUk 用户key

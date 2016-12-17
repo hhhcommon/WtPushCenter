@@ -56,7 +56,6 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
 
     public Object stopLck=new Object();
-    private Object sendQueueLck=new Object();
 
     protected SocketHandler(SocketHandleConfig conf, Socket socket) {
         super(conf);
@@ -165,16 +164,6 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
             //1-停止下级服务
             if (receiveMsg!=null) {try {receiveMsg.__interrupt();} catch(Exception e) {}}
             if (fatchMsg!=null) {try {fatchMsg.__interrupt();} catch(Exception e) {}}
-
-            while (_sendMsgQueue.size()>0) {
-                synchronized(sendQueueLck) {
-                    try {
-                        sendQueueLck.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
             if (sendMsg!=null) {try {sendMsg.__interrupt();} catch(Exception e) {}}
 
             boolean canClose=false;
@@ -213,6 +202,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
 
             //3-解除用户和服务的绑定
             globalMem.unbindPushUserANDSocket(_pushUserKey, this);
+            globalMem.unbindDeviceANDsocket(_pushUserKey, this);
             stopLck.notifyAll();
         }
     }
@@ -409,27 +399,50 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                         if (ms instanceof MsgNormal) {
                             MsgNormal _ms=(MsgNormal)ms;
                             PushUserUDKey _pUdk=PushUserUDKey.buildFromMsg(_ms);
-                            if (_pUdk.equals(_pushUserKey)&&_ms.getBizType()!=15) globalMem.receiveMem.addPureMsg(_ms);
-                            else {
-                                //处理注册
-                                if (_ms.getBizType()==15) globalMem.bindPushUserANDSocket(_pUdk, SocketHandler.this);
+                            if (_pUdk!=null) {
+                                if (_ms.getBizType()!=15) {
+                                    if (_pUdk.equals(_pushUserKey)) globalMem.receiveMem.addPureMsg(_ms);
+                                } else {//是注册消息
+                                    boolean bindDeviceFlag=false;
+                                    if (_ms.getFromType()==1) {//从服务器来的消息，对于服务器，先到的占用。
+                                        _pushUserKey=_pUdk;
+                                        bindDeviceFlag=globalMem.bindDeviceANDsocket(_pUdk, SocketHandler.this, false);
+                                        if (bindDeviceFlag) {
+                                            globalMem.bindPushUserANDSocket(_pUdk, SocketHandler.this);//处理注册
+                                        } else {//与之前的注册不一致，关闭掉这个Socket
+                                            MsgNormal ackM=MessageUtils.buildAckMsg(_ms);
+                                            ackM.setBizType(15);
+                                            ackM.setReturnType(0);//失败
+                                            ackM.setSendTime(System.currentTimeMillis());
+                                            _sendMsgQueue.add(ackM.toBytes());
+                                            SocketHandler.this.stopServer();
+                                        }
+                                    } else {//从客户端来的消息
+                                        bindDeviceFlag=globalMem.bindDeviceANDsocket(_pUdk, SocketHandler.this, false);
+                                        if (!bindDeviceFlag) { //与原来记录的不一致，则删除原来的，对于客户端，后到的占用。
+                                            SocketHandler _sh=globalMem.getSocketByDevice(_pUdk);
+                                            synchronized(_sh.stopLck) {
+                                                _sh.stopServer();
+                                                try {
+                                                    _sh.stopLck.wait();
+                                                } catch (InterruptedException e) {
+                                                    e.printStackTrace();
+                                                }
+                                            }
+                                            globalMem.bindDeviceANDsocket(_pUdk, SocketHandler.this, true);
+                                        }
+                                        Map<String, Object> retM=sessionService.dealUDkeyEntry(_pUdk, "socket/entry");
+                                        if (!(""+retM.get("ReturnType")).equals("1001")) {
+                                            MsgNormal ackM=MessageUtils.buildAckMsg(_ms);
+                                            ackM.setBizType(15);
+                                            ackM.setReturnType(0);//失败
+                                            ackM.setSendTime(System.currentTimeMillis());
+                                            _sendMsgQueue.add(ackM.toBytes());
+                                        } else {//登录成功
+                                            _pUdk.setUserId(""+retM.get("UserId"));
+                                            _pushUserKey=_pUdk;
 
-                                if (_ms.getFromType()==1) {//从服务器来的消息
-                                    if (_ms.getBizType()==15) {//是注册消息
-                                        _pushUserKey=_pUdk;
-                                    } else globalMem.receiveMem.addPureMsg(_ms);
-                                } else {//从客户端来的消息
-                                    Map<String, Object> retM=sessionService.dealUDkeyEntry(_pUdk, "socket/entry");
-                                    if (!(""+retM.get("ReturnType")).equals("1001")) {
-                                        MsgNormal ackM=MessageUtils.buildAckMsg(_ms);
-                                        ackM.setBizType(15);
-                                        ackM.setReturnType(0);//失败
-                                        ackM.setSendTime(System.currentTimeMillis());
-                                        _sendMsgQueue.add(ackM.toBytes());
-                                    } else {//登录成功
-                                        _pUdk.setUserId(""+retM.get("UserId"));
-                                        _pushUserKey=_pUdk;
-                                        if (_ms.getBizType()==15) {//是注册消息
+                                            globalMem.bindPushUserANDSocket(_pUdk, SocketHandler.this);//处理注册
                                             MsgNormal ackM=MessageUtils.buildAckMsg(_ms);
                                             ackM.setBizType(15);
                                             ackM.setReturnType(1);//成功
@@ -444,12 +457,11 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                             MsgNormal msc=MessageUtils.clone(_ms);
                                             msc.setBizType(2);//设置为电话息
                                             globalMem.receiveMem.addPureMsg(msc);
-                                        } else globalMem.receiveMem.addPureMsg(_ms);
+                                        }
                                     }
                                 }
                             }
                         } else {//数据流
-                            _pushUserKey=globalMem.getPushUserBySocket(SocketHandler.this);
                             if (_pushUserKey!=null) {
                                 ((MsgMedia)ms).setExtInfo(_pushUserKey);
                                 globalMem.receiveMem.addTypeMsg("media", ms);
@@ -500,13 +512,10 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         protected void __loopProcess() throws Exception {
             //发送信息
             if (_socketOut!=null&&!_socket.isOutputShutdown()) {
-                synchronized(sendQueueLck) {
-                    mBytes=_sendMsgQueue.poll();
-                    if (mBytes==null||mBytes.length<=2) return;
-                    _socketOut.write(mBytes);
-                    _socketOut.flush();
-                    sendQueueLck.notifyAll();
-                }
+                mBytes=_sendMsgQueue.poll();
+                if (mBytes==null||mBytes.length<=2) return;
+                _socketOut.write(mBytes);
+                _socketOut.flush();
                 if (mBytes.length==3&&mBytes[0]=='b'&&mBytes[1]=='|'&&mBytes[2]=='^') return;
                 if (fos!=null) {
                     try {
@@ -521,6 +530,29 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         }
         @Override
         protected void __close() {
+            //把所有消息发完，才结束
+            while (_sendMsgQueue.size()>0) {
+                mBytes=_sendMsgQueue.poll();
+                if (_socketOut!=null&&!_socket.isOutputShutdown()) {
+                    if (mBytes==null||mBytes.length<=2) continue;
+                    try {
+                        _socketOut.write(mBytes);
+                        _socketOut.flush();
+                    } catch (IOException e) {
+                        logger.debug(StringUtils.getAllMessage(e));
+                    }
+                    if (mBytes.length==3&&mBytes[0]=='b'&&mBytes[1]=='|'&&mBytes[2]=='^') continue;
+                    if (fos!=null) {
+                        try {
+                            fos.write(mBytes);
+                            fos.write(13);
+                            fos.write(10);
+                            fos.flush();
+                        } catch (IOException e) {
+                        }
+                    }
+                }
+            }
             try { fos.close(); } catch (Exception e) {} finally{ fos=null; }
         }
     }
