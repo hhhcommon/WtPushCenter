@@ -23,6 +23,9 @@ public class OneCall implements Serializable {
     private static final long serialVersionUID=-2635864824531924446L;
 
     private int callType;//=1是对讲模式；=2是电话模式；若是0，则表明未设置，采用默认值1
+    public int getCallType() {
+        return callType;
+    }
 
     private volatile PushUserUDKey speaker;
     private volatile Object preMsglock=new Object();

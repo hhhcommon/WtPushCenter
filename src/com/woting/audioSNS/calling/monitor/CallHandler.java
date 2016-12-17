@@ -250,7 +250,6 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             callData.addSendedMsg(toCallerMsg);//记录到已发送列表
 
             callData.setStatus_2();//修改状态，已收到“自动应答”
-            System.out.println("处理自动应答后==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
             return 1;
         } else return 2;//被抛弃
     }
@@ -316,7 +315,6 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             if (ackType==1) callData.setStatus_3();//修改状态:正常通话
             else
             if (ackType==2||ackType==31) callData.setStatus_4();//修改状态:挂断
-            System.out.println("接到被叫者手工应答后==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
             return 1;
         } else return 2;//被抛弃
     }
@@ -352,7 +350,6 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         }
         
         callData.setStatus_4();//修改状态
-        System.out.println("处理挂断消息后==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
         return 1;
     }
 
@@ -465,8 +462,6 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         toCallerMsg.setPCDType(0);
         globalMem.sendMem.addUserMsg(callData.getCallerKey(), toCallerMsg);
         callData.addSendedMsg(toCallerMsg);//记录到已发送列表
-
-        System.out.println("被叫者不在线检测到后==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
     }
 
     //处理“被叫者”未手工应答
@@ -539,8 +534,6 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 }
             }
         }
-
-        System.out.println("未手工应答后==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
     }
 
     //服务器发现电话过程过期
@@ -587,7 +580,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             MapContent _mc=new MapContent(callederMap);
             toCallederMsg.setMsgContent(_mc);
             toCallederMsg.setPCDType(0);
-            globalMem.sendMem.addUserMsg(callData.getCallerKey(), toCallederMsg);
+            globalMem.sendMem.addUserMsg(callData.getCallederKey(), toCallederMsg);
             callData.addSendedMsg(toCallederMsg);
         } else {
             if (callData.getCallederList()!=null) {
@@ -614,7 +607,6 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 }
             }
         }
-        System.out.println("通话检测到超时==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
     }
 
     //===处理第一次被叫者说话的特殊流程
@@ -675,7 +667,6 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             //记录到已发送列表
             //修改状态
             callData.setStatus_3();
-            System.out.println("第一次“被叫者”通话，并处理后==[callid="+callData.getCallId()+"]:status="+callData.getStatus());
         }
     }
 

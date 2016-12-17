@@ -47,6 +47,24 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
         MsgNormal sourceMsg=(MsgNormal)globalMem.receiveMem.pollTypeMsg("2");
         if (sourceMsg==null) return;
 
+        PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(sourceMsg);
+        MsgNormal retMsg=MessageUtils.buildRetMsg(sourceMsg);
+
+        //进入处理
+        if (sourceMsg.getCmdType()==3&&sourceMsg.getCommand()==0) {
+            List<Map<String, Object>> clm=callingMem.getActiveCallingList(pUdk.getUserId());
+            retMsg.setMsgType(0);
+            retMsg.setCommand(0);
+            if (clm==null||clm.isEmpty()) retMsg.setReturnType(0x00);//无内容
+            else {
+                Map<String, Object> dataMap=new HashMap<String, Object>();
+                dataMap.put("CallingList", clm);
+                retMsg.setReturnType(0x01);
+            }
+            globalMem.sendMem.addUserMsg(pUdk, retMsg);
+            return ;
+        }
+
         String callId=null;
         try {
             callId=((MapContent)sourceMsg.getMsgContent()).get("CallId")+"";
@@ -55,24 +73,6 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
         if (StringUtils.isNullOrEmptyOrSpace(callId)) return;
 
         OneCall oneCall=null;//通话对象
-        PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(sourceMsg);
-
-        MsgNormal retMsg=MessageUtils.buildRetMsg(sourceMsg);
-        //进入处理
-        if (sourceMsg.getCmdType()==3&&sourceMsg.getCommand()==0) {
-            List<Map<String, Object>> glm=callingMem.getActiveCallingList(pUdk.getUserId());
-            retMsg.setBizType(1);
-            retMsg.setCommand(9);
-            if (glm==null||glm.isEmpty()) retMsg.setReturnType(0x00);//无内容
-            else {
-                Map<String, Object> dataMap=new HashMap<String, Object>();
-                dataMap.put("CallingList", glm);
-                retMsg.setReturnType(0x01);
-            }
-            globalMem.sendMem.addUserMsg(pUdk, retMsg);
-            return ;
-        }
-
         if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==1) {//发起呼叫过程
             String callerId=pUdk.getUserId();
             String callederId=((MapContent)sourceMsg.getMsgContent()).get("CallederId")+"";
@@ -100,10 +100,11 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
             //查找是否有对应的内存数据，如果没有，则说明通话已经结束，告诉传来者
             oneCall=callingMem.getOneCall(callId);
             if (oneCall==null) {//没有对应的内存数据，告诉被叫者，对方已挂断
+                retMsg.setCmdType(3);
                 retMsg.setCommand(0x30);
                 retMsg.setReturnType(0x20);
                 Map<String, Object> dataMap=new HashMap<String, Object>();
-                dataMap.put("HangupType", "0");
+                dataMap.put("CallId", callId);
                 dataMap.put("ServerMsg", "服务器处理进程不存在");
                 MapContent mc=new MapContent(dataMap);
                 retMsg.setMsgContent(mc);

@@ -108,7 +108,9 @@ public class CallingMemory {
             for (String k: callMap.keySet()) {
                 oc=callMap.get(k);
                 if (oc.getStatus()==9||oc.getCallId().equals(callId)) continue;
-                if (oc.getCallerId().equals(talkId)||oc.getCallederId().equals(talkId)) return true;
+                if (oc.getCallType()==2) {
+                    if (oc.getCallerId().equals(talkId)||oc.getCallederId().equals(talkId)) return true;
+                }
             }
         } finally {
             lock.readLock().unlock();

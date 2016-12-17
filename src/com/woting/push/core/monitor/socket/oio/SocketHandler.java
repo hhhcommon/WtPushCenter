@@ -454,8 +454,9 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                             _ms.setCmdType(3);//组通知
                                             _ms.setCommand(0);//进入消息
                                             globalMem.receiveMem.addPureMsg(_ms);
+                                            //设置为电话消息
                                             MsgNormal msc=MessageUtils.clone(_ms);
-                                            msc.setBizType(2);//设置为电话息
+                                            msc.setBizType(2);
                                             globalMem.receiveMem.addPureMsg(msc);
                                         }
                                     }
@@ -516,7 +517,6 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                 if (mBytes==null||mBytes.length<=2) return;
                 _socketOut.write(mBytes);
                 _socketOut.flush();
-                if (mBytes.length==3&&mBytes[0]=='b'&&mBytes[1]=='|'&&mBytes[2]=='^') return;
                 if (fos!=null) {
                     try {
                         fos.write(mBytes);
@@ -541,7 +541,6 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                     } catch (IOException e) {
                         logger.debug(StringUtils.getAllMessage(e));
                     }
-                    if (mBytes.length==3&&mBytes[0]=='b'&&mBytes[1]=='|'&&mBytes[2]=='^') continue;
                     if (fos!=null) {
                         try {
                             fos.write(mBytes);
