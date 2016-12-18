@@ -53,19 +53,25 @@ public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
         MsgNormal retMsg=MessageUtils.buildRetMsg(sourceMsg);
 
         //进入处理
-        if (sourceMsg.getCmdType()==3&&sourceMsg.getCommand()==0) {
-            List<Map<String, Object>> glm=intercomMem.getActiveGroupList(pUdk.getUserId());
-            retMsg.setMsgType(0);
-            retMsg.setCommand(0);
-            if (glm==null||glm.isEmpty()) retMsg.setReturnType(0x00);//无内容
-            else {
-                Map<String, Object> dataMap=new HashMap<String, Object>();
-                dataMap.put("GroupList", glm);
-                retMsg.setReturnType(0x01);
-            }
-            globalMem.sendMem.addUserMsg(pUdk, retMsg);
-            return ;
-        }
+//        if (sourceMsg.getCmdType()==3&&sourceMsg.getCommand()==0) {
+//            List<Map<String, Object>> glm=intercomMem.getActiveGroupList(pUdk.getUserId());
+//            retMsg.setFromType(1);
+//            retMsg.setToType(0);
+//            retMsg.setCmdType(3);
+//            retMsg.setCommand(0);
+//            Map<String, Object> dataMap=new HashMap<String, Object>();
+//            if (glm==null||glm.isEmpty()) {
+//                retMsg.setReturnType(0);
+//                dataMap.put("GroupList", "NULL");
+//            } else {
+//                retMsg.setReturnType(1);
+//                dataMap.put("GroupList", glm);
+//            }
+//            MapContent mc=new MapContent(dataMap);
+//            retMsg.setMsgContent(mc);
+//            globalMem.sendMem.addUserMsg(pUdk, retMsg);
+//            return ;
+//        }
 
         String groupId=null;
         try {

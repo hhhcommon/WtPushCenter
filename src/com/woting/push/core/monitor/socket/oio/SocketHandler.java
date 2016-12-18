@@ -56,6 +56,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
 
     public Object stopLck=new Object();
+    private Object sendQueueLck=new Object();
 
     protected SocketHandler(SocketHandleConfig conf, Socket socket) {
         super(conf);
@@ -143,7 +144,9 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         if (msgList!=null&&!msgList.isEmpty()) {
             for (Message msg: msgList) {
                 try {
-                    _sendMsgQueue.put(msg.toBytes());
+                    synchronized(sendQueueLck) {
+                        _sendMsgQueue.put(msg.toBytes());
+                    }
                 } catch(Exception e) {}
             }
         }
@@ -384,7 +387,9 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                 rB[0]='B';
                 rB[1]='^';
                 rB[2]='^';
-                _sendMsgQueue.add(rB);
+                synchronized(sendQueueLck) {
+                    _sendMsgQueue.add(rB);
+                }
             } else { //处理正常消息
                 try {
                     Message ms=null;
@@ -402,6 +407,9 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                             if (_pUdk!=null) {
                                 if (_ms.getBizType()!=15) {
                                     if (_pUdk.equals(_pushUserKey)) globalMem.receiveMem.addPureMsg(_ms);
+                                    else {
+                                        if (_ms.getFromType()==1) globalMem.receiveMem.addPureMsg(_ms);
+                                    }
                                 } else {//是注册消息
                                     boolean bindDeviceFlag=false;
                                     if (_ms.getFromType()==1) {//从服务器来的消息，对于服务器，先到的占用。
@@ -414,7 +422,9 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                             ackM.setBizType(15);
                                             ackM.setReturnType(0);//失败
                                             ackM.setSendTime(System.currentTimeMillis());
-                                            _sendMsgQueue.add(ackM.toBytes());
+                                            synchronized(sendQueueLck) {
+                                                _sendMsgQueue.add(ackM.toBytes());
+                                            }
                                             SocketHandler.this.stopServer();
                                         }
                                     } else {//从客户端来的消息
@@ -437,7 +447,9 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                             ackM.setBizType(15);
                                             ackM.setReturnType(0);//失败
                                             ackM.setSendTime(System.currentTimeMillis());
-                                            _sendMsgQueue.add(ackM.toBytes());
+                                            synchronized(sendQueueLck) {
+                                                _sendMsgQueue.add(ackM.toBytes());
+                                            }
                                         } else {//登录成功
                                             _pUdk.setUserId(""+retM.get("UserId"));
                                             _pushUserKey=_pUdk;
@@ -447,7 +459,9 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                             ackM.setBizType(15);
                                             ackM.setReturnType(1);//成功
                                             ackM.setSendTime(System.currentTimeMillis());
-                                            _sendMsgQueue.add(ackM.toBytes());
+                                            synchronized(sendQueueLck) {
+                                                _sendMsgQueue.add(ackM.toBytes());
+                                            }
                                             //发送注册成功的消息给组对讲——以便他处理组在线的功能
                                             _ms.setAffirm(0);//设置为不需要回复
                                             _ms.setBizType(1);//设置为组消息
@@ -463,6 +477,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                 }
                             }
                         } else {//数据流
+                            _pushUserKey=globalMem.getPushUserBySocket(SocketHandler.this);
                             if (_pushUserKey!=null) {
                                 ((MsgMedia)ms).setExtInfo(_pushUserKey);
                                 globalMem.receiveMem.addTypeMsg("media", ms);
@@ -511,19 +526,20 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         }
         @Override
         protected void __loopProcess() throws Exception {
-            //发送信息
-            if (_socketOut!=null&&!_socket.isOutputShutdown()) {
+            synchronized(_sendMsgQueue) {
                 mBytes=_sendMsgQueue.poll();
                 if (mBytes==null||mBytes.length<=2) return;
-                _socketOut.write(mBytes);
-                _socketOut.flush();
-                if (fos!=null) {
-                    try {
-                        fos.write(mBytes);
-                        fos.write(13);
-                        fos.write(10);
-                        fos.flush();
-                    } catch (IOException e) {
+                if (_socketOut!=null&&!_socket.isOutputShutdown()) {
+                    _socketOut.write(mBytes);
+                    _socketOut.flush();
+                    if (fos!=null) {
+                        try {
+                            fos.write(mBytes);
+                            fos.write(13);
+                            fos.write(10);
+                            fos.flush();
+                        } catch (IOException e) {
+                        }
                     }
                 }
             }
@@ -531,9 +547,9 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         @Override
         protected void __close() {
             //把所有消息发完，才结束
-            while (_sendMsgQueue.size()>0) {
-                mBytes=_sendMsgQueue.poll();
-                if (_socketOut!=null&&!_socket.isOutputShutdown()) {
+            synchronized(_sendMsgQueue) {
+                while (_sendMsgQueue.size()>0) {
+                    mBytes=_sendMsgQueue.poll();
                     if (mBytes==null||mBytes.length<=2) continue;
                     try {
                         _socketOut.write(mBytes);

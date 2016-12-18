@@ -1,7 +1,6 @@
 package com.woting;
 
 public class OnlyTest {
-
     public static void main(String[] args) {
         String lineSeparator = java.security.AccessController.doPrivileged(new sun.security.action.GetPropertyAction("line.separator"));
         System.out.println(lineSeparator.length());
@@ -11,5 +10,4 @@ public class OnlyTest {
             System.out.println((b[i]));
         }
     }
-
 }

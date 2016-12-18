@@ -51,19 +51,25 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
         MsgNormal retMsg=MessageUtils.buildRetMsg(sourceMsg);
 
         //进入处理
-        if (sourceMsg.getCmdType()==3&&sourceMsg.getCommand()==0) {
-            List<Map<String, Object>> clm=callingMem.getActiveCallingList(pUdk.getUserId());
-            retMsg.setMsgType(0);
-            retMsg.setCommand(0);
-            if (clm==null||clm.isEmpty()) retMsg.setReturnType(0x00);//无内容
-            else {
-                Map<String, Object> dataMap=new HashMap<String, Object>();
-                dataMap.put("CallingList", clm);
-                retMsg.setReturnType(0x01);
-            }
-            globalMem.sendMem.addUserMsg(pUdk, retMsg);
-            return ;
-        }
+//        if (sourceMsg.getCmdType()==3&&sourceMsg.getCommand()==0) {
+//            List<Map<String, Object>> clm=callingMem.getActiveCallingList(pUdk.getUserId());
+//            retMsg.setFromType(1);
+//            retMsg.setToType(0);
+//            retMsg.setCmdType(3);
+//            retMsg.setCommand(0);
+//            Map<String, Object> dataMap=new HashMap<String, Object>();
+//            if (clm==null||clm.isEmpty()) {
+//                retMsg.setReturnType(0);
+//                dataMap.put("CallingList", "NULL");
+//            } else {
+//                retMsg.setReturnType(1);
+//                dataMap.put("CallingList", clm);
+//            }
+//            MapContent mc=new MapContent(dataMap);
+//            retMsg.setMsgContent(mc);
+//            globalMem.sendMem.addUserMsg(pUdk, retMsg);
+//            return ;
+//        }
 
         String callId=null;
         try {
