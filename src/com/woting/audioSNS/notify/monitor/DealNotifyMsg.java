@@ -72,7 +72,7 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
                 Map<String, Object> m=mc.getContentMap();
 
                 //2.1-取出目的信息
-                String toGroups=(m.get("_TOGROUPS")==null?"":m.get("_TOGROUP")+"");
+                String toGroups=(m.get("_TOGROUPS")==null?"":m.get("_TOGROUPS")+"");
                 String toUsers=(m.get("_TOUSERS")==null?"":m.get("_TOUSERS")+"");
                 String noUsers=(m.get("_NOUSERS")==null?"":m.get("_NOUSERS")+"");
                 if (StringUtils.isNullOrEmptyOrSpace(toGroups)&&StringUtils.isNullOrEmptyOrSpace(toUsers)) return;
@@ -95,7 +95,7 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
                         //从数据库取用户
                         if (ul==null) {
                             g=groupService.getGroup(_ts);
-                            ul=g.getUserList();
+                            if (g!=null) ul=g.getUserList();
                         }
                         
                         if (ul!=null&&!ul.isEmpty()) {

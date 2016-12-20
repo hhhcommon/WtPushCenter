@@ -188,7 +188,7 @@ public class MsgNormal extends Message {
         else throw new Exception("消息目标异常！");
         if (!isAck()) {
             //八、用户类型
-            if (fromType==0||(fromType==1&&bizType==15)) {
+            if (fromType==0||(fromType==1&&bizType==15)||(fromType==1&&toType==1&&(bizType==4||bizType==8))) {
                 f1=binaryMsg[_offset++];
                 setPCDType(f1);
                 f1=binaryMsg[_offset];
@@ -221,10 +221,12 @@ public class MsgNormal extends Message {
                 if (!(binaryMsg[_offset]==END_HEAD[0]&&binaryMsg[_offset+1]==END_HEAD[1])) throw new Exception("消息字节串异常！");
                 _offset+=4;
                 short _dataLen=(short)(((binaryMsg[_offset-1]<<8)|binaryMsg[_offset-2]&0xff));
-                byte[] binaryCnt=Arrays.copyOfRange(binaryMsg, _offset, _offset+_dataLen);
-                MapContent mc=new MapContent();
-                mc.fromBytes(binaryCnt);
-                setMsgContent(mc);
+                if (_dataLen>0) {
+                    byte[] binaryCnt=Arrays.copyOfRange(binaryMsg, _offset, _offset+_dataLen);
+                    MapContent mc=new MapContent();
+                    mc.fromBytes(binaryCnt);
+                    setMsgContent(mc);
+                }
             }
         } else {
             if (bizType==15) {
@@ -351,6 +353,9 @@ public class MsgNormal extends Message {
                     if (_tempBytes!=null&&_tempBytes.length>0) {
                         for (i=0; i<_tempBytes.length; i++) ret[_offset++]=_tempBytes[i];
                     }
+                } else {
+                    ret[_offset++]=(byte)(0>>0);
+                    ret[_offset++]=(byte)(0>>8);
                 }
             }
         } else {

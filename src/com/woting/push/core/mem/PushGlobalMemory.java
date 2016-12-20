@@ -55,6 +55,7 @@ public class PushGlobalMemory {
        notifyMsg=new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
 
        REF_deviceANDsocket=new HashMap<String, SocketHandler>();
+       REF_userdtypeANDsocket=new HashMap<String, SocketHandler>();
        REF_userdtypeANDudk=new HashMap<String, PushUserUDKey>();
        REF_udkANDsocket=new HashMap<PushUserUDKey, SocketHandler>();
        REF_socketANDudk=new HashMap<SocketHandler, PushUserUDKey>();
@@ -97,15 +98,9 @@ public class PushGlobalMemory {
 
 //    private Object LOCK_usersocketMap=new Object();//用户和Sockek对应的临界区的锁，这个锁是读写一致的，虽然慢，但能保证数据一致性
 
-    /**
-     * 用户和SocketHandler的对应关系
-     * <pre>
-     * Key    推送用户Key对象
-     * Value  Socket处理线程类
-     * </pre>
-     */
-    private Map<String, PushUserUDKey> REF_userdtypeANDudk;
     private Map<String, SocketHandler> REF_deviceANDsocket;//设备和Socket连接的对应表； Key——设备标识：DeviceId::PCDType；Value——Socket处理线程
+    private Map<String, SocketHandler> REF_userdtypeANDsocket;//用户设备和Socket连接的对应表； Key——设备标识：DeviceId::PCDType；Value——Socket处理线程
+    private Map<String, PushUserUDKey> REF_userdtypeANDudk;
     private Map<PushUserUDKey, SocketHandler> REF_udkANDsocket;
     private Map<SocketHandler, PushUserUDKey> REF_socketANDudk;
 
@@ -156,10 +151,8 @@ public class PushGlobalMemory {
         return true;
     }
     /**
-     * 解除设备和Socket的绑定，只在Socket停止时使用
-     * @param pUk 用户key
-     * @param sh SocketHandler处理线程
-     * @param 若给定的sh和系统中记录的sh不一致，则不进行删除
+     * 获得设备和Socket的绑定关系
+     * @param pUk 设备Key
      */
     public SocketHandler getSocketByDevice(PushUserUDKey pUdk) {
         return REF_deviceANDsocket.get(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
@@ -214,6 +207,7 @@ public class PushGlobalMemory {
         REF_udkANDsocket.put(pUdk, sh);
         REF_socketANDudk.put(sh, pUdk);
         REF_userdtypeANDudk.put(pUdk.getUserId()+"::"+pUdk.getPCDType(), pUdk);
+        REF_userdtypeANDsocket.put(pUdk.getUserId()+"::"+pUdk.getPCDType(), sh);
     }
     /**
      * 删除用户和Socket处理之间的绑定
@@ -232,6 +226,7 @@ public class PushGlobalMemory {
             if (_pUdk!=null) {
                 REF_udkANDsocket.remove(_pUdk);
                 REF_userdtypeANDudk.remove(_pUdk.getUserId()+"::"+_pUdk.getPCDType());
+                REF_userdtypeANDsocket.remove(_pUdk.getUserId()+"::"+_pUdk.getPCDType());
             }
             REF_socketANDudk.remove(sh);
         } else if (sh==null) {
@@ -239,10 +234,12 @@ public class PushGlobalMemory {
             if (_sh!=null) REF_socketANDudk.remove(_sh);
             REF_udkANDsocket.remove(sh);
             REF_userdtypeANDudk.remove(pUdk.getUserId()+"::"+pUdk.getPCDType());
+            REF_userdtypeANDsocket.remove(pUdk.getUserId()+"::"+_pUdk.getPCDType());
         } else {
             REF_udkANDsocket.remove(pUdk);
             REF_socketANDudk.remove(sh);
             REF_userdtypeANDudk.remove(pUdk.getUserId()+"::"+pUdk.getPCDType());
+            REF_userdtypeANDsocket.remove(pUdk.getUserId()+"::"+pUdk.getPCDType());
         }
     }
     public PushUserUDKey getPushUserBySocket(SocketHandler sh) {
@@ -252,6 +249,10 @@ public class PushGlobalMemory {
     public SocketHandler getSocketByPushUser(PushUserUDKey pUdk) {
         if (pUdk==null) return null;
         return REF_udkANDsocket.get(pUdk);
+    }
+    public SocketHandler getSocketByUser(PushUserUDKey pUdk) {
+        if (pUdk==null) return null;
+        return REF_userdtypeANDsocket.get(pUdk.getUserId()+"::"+pUdk.getPCDType());
     }
     /**
      * 得到注册的仍然活动的Socket处理线程

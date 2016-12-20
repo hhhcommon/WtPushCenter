@@ -7,8 +7,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -18,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import com.spiritdata.framework.util.DateUtils;
 import com.spiritdata.framework.util.JsonUtils;
+import com.spiritdata.framework.util.SequenceUUID;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.push.core.SocketHandleConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
@@ -25,6 +28,7 @@ import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MessageUtils;
 import com.woting.push.core.message.MsgMedia;
 import com.woting.push.core.message.MsgNormal;
+import com.woting.push.core.message.content.MapContent;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
 import com.woting.push.core.service.SessionService;
 import com.woting.push.ext.SpringShell;
@@ -40,6 +44,9 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
     private BufferedInputStream _socketIn=null;
     private BufferedOutputStream _socketOut=null;
     private PushUserUDKey _pushUserKey=null;//和这个Socket绑定的用户
+    public PushUserUDKey getPuUDKey() {
+        return _pushUserKey;
+    }
 
     protected ArrayBlockingQueue<byte[]> _sendMsgQueue=new ArrayBlockingQueue<byte[]>(512); //512条待发布消息的缓存
 
@@ -56,7 +63,6 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
 
     public Object stopLck=new Object();
-    private Object sendQueueLck=new Object();
 
     protected SocketHandler(SocketHandleConfig conf, Socket socket) {
         super(conf);
@@ -144,7 +150,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         if (msgList!=null&&!msgList.isEmpty()) {
             for (Message msg: msgList) {
                 try {
-                    synchronized(sendQueueLck) {
+                    synchronized(_sendMsgQueue) {
                         _sendMsgQueue.put(msg.toBytes());
                     }
                 } catch(Exception e) {}
@@ -161,52 +167,55 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
     @Override
     public void destroyServer() {
         synchronized(stopLck) {
-            if (StringUtils.isNullOrEmptyOrSpace(closeCause)) closeCause="未知原因";
-            logger.debug(socketDesc+"关闭::{}", closeCause);
+            try {
+                if (StringUtils.isNullOrEmptyOrSpace(closeCause)) closeCause="未知原因";
+                logger.debug(socketDesc+"关闭::{}", closeCause);
 
-            //1-停止下级服务
-            if (receiveMsg!=null) {try {receiveMsg.__interrupt();} catch(Exception e) {}}
-            if (fatchMsg!=null) {try {fatchMsg.__interrupt();} catch(Exception e) {}}
-            if (sendMsg!=null) {try {sendMsg.__interrupt();} catch(Exception e) {}}
+                //1-停止下级服务
+                if (receiveMsg!=null) {try {receiveMsg.__interrupt();} catch(Exception e) {}}
+                if (fatchMsg!=null) {try {fatchMsg.__interrupt();} catch(Exception e) {}}
+                if (sendMsg!=null) {try {sendMsg.__interrupt();} catch(Exception e) {}}
 
-            boolean canClose=false;
-            int loopCount=0;
-            while(!canClose) {
-                loopCount++;
-                if (loopCount>conf.get_TryDestoryAllCount()) {
-                    canClose=true;
-                    continue;
-                }
-                if (receiveMsg==null&&receiveMsg==null&&fatchMsg==null) {
-                    canClose=true;
-                    continue;
-                } else {
-                    if ((receiveMsg!=null&&!receiveMsg.__isRunning)&&(receiveMsg!=null&&!sendMsg.__isRunning)&&(fatchMsg!=null&&!fatchMsg.__isRunning)) {
+                boolean canClose=false;
+                int loopCount=0;
+                while(!canClose) {
+                    loopCount++;
+                    if (loopCount>conf.get_TryDestoryAllCount()) {
                         canClose=true;
                         continue;
                     }
+                    if (receiveMsg==null&&receiveMsg==null&&fatchMsg==null) {
+                        canClose=true;
+                        continue;
+                    } else {
+                        if ((receiveMsg!=null&&!receiveMsg.__isRunning)&&(receiveMsg!=null&&!sendMsg.__isRunning)&&(fatchMsg!=null&&!fatchMsg.__isRunning)) {
+                            canClose=true;
+                            continue;
+                        }
+                    }
+                    try { sleep(10); } catch (InterruptedException e) {};
                 }
-                try { sleep(10); } catch (InterruptedException e) {};
-            }
-            receiveMsg=null;
-            fatchMsg=null;
-            sendMsg=null;
+                receiveMsg=null;
+                fatchMsg=null;
+                sendMsg=null;
 
-            //2-释放Socket的相关资源
-            try {
-                try {_socketIn.close();} catch(Exception e) {};
-                try {_socketOut.close();} catch(Exception e) {};
-                try {_socket.close();} catch(Exception e) {};
+                //2-释放Socket的相关资源
+                try {
+                    try {_socketIn.close();} catch(Exception e) {};
+                    try {_socketOut.close();} catch(Exception e) {};
+                    try {_socket.close();} catch(Exception e) {};
+                } finally {
+                    _socketIn=null;
+                    _socketOut=null;
+                    _socket=null;
+                }
+
+                //3-解除用户和服务的绑定
+                globalMem.unbindPushUserANDSocket(_pushUserKey, this);
+                globalMem.unbindDeviceANDsocket(_pushUserKey, this);
             } finally {
-                _socketIn=null;
-                _socketOut=null;
-                _socket=null;
+                stopLck.notifyAll();
             }
-
-            //3-解除用户和服务的绑定
-            globalMem.unbindPushUserANDSocket(_pushUserKey, this);
-            globalMem.unbindDeviceANDsocket(_pushUserKey, this);
-            stopLck.notifyAll();
         }
     }
 
@@ -270,7 +279,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         private int _headLen=36;
 
         private byte[] endMsgFlag={0x00,0x00,0x00};
-        private byte[] ba=new byte[2048];//一条消息的内容缓存——最大为2K
+        private byte[] ba=new byte[20480];//一条消息的内容缓存——最大为2K
 
         protected _ReceiveMsg(String name) {
             super(name);
@@ -387,7 +396,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                 rB[0]='B';
                 rB[1]='^';
                 rB[2]='^';
-                synchronized(sendQueueLck) {
+                synchronized(_sendMsgQueue) {
                     _sendMsgQueue.add(rB);
                 }
             } else { //处理正常消息
@@ -407,9 +416,6 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                             if (_pUdk!=null) {
                                 if (_ms.getBizType()!=15) {
                                     if (_pUdk.equals(_pushUserKey)) globalMem.receiveMem.addPureMsg(_ms);
-                                    else {
-                                        if (_ms.getFromType()==1) globalMem.receiveMem.addPureMsg(_ms);
-                                    }
                                 } else {//是注册消息
                                     boolean bindDeviceFlag=false;
                                     if (_ms.getFromType()==1) {//从服务器来的消息，对于服务器，先到的占用。
@@ -422,56 +428,91 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                             ackM.setBizType(15);
                                             ackM.setReturnType(0);//失败
                                             ackM.setSendTime(System.currentTimeMillis());
-                                            synchronized(sendQueueLck) {
+                                            synchronized(_sendMsgQueue) {
                                                 _sendMsgQueue.add(ackM.toBytes());
                                             }
                                             SocketHandler.this.stopServer();
                                         }
                                     } else {//从客户端来的消息
-                                        bindDeviceFlag=globalMem.bindDeviceANDsocket(_pUdk, SocketHandler.this, false);
-                                        if (!bindDeviceFlag) { //与原来记录的不一致，则删除原来的，对于客户端，后到的占用。
-                                            SocketHandler _sh=globalMem.getSocketByDevice(_pUdk);
-                                            synchronized(_sh.stopLck) {
-                                                _sh.stopServer();
-                                                try {
-                                                    _sh.stopLck.wait();
-                                                } catch (InterruptedException e) {
-                                                    e.printStackTrace();
-                                                }
-                                            }
-                                            globalMem.bindDeviceANDsocket(_pUdk, SocketHandler.this, true);
+                                        SocketHandler _oldSh=globalMem.getSocketByUser(_pUdk); //剔出
+                                        boolean needRegister=false;
+                                        boolean needKit=false;
+                                        if (_oldSh==null) {
+                                            needRegister=true;
+                                        } else {
+                                            needRegister=!(_oldSh.equals(SocketHandler.this)&&_oldSh.getPuUDKey().equals(_pUdk));
+                                            needKit=(_oldSh.getPuUDKey()!=null&&(_oldSh.getPuUDKey().getPCDType()==_pUdk.getPCDType()&&_oldSh.getPuUDKey().getUserId().equals(_pUdk.getUserId())));
                                         }
-                                        Map<String, Object> retM=sessionService.dealUDkeyEntry(_pUdk, "socket/entry");
-                                        if (!(""+retM.get("ReturnType")).equals("1001")) {
-                                            MsgNormal ackM=MessageUtils.buildAckMsg(_ms);
-                                            ackM.setBizType(15);
-                                            ackM.setReturnType(0);//失败
-                                            ackM.setSendTime(System.currentTimeMillis());
-                                            synchronized(sendQueueLck) {
-                                                _sendMsgQueue.add(ackM.toBytes());
+                                        if (needRegister) {
+                                            bindDeviceFlag=globalMem.bindDeviceANDsocket(_pUdk, SocketHandler.this, false);
+                                            if (!bindDeviceFlag) { //与原来记录的不一致，则删除原来的，对于客户端，后到的占用。
+                                                SocketHandler _sh=globalMem.getSocketByDevice(_pUdk);
+                                                if (needKit) needKit=false;
+                                                synchronized(_sh.stopLck) {
+                                                    _sh.stopServer();
+                                                    try {
+                                                        _sh.stopLck.wait();
+                                                    } catch (InterruptedException e) {
+                                                        e.printStackTrace();
+                                                    }
+                                                }
+                                                globalMem.bindDeviceANDsocket(_pUdk, SocketHandler.this, true);
                                             }
-                                        } else {//登录成功
-                                            _pUdk.setUserId(""+retM.get("UserId"));
-                                            _pushUserKey=_pUdk;
+                                            Map<String, Object> retM=sessionService.dealUDkeyEntry(_pUdk, "socket/entry");
+                                            if (!(""+retM.get("ReturnType")).equals("1001")) {
+                                                MsgNormal ackM=MessageUtils.buildAckMsg(_ms);
+                                                ackM.setBizType(15);
+                                                ackM.setReturnType(0);//失败
+                                                ackM.setSendTime(System.currentTimeMillis());
+                                                if (needKit) needKit=false;
+                                                synchronized(_sendMsgQueue) {
+                                                    _sendMsgQueue.add(ackM.toBytes());
+                                                }
+                                            } else {//登录成功
+                                                _pUdk.setUserId(""+retM.get("UserId"));
+                                                _pushUserKey=_pUdk;
 
-                                            globalMem.bindPushUserANDSocket(_pUdk, SocketHandler.this);//处理注册
-                                            MsgNormal ackM=MessageUtils.buildAckMsg(_ms);
-                                            ackM.setBizType(15);
-                                            ackM.setReturnType(1);//成功
-                                            ackM.setSendTime(System.currentTimeMillis());
-                                            synchronized(sendQueueLck) {
-                                                _sendMsgQueue.add(ackM.toBytes());
+                                                globalMem.bindPushUserANDSocket(_pUdk, SocketHandler.this);//处理注册
+                                                MsgNormal ackM=MessageUtils.buildAckMsg(_ms);
+                                                ackM.setBizType(15);
+                                                ackM.setReturnType(1);//成功
+                                                ackM.setSendTime(System.currentTimeMillis());
+                                                synchronized(_sendMsgQueue) {
+                                                    _sendMsgQueue.add(ackM.toBytes());
+                                                }
+                                                //发送注册成功的消息给组对讲——以便他处理组在线的功能
+                                                _ms.setAffirm(0);//设置为不需要回复
+                                                _ms.setBizType(1);//设置为组消息
+                                                _ms.setCmdType(3);//组通知
+                                                _ms.setCommand(0);//进入消息
+                                                globalMem.receiveMem.addPureMsg(_ms);
+                                                //设置为电话消息
+                                                MsgNormal msc=MessageUtils.clone(_ms);
+                                                msc.setMsgId(_ms.getMsgId());
+                                                msc.setBizType(2);
+                                                globalMem.receiveMem.addPureMsg(msc);
                                             }
-                                            //发送注册成功的消息给组对讲——以便他处理组在线的功能
-                                            _ms.setAffirm(0);//设置为不需要回复
-                                            _ms.setBizType(1);//设置为组消息
-                                            _ms.setCmdType(3);//组通知
-                                            _ms.setCommand(0);//进入消息
-                                            globalMem.receiveMem.addPureMsg(_ms);
-                                            //设置为电话消息
-                                            MsgNormal msc=MessageUtils.clone(_ms);
-                                            msc.setBizType(2);
-                                            globalMem.receiveMem.addPureMsg(msc);
+                                        }
+                                        if (needKit&&_oldSh!=null) {
+                                            MsgNormal msg=new MsgNormal();
+                                            msg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
+                                            msg.setMsgType(0);
+                                            msg.setAffirm(0);
+                                            msg.setFromType(1);
+                                            msg.setToType(0);
+                                            msg.setBizType(0x04);
+                                            msg.setCmdType(3);
+                                            msg.setCommand(1);
+                                            msg.setSendTime(System.currentTimeMillis());
+                                            Map<String, Object> dataMap=new HashMap<String, Object>();
+                                            dataMap.put("UserId", _pUdk.getUserId());
+                                            dataMap.put("PCDType", _pUdk.getPCDType());
+                                            dataMap.put("DeviceId", _pUdk.getDeviceId());
+                                            MapContent mc=new MapContent(dataMap);
+                                            msg.setMsgContent(mc);
+                                            List<Message> ls=new ArrayList<Message>();
+                                            ls.add(msg);
+                                            _oldSh.addMessages(ls);
                                         }
                                     }
                                 }

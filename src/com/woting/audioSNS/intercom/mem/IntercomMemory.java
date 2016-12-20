@@ -13,6 +13,7 @@ import com.woting.audioSNS.intercom.model.OneMeet;
 import com.woting.audioSNS.intercom.monitor.IntercomHandler;
 import com.woting.passport.UGA.model.Group;
 import com.woting.passport.UGA.persis.pojo.GroupPo;
+import com.woting.passport.UGA.persis.pojo.UserPo;
 import com.woting.push.user.PushUserUDKey;
 
 public class IntercomMemory {
@@ -180,9 +181,25 @@ public class IntercomMemory {
             m.put("GroupId", om.getGroupId());
             Group g=om.getGroup();
             if (g==null) continue;
+            //组信息
             m.put("GroupInfo", ((GroupPo)g.convert2Po()).toHashMap4View());
-            m.put("GroupUserList", g.getUserList());
-            m.put("GroupEntryUsers", om.getEntryGroupUserMap());
+            //组内成员信息
+            List<Map<String, Object>> gulm=new ArrayList<Map<String, Object>>();
+            List<UserPo> upl=g.getUserList();
+            if (upl!=null&&!upl.isEmpty()) {
+                for (UserPo up: upl) {
+                    gulm.add(up.toHashMap4View());
+                }
+            }
+            m.put("GroupUserList", gulm);
+            //入组成员Id
+            List<String> entryUserIds=new ArrayList<String>();
+            if (om.getEntryGroupUserMap()!=null&&!om.getEntryGroupUserMap().isEmpty()) {
+                for (String uid: om.getEntryGroupUserMap().keySet()) {
+                    entryUserIds.add(uid);
+                }
+            }
+            m.put("GroupEntryUserIds", entryUserIds);
             rt.add(m);
         }
         return rt;

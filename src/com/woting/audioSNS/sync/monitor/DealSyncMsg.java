@@ -14,7 +14,6 @@ import com.woting.passport.UGA.persis.pojo.UserPo;
 import com.woting.passport.UGA.service.GroupService;
 import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.Message;
-import com.woting.push.core.message.MsgMedia;
 import com.woting.push.core.message.MsgNormal;
 import com.woting.push.core.message.content.MapContent;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
@@ -45,7 +44,7 @@ public class DealSyncMsg extends AbstractLoopMoniter<SyncMessageConfig> {
     @Override
     public void oneProcess() throws Exception {
         Message m=globalMem.receiveMem.pollTypeMsg("8");
-        if (m==null||!(m instanceof MsgMedia)) return;
+        if (m==null||!(m instanceof MsgNormal)) return;
 
         MsgNormal mn=(MsgNormal)m;
         if (!mn.isAck()) {//非应答消息
@@ -80,6 +79,7 @@ public class DealSyncMsg extends AbstractLoopMoniter<SyncMessageConfig> {
                             else interMem.addToBeDelOneMeet(om);
                         }
                         if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==4) { //加入组内成员
+                            System.out.println("=============创建用户用户组关系，并向组内在线人广播消息=============");
                             UserPo up=new UserPo();
                             up.fromHashMap((Map<String, Object>)mc.get("UserInfo"));
                             om.getGroup().addOneUser(up);
@@ -100,11 +100,13 @@ public class DealSyncMsg extends AbstractLoopMoniter<SyncMessageConfig> {
         return true;
     }
 
+    @SuppressWarnings("unchecked")
     private String toTypeName(MsgNormal mn) {
-        if (mn.getCommand()==2) return "加入组成员::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"][UserId="+((Map<?,?>)((MapContent)mn.getMsgContent()).get("UserInfo")).get("UserId")+"]";
-        if (mn.getCommand()==3) return "加入组成员::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"][UserId="+((Map<?,?>)((MapContent)mn.getMsgContent()).get("UserInfo")).get("UserId")+"]";
-        if (mn.getCommand()==4) return "加入组成员::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"][UserId="+((Map<?,?>)((MapContent)mn.getMsgContent()).get("UserInfo")).get("UserId")+"]";
-        if (mn.getCommand()==5) return "删除组成员::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"][UserId="+((MapContent)mn.getMsgContent()).get("UserId")+"]";
+        MapContent mc=(MapContent)mn.getMsgContent();
+        if (mn.getCommand()==2) return "加入组成员::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"][UserId="+((Map<String, Object>)mc.get("UserInfo")).get("userId")+"]";
+        if (mn.getCommand()==3) return "加入组成员::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"][UserId="+((Map<String, Object>)mc.get("UserInfo")).get("userId")+"]";
+        if (mn.getCommand()==4) return "加入组成员::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"][UserId="+((Map<String, Object>)mc.get("UserInfo")).get("userId")+"]";
+        if (mn.getCommand()==5) return "删除组成员::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"][UserId="+mc.get("UserId")+"]";
         return ""; 
     }
 }
