@@ -96,11 +96,10 @@ public class PushGlobalMemory {
      */
     private ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>> notifyMsg;
 
-//    private Object LOCK_usersocketMap=new Object();//用户和Sockek对应的临界区的锁，这个锁是读写一致的，虽然慢，但能保证数据一致性
-
-    private Map<String, SocketHandler> REF_deviceANDsocket;//设备和Socket连接的对应表； Key——设备标识：DeviceId::PCDType；Value——Socket处理线程
-    private Map<String, SocketHandler> REF_userdtypeANDsocket;//用户设备和Socket连接的对应表； Key——设备标识：DeviceId::PCDType；Value——Socket处理线程
-    private Map<String, PushUserUDKey> REF_userdtypeANDudk;
+//    private Object LOCK_unionKey=new Object(); //同一Key锁
+    private Map<String, SocketHandler> REF_deviceANDsocket;   //设备和Socket处理线程的对应表； Key——设备标识：DeviceId::PCDType；Value——Socket处理线程
+    private Map<String, SocketHandler> REF_userdtypeANDsocket;//用户设备和Socket处理线程的对应表； Key——设备标识：UserId::PCDType；Value——Socket处理线程
+    private Map<String, PushUserUDKey> REF_userdtypeANDudk;   //用户设备和Key的对应表； Key——设备标识：UserId::PCDType；Value——PushUserUDKey
     private Map<PushUserUDKey, SocketHandler> REF_udkANDsocket;
     private Map<SocketHandler, PushUserUDKey> REF_socketANDudk;
 
@@ -111,6 +110,8 @@ public class PushGlobalMemory {
      */
     public void registSocketHandler(SocketHandler sh) {
         if (sh==null) return;
+//        synchronized(LOCK_unionKey) {
+//        }
         REF_socketANDudk.put(sh, null);
     }
     /**
@@ -121,6 +122,8 @@ public class PushGlobalMemory {
      * @return 若绑定成功返回true，否则返回false(若所给sh与系统记录的不一致，则不进行绑定，返回false，除非force==true)
      */
     public boolean bindDeviceANDsocket(PushUserUDKey pUdk, SocketHandler sh, boolean force) {
+//      synchronized(LOCK_unionKey) {
+//      }
         if (pUdk==null||sh==null) return false;
         if (force) {
             REF_deviceANDsocket.put(pUdk.getDeviceId()+"::"+pUdk.getPCDType(), sh);
@@ -143,6 +146,8 @@ public class PushGlobalMemory {
      * @param 若给定的sh和系统中记录的sh不一致，则不进行删除
      */
     public boolean unbindDeviceANDsocket(PushUserUDKey pUdk, SocketHandler sh) {
+//      synchronized(LOCK_unionKey) {
+//      }
         if (pUdk==null||sh==null) return true;
         SocketHandler _sh=REF_deviceANDsocket.get(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
         if (_sh==null) return true;
@@ -155,6 +160,8 @@ public class PushGlobalMemory {
      * @param pUk 设备Key
      */
     public SocketHandler getSocketByDevice(PushUserUDKey pUdk) {
+//      synchronized(LOCK_unionKey) {
+//      }
         return REF_deviceANDsocket.get(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
     }
 
@@ -164,6 +171,8 @@ public class PushGlobalMemory {
      * @param sh SocketHandler处理线程
      */
     public void bindPushUserANDSocket(PushUserUDKey pUdk, SocketHandler sh) {
+//      synchronized(LOCK_unionKey) {
+//      }
         if (pUdk==null||sh==null) return;
 //        synchronized(LOCK_usersocketMap) {
 //        }
@@ -206,8 +215,28 @@ public class PushGlobalMemory {
 //        }
         REF_udkANDsocket.put(pUdk, sh);
         REF_socketANDudk.put(sh, pUdk);
-        REF_userdtypeANDudk.put(pUdk.getUserId()+"::"+pUdk.getPCDType(), pUdk);
-        REF_userdtypeANDsocket.put(pUdk.getUserId()+"::"+pUdk.getPCDType(), sh);
+        if (!StringUtils.isNullOrEmptyOrSpace(pUdk.getUserId())) {
+            REF_userdtypeANDudk.put(pUdk.getUserId()+"::"+pUdk.getPCDType(), pUdk);
+            REF_userdtypeANDsocket.put(pUdk.getUserId()+"::"+pUdk.getPCDType(), sh);
+        }
+    }
+    /**
+     * 剔出用户
+     * @param pUdk 新用户Key
+     * @param sh 旧用户对应的Socket处理
+     */
+    public boolean kickOut(PushUserUDKey pUdk, SocketHandler oldSh) {
+//      synchronized(LOCK_unionKey) {
+//      }
+        if (pUdk==null||oldSh==null) return false;
+        if (oldSh.getPuUDKey()==null) return false;
+        PushUserUDKey oldUdk=oldSh.getPuUDKey();
+        if (!oldUdk.getUserId().equals(pUdk.getUserId())||oldUdk.getPCDType()!=pUdk.getPCDType()) return false;
+
+        PushUserUDKey _oldUdk=REF_socketANDudk.get(oldSh);
+        REF_udkANDsocket.remove(oldUdk);
+        if (!_oldUdk.equals(oldUdk)) REF_socketANDudk.put(oldSh, null);
+        return true;
     }
     /**
      * 删除用户和Socket处理之间的绑定
@@ -215,42 +244,72 @@ public class PushGlobalMemory {
      * @param sh  SocketHandler处理线程，可为空
      */
     public void unbindPushUserANDSocket(PushUserUDKey pUdk, SocketHandler sh) {
+//      synchronized(LOCK_unionKey) {
+//      }
         if (pUdk==null&&sh==null) return;
         PushUserUDKey _pUdk=null;
         SocketHandler _sh=null;
 
-//        synchronized(LOCK_usersocketMap) {
-//        }
         if (pUdk==null) {
             _pUdk=REF_socketANDudk.get(sh);
             if (_pUdk!=null) {
                 REF_udkANDsocket.remove(_pUdk);
-                REF_userdtypeANDudk.remove(_pUdk.getUserId()+"::"+_pUdk.getPCDType());
-                REF_userdtypeANDsocket.remove(_pUdk.getUserId()+"::"+_pUdk.getPCDType());
+                if (!StringUtils.isNullOrEmptyOrSpace(_pUdk.getUserId())) {
+                    PushUserUDKey _pUdk2=REF_userdtypeANDudk.get(_pUdk.getUserId()+"::"+_pUdk.getPCDType());
+                    if (_pUdk2!=null&&_pUdk2.equals(_pUdk)) {
+                        REF_userdtypeANDudk.remove(_pUdk.getUserId()+"::"+_pUdk.getPCDType());
+                    }
+                    _sh=REF_userdtypeANDsocket.get(_pUdk.getUserId()+"::"+_pUdk.getPCDType());
+                    if (_sh!=null&&_sh.equals(sh)) {
+                        REF_userdtypeANDsocket.remove(_pUdk.getUserId()+"::"+_pUdk.getPCDType());
+                    }
+                }
             }
             REF_socketANDudk.remove(sh);
         } else if (sh==null) {
+            REF_udkANDsocket.remove(pUdk);
             _sh=REF_udkANDsocket.get(pUdk);
             if (_sh!=null) REF_socketANDudk.remove(_sh);
-            REF_udkANDsocket.remove(sh);
-            REF_userdtypeANDudk.remove(pUdk.getUserId()+"::"+pUdk.getPCDType());
-            REF_userdtypeANDsocket.remove(pUdk.getUserId()+"::"+_pUdk.getPCDType());
+            if (!StringUtils.isNullOrEmptyOrSpace(pUdk.getUserId())) {
+                _pUdk=REF_userdtypeANDudk.get(pUdk.getUserId()+"::"+pUdk.getPCDType());
+                if (_pUdk!=null&&_pUdk.equals(pUdk)) {
+                    REF_userdtypeANDudk.remove(pUdk.getUserId()+"::"+pUdk.getPCDType());
+                }
+                SocketHandler _sh2=REF_userdtypeANDsocket.get(pUdk.getUserId()+"::"+pUdk.getPCDType());
+                if (_sh2!=null&&_sh2.equals(_sh)) {
+                    REF_userdtypeANDsocket.remove(pUdk.getUserId()+"::"+pUdk.getPCDType());
+                }
+            }
         } else {
             REF_udkANDsocket.remove(pUdk);
             REF_socketANDudk.remove(sh);
-            REF_userdtypeANDudk.remove(pUdk.getUserId()+"::"+pUdk.getPCDType());
-            REF_userdtypeANDsocket.remove(pUdk.getUserId()+"::"+pUdk.getPCDType());
+            if (!StringUtils.isNullOrEmptyOrSpace(pUdk.getUserId())) {
+                _pUdk=REF_userdtypeANDudk.get(pUdk.getUserId()+"::"+pUdk.getPCDType());
+                if (_pUdk!=null&&_pUdk.equals(pUdk)) {
+                    REF_userdtypeANDudk.remove(pUdk.getUserId()+"::"+pUdk.getPCDType());
+                }
+                _sh=REF_userdtypeANDsocket.get(pUdk.getUserId()+"::"+pUdk.getPCDType());
+                if (_sh!=null&&_sh.equals(sh)) {
+                    REF_userdtypeANDsocket.remove(pUdk.getUserId()+"::"+pUdk.getPCDType());
+                }
+            }
         }
     }
     public PushUserUDKey getPushUserBySocket(SocketHandler sh) {
+//      synchronized(LOCK_unionKey) {
+//      }
         if (sh==null) return null;
         return REF_socketANDudk.get(sh);
     }
     public SocketHandler getSocketByPushUser(PushUserUDKey pUdk) {
+//      synchronized(LOCK_unionKey) {
+//      }
         if (pUdk==null) return null;
         return REF_udkANDsocket.get(pUdk);
     }
     public SocketHandler getSocketByUser(PushUserUDKey pUdk) {
+//      synchronized(LOCK_unionKey) {
+//      }
         if (pUdk==null) return null;
         return REF_userdtypeANDsocket.get(pUdk.getUserId()+"::"+pUdk.getPCDType());
     }

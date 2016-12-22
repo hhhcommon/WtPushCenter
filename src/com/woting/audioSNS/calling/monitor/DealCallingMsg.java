@@ -1,5 +1,6 @@
 package com.woting.audioSNS.calling.monitor;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +9,7 @@ import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.calling.CallingConfig;
 import com.woting.audioSNS.calling.mem.CallingMemory;
 import com.woting.audioSNS.calling.model.OneCall;
+import com.woting.passport.UGA.persis.pojo.UserPo;
 import com.woting.passport.UGA.service.UserService;
 import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.MessageUtils;
@@ -61,7 +63,19 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
             if (clm==null||clm.isEmpty()) retMsg.setReturnType(0);
             else {
                 retMsg.setReturnType(1);
-                dataMap.put("CallingList", clm);
+                List<Map<String, Object>> callingList=new ArrayList<Map<String, Object>>();
+                for (Map<String, Object> ci: clm) {
+                    UserPo caller=userService.getUserById(ci.get("CallerId")+"");
+                    UserPo calleder=userService.getUserById(ci.get("CallederId")+"");
+                    Map<String, Object> cm=new HashMap<String, Object>();
+                    cm.put("CallId", ci.get("CallId"));
+                    cm.put("CallerId", ci.get("CallerId"));
+                    cm.put("CallederId", ci.get("CallederId"));
+                    if (caller!=null) cm.put("CallerInfo", caller.toHashMap4View());
+                    if (calleder!=null) cm.put("CallederInfo", calleder.toHashMap4View());
+                    callingList.add(cm);
+                }
+                dataMap.put("CallingList", callingList);
                 MapContent mc=new MapContent(dataMap);
                 retMsg.setMsgContent(mc);
             }
