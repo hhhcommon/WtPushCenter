@@ -522,12 +522,12 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                             if ((ba[i-1]&0xF0)==0xF0) isRegist=1;
                         } else  if (isAck==1) {//是回复消息
                             if (isRegist==1) { //是注册消息
-                                if (i==48&&endMsgFlag[2]==0) _dataLen=80; else _dataLen=91;
-                                if (_dataLen>=0&&i==_dataLen) break;
+                                if (_dataLen<0) _dataLen=91;
+                                if (i==48&&endMsgFlag[2]==0) _dataLen=80;
                             } else { //非注册消息
                                 if (_dataLen<0) _dataLen=45;
-                                if (_dataLen>=0&&i==_dataLen) break;
                             }
+                            if (_dataLen>=0&&i==_dataLen) break;
                         } else  if (isAck==0) {//是一般消息
                             if (isRegist==1) {//是注册消息
                                 if (((ba[2]&0x80)==0x80)&&((ba[2]&0x00)==0x00)) {
@@ -578,7 +578,6 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                 rB[1]='^';
                 rB[2]='^';
                 _sendMsgQueue.add(rB);
-                System.out.println(System.currentTimeMillis()+"::"+this.getName()+"::SendBOk---"+(_pushUserKey==null?"NOKEY":_pushUserKey.toString()));
             } else { //处理正常消息
                 try {
                     Message ms=null;
