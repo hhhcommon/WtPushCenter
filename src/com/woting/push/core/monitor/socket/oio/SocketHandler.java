@@ -310,28 +310,28 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         }
         @Override
         protected void __loopProcess() throws Exception {
-            synchronized(_recvMsgQueue) {
-                msg=_recvMsgQueue.poll();
-                if (msg==null) return;
-                try {
-                    __dealOneMsg(msg);
-                } catch(Exception e) {
-                    logger.debug(StringUtils.getAllMessage(e));
-                }
+//            synchronized(_recvMsgQueue) {
+//            }
+            msg=_recvMsgQueue.poll();
+            if (msg==null) return;
+            try {
+                __dealOneMsg(msg);
+            } catch(Exception e) {
+                logger.debug(StringUtils.getAllMessage(e));
             }
         }
         @Override
         protected void __close() {
             //把所有消息发完，才结束
-            synchronized(_recvMsgQueue) {
-                while (_recvMsgQueue.size()>0) {
-                    msg=_recvMsgQueue.poll();
-                    if (msg==null) continue;
-                    try {
-                        __dealOneMsg(msg);
-                    } catch (Exception e) {
-                        logger.debug(StringUtils.getAllMessage(e));
-                    }
+//            synchronized(_recvMsgQueue) {
+//            }
+            while (_recvMsgQueue.size()>0) {
+                msg=_recvMsgQueue.poll();
+                if (msg==null) continue;
+                try {
+                    __dealOneMsg(msg);
+                } catch (Exception e) {
+                    logger.debug(StringUtils.getAllMessage(e));
                 }
             }
         }
@@ -395,18 +395,6 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                     ackM.setSendTime(System.currentTimeMillis());
                                     try { _sendMsgQueue.add(ackM.toBytes()); } catch(Exception e) { }
 
-                                    //发送注册成功的消息给组对讲和电话——以便他处理组在线的功能
-                                    _ms.setAffirm(0);//设置为不需要回复
-                                    _ms.setBizType(1);//设置为组消息
-                                    _ms.setCmdType(3);//组通知
-                                    _ms.setCommand(0);//进入消息
-                                    _ms.setUserId(_pUdk.getUserId());
-                                    globalMem.receiveMem.addPureMsg(_ms);//对讲组
-                                    MsgNormal msc=MessageUtils.clone(_ms);
-                                    msc.setMsgId(_ms.getMsgId());
-                                    msc.setBizType(2);
-                                    globalMem.receiveMem.addPureMsg(msc);//电话
-
                                     //判断剔出
                                     SocketHandler _oldSh=globalMem.getSocketByUser(_pUdk); //和该用户对应的旧的Socket处理
                                     PushUserUDKey _oldUk=(_oldSh==null?null:_oldSh.getPuUDKey()); //旧Socket处理所绑定的UserKey
@@ -439,6 +427,18 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                         _oldSh.addMessages(ls);
                                     }
                                     globalMem.bindPushUserANDSocket(_pUdk, SocketHandler.this);//绑定信息
+
+                                    //发送注册成功的消息给组对讲和电话——以便他处理组在线的功能
+                                    _ms.setAffirm(0);//设置为不需要回复
+                                    _ms.setBizType(1);//设置为组消息
+                                    _ms.setCmdType(3);//组通知
+                                    _ms.setCommand(0);//进入消息
+                                    _ms.setUserId(_pUdk.getUserId());
+                                    globalMem.receiveMem.addPureMsg(_ms);//对讲组
+                                    MsgNormal msc=MessageUtils.clone(_ms);
+                                    msc.setMsgId(_ms.getMsgId());
+                                    msc.setBizType(2);
+                                    globalMem.receiveMem.addPureMsg(msc);//电话
                                 }
                             }
                         }
@@ -531,9 +531,11 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                         } else  if (isAck==0) {//是一般消息
                             if (isRegist==1) {//是注册消息
                                 if (((ba[2]&0x80)==0x80)&&((ba[2]&0x00)==0x00)) {
-                                    if (i==48&&endMsgFlag[2]==0) _dataLen=80; else _dataLen=91;
+                                    if (_dataLen<0) _dataLen=91;
+                                    if (i==48&&endMsgFlag[2]==0) _dataLen=80;
                                 } else {
-                                    if (i==47&&endMsgFlag[2]==0) _dataLen=79; else _dataLen=90;
+                                    if (_dataLen<0) _dataLen=90;
+                                    if (i==47&&endMsgFlag[2]==0) _dataLen=79;
                                 }
                                 if (_dataLen>=0&&i==_dataLen) break;
                             } else {//非注册消息
@@ -576,6 +578,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                 rB[1]='^';
                 rB[2]='^';
                 _sendMsgQueue.add(rB);
+                System.out.println(System.currentTimeMillis()+"::"+this.getName()+"::SendBOk---"+(_pushUserKey==null?"NOKEY":_pushUserKey.toString()));
             } else { //处理正常消息
                 try {
                     Message ms=null;
@@ -627,20 +630,20 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         }
         @Override
         protected void __loopProcess() throws Exception {
-            synchronized(_sendMsgQueue) {
-                mBytes=_sendMsgQueue.poll();
-                if (mBytes==null||mBytes.length<=2) return;
-                if (_socketOut!=null&&!_socket.isOutputShutdown()) {
-                    _socketOut.write(mBytes);
-                    _socketOut.flush();
-                    if (fos!=null) {
-                        try {
-                            fos.write(mBytes);
-                            fos.write(13);
-                            fos.write(10);
-                            fos.flush();
-                        } catch (IOException e) {
-                        }
+//            synchronized(_sendMsgQueue) {
+//            }
+            mBytes=_sendMsgQueue.poll();
+            if (mBytes==null||mBytes.length<=2) return;
+            if (_socketOut!=null&&!_socket.isOutputShutdown()) {
+                _socketOut.write(mBytes);
+                _socketOut.flush();
+                if (fos!=null) {
+                    try {
+                        fos.write(mBytes);
+                        fos.write(13);
+                        fos.write(10);
+                        fos.flush();
+                    } catch (IOException e) {
                     }
                 }
             }
@@ -648,24 +651,24 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         @Override
         protected void __close() {
             //把所有消息发完，才结束
-            synchronized(_sendMsgQueue) {
-                while (_sendMsgQueue.size()>0) {
-                    mBytes=_sendMsgQueue.poll();
-                    if (mBytes==null||mBytes.length<=2) continue;
+//            synchronized(_sendMsgQueue) {
+//            }
+            while (_sendMsgQueue.size()>0) {
+                mBytes=_sendMsgQueue.poll();
+                if (mBytes==null||mBytes.length<=2) continue;
+                try {
+                    _socketOut.write(mBytes);
+                    _socketOut.flush();
+                } catch (IOException e) {
+                    logger.debug(StringUtils.getAllMessage(e));
+                }
+                if (fos!=null) {
                     try {
-                        _socketOut.write(mBytes);
-                        _socketOut.flush();
+                        fos.write(mBytes);
+                        fos.write(13);
+                        fos.write(10);
+                        fos.flush();
                     } catch (IOException e) {
-                        logger.debug(StringUtils.getAllMessage(e));
-                    }
-                    if (fos!=null) {
-                        try {
-                            fos.write(mBytes);
-                            fos.write(13);
-                            fos.write(10);
-                            fos.flush();
-                        } catch (IOException e) {
-                        }
                     }
                 }
             }
