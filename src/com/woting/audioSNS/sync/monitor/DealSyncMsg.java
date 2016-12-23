@@ -9,15 +9,11 @@ import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.intercom.mem.IntercomMemory;
 import com.woting.audioSNS.intercom.model.OneMeet;
 import com.woting.audioSNS.sync.SyncMessageConfig;
-import com.woting.passport.UGA.persis.pojo.GroupPo;
-import com.woting.passport.UGA.persis.pojo.UserPo;
-import com.woting.passport.UGA.service.GroupService;
 import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MsgNormal;
 import com.woting.push.core.message.content.MapContent;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
-import com.woting.push.ext.SpringShell;
 
 /**
  * 主要处理用户组同步
@@ -28,17 +24,10 @@ public class DealSyncMsg extends AbstractLoopMoniter<SyncMessageConfig> {
     private IntercomMemory interMem=IntercomMemory.getInstance();
 
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
-    private GroupService groupService;
 
     public DealSyncMsg(SyncMessageConfig smc, int index) {
         super(smc);
         super.setName("同步消息处理线程"+index);
-    }
-
-    @Override
-    public boolean initServer() {
-        groupService=(GroupService)SpringShell.getBean("groupService");
-        return groupService!=null;
     }
 
     @Override
@@ -68,27 +57,51 @@ public class DealSyncMsg extends AbstractLoopMoniter<SyncMessageConfig> {
                 if (mc==null||mc.getContentMap()==null||mc.getContentMap().size()==0) return;
                 String groupId=mc.get("GroupId")+"";
                 if (!StringUtils.isNullOrEmptyOrSpace(groupId)) {
-                    OneMeet om=interMem.getOneMeet(groupId);
-                    if (om!=null) {
-                        if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==2) { //更改组信息
-                            GroupPo gp=groupService.getGroupPo(groupId);
-                            om.getGroup().buildFromPo(gp);
-                        }
-                        if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==3) { //删除组
+                    if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==2) { //更改组信息
+                        globalMem.uANDgMem.updateGroup(groupId);
+                    }
+                    if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==3) { //删除组
+                        globalMem.uANDgMem.delGroup(groupId);
+                        OneMeet om=interMem.getOneMeet(groupId);
+                        if (om!=null) {
                             if (om.getSpeaker()==null) interMem.removeOneMeet(om.getGroupId());
                             else interMem.addToBeDelOneMeet(om);
                         }
-                        if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==4) { //加入组内成员
-                            System.out.println("=============创建用户用户组关系，并向组内在线人广播消息=============");
-                            UserPo up=new UserPo();
-                            up.fromHashMap((Map<String, Object>)mc.get("UserInfo"));
-                            om.getGroup().addOneUser(up);
-                        }
-                        if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==5) { //删除组内成员
-                            String userId=mc.get("UserId")+"";
-                            if (!StringUtils.isNullOrEmptyOrSpace(userId)) om.getGroup().delOneUser(userId);
+                    }
+                    if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==4) { //加入组内成员
+                        Map<String, Object> um=(Map<String, Object>)mc.get("UserInfo");
+                        if (um!=null&&!StringUtils.isNullOrEmptyOrSpace((String)um.get("userId"))) {
+                            globalMem.uANDgMem.addUserToGroup(groupId, (String)um.get("userId"));
                         }
                     }
+                    if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==5) { //删除组内成员
+                        Map<String, Object> um=(Map<String, Object>)mc.get("UserInfo");
+                        if (um!=null&&!StringUtils.isNullOrEmptyOrSpace((String)um.get("userId"))) {
+                            globalMem.uANDgMem.delUserFromGroup(groupId, (String)um.get("userId"));
+                        }
+                    }
+//
+//                    OneMeet om=interMem.getOneMeet(groupId);
+//                    if (om!=null) {
+//                        if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==2) { //更改组信息
+//                            globalMem.uANDgMem.updateGroup(groupId);
+//                        }
+//                        if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==3) { //删除组
+//                            globalMem.uANDgMem.delGroup(groupId);
+//                            if (om.getSpeaker()==null) interMem.removeOneMeet(om.getGroupId());
+//                            else interMem.addToBeDelOneMeet(om);
+//                        }
+//                        if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==4) { //加入组内成员
+//                            globalMem.uANDgMem.delGroup(groupId);
+//                            UserPo up=new UserPo();
+//                            up.fromHashMap((Map<String, Object>)mc.get("UserInfo"));
+//                            om.getGroup().addOneUser(up);
+//                        }
+//                        if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==5) { //删除组内成员
+//                            String userId=mc.get("UserId")+"";
+//                            if (!StringUtils.isNullOrEmptyOrSpace(userId)) om.getGroup().delOneUser(userId);
+//                        }
+//                    }
                 }
             } catch(Exception e) {
                 logger.debug(StringUtils.getAllMessage(e));

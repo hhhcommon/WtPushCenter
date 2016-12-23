@@ -27,6 +27,7 @@ public class GroupService {
         userDao.setNamespace("WT_USER");
         groupDao.setNamespace("WT_GROUP");
     }
+
     /**
      * 根据用户组Id获得用户组信息，包括组下人员
      * @param groupId

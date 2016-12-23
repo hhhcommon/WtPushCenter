@@ -10,7 +10,6 @@ import com.woting.audioSNS.calling.CallingConfig;
 import com.woting.audioSNS.calling.mem.CallingMemory;
 import com.woting.audioSNS.calling.model.OneCall;
 import com.woting.passport.UGA.persis.pojo.UserPo;
-import com.woting.passport.UGA.service.UserService;
 import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.MessageUtils;
 import com.woting.push.core.message.MsgNormal;
@@ -29,7 +28,6 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
     private CallingMemory callingMem=CallingMemory.getInstance();
 
     private SessionService sessionService=null;
-    private UserService userService=null;
 
     public DealCallingMsg(CallingConfig cc, int index) {
         super(cc);
@@ -40,8 +38,7 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
     @Override
     public boolean initServer() {
         sessionService=(SessionService)SpringShell.getBean("sessionService");
-        userService=(UserService)SpringShell.getBean("userService");
-        return sessionService!=null&&userService!=null;
+        return sessionService!=null;
     }
 
     @Override
@@ -65,8 +62,8 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
                 retMsg.setReturnType(1);
                 List<Map<String, Object>> callingList=new ArrayList<Map<String, Object>>();
                 for (Map<String, Object> ci: clm) {
-                    UserPo caller=userService.getUserById(ci.get("CallerId")+"");
-                    UserPo calleder=userService.getUserById(ci.get("CallederId")+"");
+                    UserPo caller=globalMem.uANDgMem.getUserById(ci.get("CallerId")+"");
+                    UserPo calleder=globalMem.uANDgMem.getUserById(ci.get("CallederId")+"");
                     Map<String, Object> cm=new HashMap<String, Object>();
                     cm.put("CallId", ci.get("CallId"));
                     cm.put("CallerId", ci.get("CallerId"));
@@ -111,7 +108,7 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
                 return;
             }
             //启动处理进程
-            CallHandler callHandler=new CallHandler(conf, oneCall, sessionService, userService);
+            CallHandler callHandler=new CallHandler(conf, oneCall, sessionService);
             callHandler.setDaemon(true);
             callHandler.start();
         } else {//其他消息，放到具体的独立处理线程中处理

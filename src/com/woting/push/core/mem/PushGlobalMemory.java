@@ -11,8 +11,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.intercom.model.OneMeet;
 import com.woting.passport.UGA.model.Group;
+import com.woting.passport.UGA.persis.pojo.GroupPo;
 import com.woting.passport.UGA.persis.pojo.UserPo;
 import com.woting.passport.UGA.service.GroupService;
+import com.woting.passport.UGA.service.UserService;
 import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MsgMedia;
 import com.woting.push.core.message.MsgNormal;
@@ -34,6 +36,7 @@ import com.woting.push.user.PushUserUDKey;
 public class PushGlobalMemory {
     private SessionService sessionService=null;
     private GroupService groupService=null;
+    private UserService userService=null;
 
     //java的占位单例模式===begin
     private static class InstanceHolder {
@@ -54,6 +57,7 @@ public class PushGlobalMemory {
     private PushGlobalMemory() {
         sessionService=(SessionService)SpringShell.getBean("sessionService");
         groupService=(GroupService)SpringShell.getBean("groupService");
+        userService=(UserService)SpringShell.getBean("userService");
 
         groupMap=new ConcurrentHashMap<String, Group>();
         userMap=new ConcurrentHashMap<String, UserPo>();
@@ -71,9 +75,9 @@ public class PushGlobalMemory {
 
         receiveMem=new ReceiveMemory();
         sendMem=new SendMemory();
-        groupMem=new GroupMemory();
+        uANDgMem=new UserAndGroupMemory();
 
-        groupMem.loadFromDB();
+        uANDgMem.loadFromDB();
     }
 
     //==========接收消息内存
@@ -383,7 +387,7 @@ public class PushGlobalMemory {
 
     public ReceiveMemory receiveMem=null;
     public SendMemory sendMem=null;
-    public GroupMemory groupMem=null;
+    public UserAndGroupMemory uANDgMem=null;
 
     /**
      * 内部类，接受消息处理类
@@ -622,9 +626,154 @@ public class PushGlobalMemory {
      * 其他数据更新都通过消息接口处理。
      * @author wanghui
      */
-    public class GroupMemory {
+    public class UserAndGroupMemory {
+        /**
+         * 从数据库装载信息
+         */
         public void loadFromDB() {
             groupService.fillGroupsAndUsers(groupMap, userMap);
+        }
+
+        /**
+         * 通过用户Id获得用户信息
+         * @param userId 用户Id
+         * @return 用户信息
+         */
+        public UserPo getUserById(String userId) {
+            if (StringUtils.isNullOrEmptyOrSpace(userId)) return null;
+
+            UserPo ret=userMap.get(userId);
+            if (ret==null) {
+                ret=userService.getUserById(userId);
+                if (ret!=null) userMap.put(userId, ret);
+            }
+            return ret;
+        }
+
+        /**
+         * 通过用户Id获得用户信息
+         * @param userId 用户Id
+         * @return 用户信息
+         */
+        public Group getGroupById(String groupId) {
+            if (StringUtils.isNullOrEmptyOrSpace(groupId)) return null;
+
+            Group ret=groupMap.get(groupId);
+            if (ret==null) {
+                ret=groupService.getGroup(groupId);
+                if (ret!=null) {
+                    List<UserPo> userList=ret.getUserList();
+                    if (userList!=null&&!userList.isEmpty()) {
+                        for (int i=0; i<userList.size(); i++) {
+                            UserPo up=userList.get(i);
+                            if (userMap.get(up.getUserId())==null) {
+                                userMap.put(up.getUserId(), up);
+                            } else {
+                                userList.remove(i);
+                                userList.add(i, userMap.get(up.getUserId()));
+                            }
+                        }
+                    }
+                    groupMap.put(groupId, ret);
+                }
+            }
+            return ret;
+        }
+
+        /**
+         * 从数据库中读取数据，更新缓存。这里仅更新用户组本身的数据信息
+         * @param groupId 用户组Id
+         * @return 若用户组不存在，返回false
+         */
+        public boolean updateGroup(String groupId) {
+            if (StringUtils.isNullOrEmptyOrSpace(groupId)) return false;
+
+            GroupPo gp=groupService.getGroupPo(groupId);
+            if (gp==null) return false;
+            Group g=groupMap.get(groupId);
+            if (g==null) {
+                g=getGroupById(groupId);
+                if (g==null) return false;
+                groupMap.put(g.getGroupId(), g);
+            } else {
+                g.buildFromPo(gp);
+            }
+            return true;
+        }
+
+        /**
+         * 删除缓存中的用户组
+         * @param groupId 用户组Id
+         * @return 若内存中不存在该用户组返回false
+         */
+        public boolean delGroup(String groupId) {
+            if (StringUtils.isNullOrEmptyOrSpace(groupId)) return false;
+
+            return groupMap.remove(groupId)!=null;
+        }
+
+        /**
+         * 把用户信息加入用户组
+         * @param groupId 用户组Id
+         * @param userId 用户Id
+         */
+        public boolean addUserToGroup(String groupId, String userId) {
+            if (StringUtils.isNullOrEmptyOrSpace(groupId)) return false;
+            if (StringUtils.isNullOrEmptyOrSpace(userId)) return false;
+
+            Group g=getGroupById(groupId);
+            if (g==null) return false;
+
+            UserPo up=null;
+            List<UserPo> upl=g.getUserList();
+            if (upl==null) {
+                up=getUserById(userId);
+                if (up!=null) {
+                    upl=new ArrayList<UserPo>();
+                    upl.add(up);
+                    g.setUserList(upl);
+                } else return false;
+            } else {
+                boolean find=false;
+                for (int i=0; i<upl.size(); i++) {
+                    if (userId.equals(upl.get(i).getUserId())) {
+                        find=true;
+                        break;
+                    }
+                }
+                if (!find) {
+                    up=getUserById(userId);
+                    if (up!=null) upl.add(up);
+                    else return false;
+                }
+            }
+            return true;
+        }
+
+        /**
+         * 把用户从用户组中删除
+         * @param groupId 用户组Id
+         * @param userId 用户Id
+         */
+        public boolean delUserFromGroup(String groupId, String userId) {
+            if (StringUtils.isNullOrEmptyOrSpace(groupId)) return false;
+            if (StringUtils.isNullOrEmptyOrSpace(userId)) return false;
+
+            Group g=getGroupById(groupId);
+            if (g==null) return false;
+
+            List<UserPo> upl=g.getUserList();
+            if (upl==null) return false;
+
+            boolean find=false;
+            for (int i=upl.size()-1; i>=0; i--) {
+                if (userId.equals(upl.get(i).getUserId())) {
+                    find=true;
+                    upl.remove(i);
+                    break;
+                }
+            }
+            return find;
         }
     }
 }

@@ -37,6 +37,9 @@
   <sql id="Base_Column_List">
     id, groupNum, groupName, groupSignature, groupPwd, groupImg, groupType, pId, sort, createUserId, adminUserIds, descn, cTime, lmTime
   </sql>
+  <sql id="Base_Column_ListA">
+    a.id, a.groupNum, a.groupName, a.groupSignature, a.groupPwd, a.groupImg, a.groupType, a.pId, a.sort, a.createUserId, a.adminUserIds, a.descn, a.cTime, a.lmTime, b.groupCount
+  </sql>
 
   <!-- 条件子句 -->
   <sql id="WhereClauseByEntiey">
@@ -59,6 +62,25 @@
       </trim>
     </where>
   </sql>
+  <!-- 条件子句 -->
+  <sql id="WhereClauseByEntieyA">
+    <trim prefix="(" suffix=")" prefixOverrides="and">
+      <if test="groupId!=null"> and a.id=#{groupId,jdbcType=VARCHAR}</if>
+      <if test="groupNum!=null"> and a.groupNum=#{groupNum,jdbcType=VARCHAR}</if>
+      <if test="groupName!=null"> and a.groupName=#{groupName,jdbcType=VARCHAR}</if>
+      <if test="groupSignature!=null"> and a.groupSignature=#{groupSignature,jdbcType=VARCHAR}</if>
+      <if test="groupPwd!=null"> and a.groupPwd=#{groupPwd,jdbcType=VARCHAR}</if>
+      <if test="groupImg!=null"> and a.groupImg=#{groupImg,jdbcType=VARCHAR}</if>
+      <if test="groupType!=null"> and a.groupType=#{groupType,jdbcType=INTEGER}</if>
+      <if test="pId!=null"> and a.pId=#{pId,jdbcType=VARCHAR}</if>
+      <if test="sort!=null and sort!=0"> and a.sort=#{sort,jdbcType=INTEGER}</if>
+      <if test="createUserId!=null"> and a.createUserId=#{createUserId,jdbcType=VARCHAR}</if>
+      <if test="adminUserIds!=null"> and a.adminUserIds=#{adminUserIds,jdbcType=VARCHAR}</if>
+      <if test="descn!=null"> and a.descn=#{descn,jdbcType=VARCHAR}</if>
+      <if test="CTime!=null"> and a.cTime=#{CTime,jdbcType=TIMESTAMP}</if>
+      <if test="lmTime!=null"> and a.lmTime=#{lmTime,jdbcType=TIMESTAMP}</if>
+    </trim>
+  </sql>
 
   <!-- 获得记录条数-->
   <select id="getCount" parameterType="java.util.Map" resultType="java.lang.Integer">
@@ -74,10 +96,17 @@
 
   <!-- 获得一条数据 -->
   <select id="getInfo" resultMap="groupMap" parameterType="java.util.Map">
-    select <include refid="Base_Column_List"/> from plat_Group <if test="_parameter!=null"><include refid="WhereClauseByEntiey"/></if>
+    select <include refid="Base_Column_ListA"/>
+    from plat_Group a,
+      (select groupId, count(userId) groupCount from plat_GroupUser group by groupId) b
+    where a.id=b.groupId
+    <if test="_parameter!=null"><include refid="WhereClauseByEntieyA"/></if>
   </select>
   <select id="getGroupById" resultMap="groupMap" parameterType="java.lang.String">
-    select <include refid="Base_Column_List"/> from plat_Group where id=#{value,jdbcType=VARCHAR}
+    select <include refid="Base_Column_ListA"/>
+    from plat_Group a,
+      (select groupId, count(userId) groupCount from plat_GroupUser group by groupId) b
+    where a.id=b.groupId and a.id=#{value,jdbcType=VARCHAR}
   </select>
 
   <!-- 得到某用户所属的用户组 -->

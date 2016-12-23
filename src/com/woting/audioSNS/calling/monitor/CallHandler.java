@@ -20,7 +20,6 @@ import com.woting.audioSNS.calling.CallingConfig;
 import com.woting.audioSNS.calling.mem.CallingMemory;
 import com.woting.audioSNS.calling.model.OneCall;
 import com.woting.passport.UGA.persis.pojo.UserPo;
-import com.woting.passport.UGA.service.UserService;
 import com.woting.push.user.PushUserUDKey;
 
 /**
@@ -38,19 +37,17 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     private boolean isCallederTalked=false; //是否“呼叫者”说话
 
     private SessionService sessionService=null;
-    private UserService userService=null;
 
     /**
      * 构造函数，必须给定一个通话控制数据
      * @param callData
      */
-    protected CallHandler(CallingConfig conf, OneCall oneCall, SessionService sessionService, UserService userService) {
+    protected CallHandler(CallingConfig conf, OneCall oneCall, SessionService sessionService) {
         super(conf);
         super.setName("电话处理["+oneCall.getCallId()+"]监控主线程");
         setLoopDelay(10);
         callData=oneCall;
         this.sessionService=sessionService;
-        this.userService=userService;
         callData.setCallHandler(this);
     }
 
@@ -207,7 +204,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 toCallederMsg.setMsgContent(_mc);
                 //加入“呼叫者”的用户信息给被叫者
                 Map<String, Object> callerInfo=new HashMap<String, Object>();
-                UserPo u=userService.getUserById(callerId);
+                UserPo u=globalMem.uANDgMem.getUserById(callerId);
                 callerInfo.put("UserName", u.getLoginName());
                 callerInfo.put("UserNum", u.getUserNum());
                 callerInfo.put("Portrait", u.getPortraitMini());

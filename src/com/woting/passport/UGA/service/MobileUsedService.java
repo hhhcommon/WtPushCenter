@@ -9,7 +9,6 @@ import javax.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import com.spiritdata.framework.core.dao.mybatis.MybatisDAO;
-import com.spiritdata.framework.util.SequenceUUID;
 import com.woting.passport.UGA.persis.pojo.MobileUsedPo;
 
 /**
@@ -24,23 +23,6 @@ public class MobileUsedService {
     @PostConstruct
     public void initParam() {
         muDao.setNamespace("MOBILE_USED");
-    }
-
-    /**
-     * 保存用户使用情况
-     * @param mu
-     */
-    public void saveMobileUsed(MobileUsedPo mu) {
-        try {
-            mu.setMuId(SequenceUUID.getUUIDSubSegment(4));
-            muDao.insert(mu);
-        } catch(Exception e) {
-            try {
-                muDao.update("updateByIMEI", mu);
-            } catch(Exception e1) {
-                e1.printStackTrace();
-            }
-        }
     }
 
     /**

@@ -10,13 +10,11 @@ import com.spiritdata.framework.core.lock.BlockLockConfig;
 import com.spiritdata.framework.core.lock.ExpirableBlockKey;
 import com.spiritdata.framework.ext.redis.lock.RedisBlockLock;
 import com.spiritdata.framework.ext.spring.redis.RedisOperService;
-import com.spiritdata.framework.util.JsonUtils;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.intercom.IntercomConfig;
 import com.woting.audioSNS.intercom.mem.IntercomMemory;
 import com.woting.audioSNS.intercom.model.OneMeet;
 import com.woting.passport.UGA.model.Group;
-import com.woting.passport.UGA.service.GroupService;
 import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.MessageUtils;
 import com.woting.push.core.message.MsgNormal;
@@ -30,19 +28,11 @@ public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
     private IntercomMemory intercomMem=IntercomMemory.getInstance();
     private JedisConnectionFactory redisConn;
 
-    private GroupService groupService;
-
     public DealIntercomMsg(IntercomConfig conf, int index) {
         super(conf);
         super.setName("对讲处理线程"+index);
         redisConn=(JedisConnectionFactory) SpringShell.getBean("redisConnFactory");
         this.setLoopDelay(10);
-    }
-
-    @Override
-    public boolean initServer() {
-        groupService=(GroupService)SpringShell.getBean("groupService");
-        return groupService!=null;
     }
 
     @Override
@@ -93,7 +83,7 @@ public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
                 if (om!=null) om.addPreMsg(sourceMsg);
                 else {
                     //创建组对象
-                    Group g=groupService.getGroup(groupId);
+                    Group g=globalMem.uANDgMem.getGroupById(groupId);
                     if (g==null) {
                         retMsg.setCommand(9);
                         retMsg.setReturnType(0x20);
