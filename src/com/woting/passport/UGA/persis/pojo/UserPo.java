@@ -82,6 +82,15 @@ public class UserPo extends UgaUser {
         this.lmTime=lmTime;
     }
 
+    public UserPo() {
+        super();
+    }
+
+    public UserPo(Map<String, Object> um) {
+        super();
+        fromHashMap(um);
+    }
+
     public Map<String, Object> toHashMap4View() {
         Map<String, Object> retM=new HashMap<String, Object>();
         if (!StringUtils.isNullOrEmptyOrSpace(this.userId)) retM.put("UserId", this.userId);

@@ -10,7 +10,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.intercom.model.OneMeet;
+import com.woting.passport.UGA.model.Group;
 import com.woting.passport.UGA.persis.pojo.UserPo;
+import com.woting.passport.UGA.service.GroupService;
 import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MsgMedia;
 import com.woting.push.core.message.MsgNormal;
@@ -31,6 +33,7 @@ import com.woting.push.user.PushUserUDKey;
  */
 public class PushGlobalMemory {
     private SessionService sessionService=null;
+    private GroupService groupService=null;
 
     //java的占位单例模式===begin
     private static class InstanceHolder {
@@ -49,23 +52,39 @@ public class PushGlobalMemory {
      * 初始化，创建两个主要的对象
      */
     private PushGlobalMemory() {
-       pureMsgQueue=new ConcurrentLinkedQueue<Message>();
-       typeMsg=new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
-       sendMsg=new ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Message>>();
-       notifyMsg=new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
+        sessionService=(SessionService)SpringShell.getBean("sessionService");
+        groupService=(GroupService)SpringShell.getBean("groupService");
 
-       REF_deviceANDsocket=new HashMap<String, SocketHandler>();
-       REF_userdtypeANDsocket=new HashMap<String, SocketHandler>();
-       REF_userdtypeANDudk=new HashMap<String, PushUserUDKey>();
-       REF_udkANDsocket=new HashMap<PushUserUDKey, SocketHandler>();
-       REF_socketANDudk=new HashMap<SocketHandler, PushUserUDKey>();
+        groupMap=new ConcurrentHashMap<String, Group>();
+        userMap=new ConcurrentHashMap<String, UserPo>();
 
-       receiveMem=new ReceiveMemory();
-       sendMem=new SendMemory();
-       sessionService=(SessionService)SpringShell.getBean("sessionService");
+        pureMsgQueue=new ConcurrentLinkedQueue<Message>();
+        typeMsg=new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
+        sendMsg=new ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Message>>();
+        notifyMsg=new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
+
+        REF_deviceANDsocket=new HashMap<String, SocketHandler>();
+        REF_userdtypeANDsocket=new HashMap<String, SocketHandler>();
+        REF_userdtypeANDudk=new HashMap<String, PushUserUDKey>();
+        REF_udkANDsocket=new HashMap<PushUserUDKey, SocketHandler>();
+        REF_socketANDudk=new HashMap<SocketHandler, PushUserUDKey>();
+
+        receiveMem=new ReceiveMemory();
+        sendMem=new SendMemory();
+        groupMem=new GroupMemory();
+
+        groupMem.loadFromDB();
     }
 
     //==========接收消息内存
+    /**
+     * 组信息缓存，目前缓存所有组信息
+     */
+    private ConcurrentHashMap<String, Group> groupMap;
+    /**
+     * 组信息缓存，目前缓存所有组信息
+     */
+    private ConcurrentHashMap<String, UserPo> userMap;
     /**
      * 总接收(纯净)队列所有收到的信息都会暂时先放入这个队列中
      */
@@ -364,6 +383,8 @@ public class PushGlobalMemory {
 
     public ReceiveMemory receiveMem=null;
     public SendMemory sendMem=null;
+    public GroupMemory groupMem=null;
+
     /**
      * 内部类，接受消息处理类
      * @author wanghui
@@ -592,6 +613,18 @@ public class PushGlobalMemory {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * 内部类，用户组数据处理类
+     * 用户组数据只有在初始化时从数据库中获取。
+     * 其他数据更新都通过消息接口处理。
+     * @author wanghui
+     */
+    public class GroupMemory {
+        public void loadFromDB() {
+            groupService.fillGroupsAndUsers(groupMap, userMap);
         }
     }
 }

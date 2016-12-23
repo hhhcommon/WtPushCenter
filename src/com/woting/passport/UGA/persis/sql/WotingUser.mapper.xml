@@ -173,4 +173,9 @@
   <select id="getListUserInGroup" resultMap="userMap" parameterType="java.lang.String">
     select <include refid="Base_Column_List_A"/> from plat_User a, plat_GroupUser b where a.id=b.userId and b.groupId=#{groupId,jdbcType=VARCHAR}
   </select>
+  <!-- 得到所有组内用户列表-->
+  <select id="getAllUserInGroup" resultType="java.util.HashMap" parameterType="java.util.Map">
+    select <include refid="Base_Column_List_A"/>, b.groupId from plat_User a, plat_GroupUser b where a.id=b.userId
+    order by b.groupId
+  </select>
 </mapper>
