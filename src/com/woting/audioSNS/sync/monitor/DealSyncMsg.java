@@ -116,9 +116,10 @@ public class DealSyncMsg extends AbstractLoopMoniter<SyncMessageConfig> {
     @SuppressWarnings("unchecked")
     private String toTypeName(MsgNormal mn) {
         MapContent mc=(MapContent)mn.getMsgContent();
-        if (mn.getCommand()==2) return "加入组成员::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"][UserId="+((Map<String, Object>)mc.get("UserInfo")).get("userId")+"]";
-        if (mn.getCommand()==3) return "加入组成员::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"][UserId="+((Map<String, Object>)mc.get("UserInfo")).get("userId")+"]";
-        if (mn.getCommand()==4) return "加入组成员::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"][UserId="+((Map<String, Object>)mc.get("UserInfo")).get("userId")+"]";
+        Map<String, Object> um=((Map<String, Object>)mc.get("UserInfo"));
+        if (mn.getCommand()==2) return "加入组成员::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"]"+(um==null?"":"[UserId="+um.get("userId")+"]");
+        if (mn.getCommand()==3) return "加入组成员::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"]"+(um==null?"":"[UserId="+um.get("userId")+"]");
+        if (mn.getCommand()==4) return "加入组成员::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"]"+(um==null?"":"[UserId="+um.get("userId")+"]");
         if (mn.getCommand()==5) return "删除组成员::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"][UserId="+mc.get("UserId")+"]";
         return ""; 
     }

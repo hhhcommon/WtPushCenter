@@ -77,7 +77,7 @@ public class GroupService {
                 List<UserPo> userList=null;
                 while (i<ul.size()) {
                     ui=ul.get(i++);
-                    up=um.get((String)ui.get("userId"));
+                    up=um.get((String)ui.get("id"));
                     if (up==null) {
                         up=new UserPo(ui);
                         um.put(up.getUserId(), up);

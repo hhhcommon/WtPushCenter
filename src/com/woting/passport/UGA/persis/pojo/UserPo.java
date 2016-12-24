@@ -89,6 +89,7 @@ public class UserPo extends UgaUser {
     public UserPo(Map<String, Object> um) {
         super();
         fromHashMap(um);
+        if (!StringUtils.isNullOrEmptyOrSpace((String)um.get("id"))) setUserId((String)um.get("id"));
     }
 
     public Map<String, Object> toHashMap4View() {
