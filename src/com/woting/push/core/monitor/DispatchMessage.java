@@ -35,7 +35,7 @@ public class DispatchMessage extends AbstractLoopMoniter<PushConfig> {
     public void oneProcess() throws Exception {
         Message m=globalMem.receiveMem.pollPureMsg();
         if (m!=null) {
-            if (m.isAffirm()&&!(m instanceof MsgMedia)) {//处理回复消息
+            if (m.isCtlAffirm()&&!(m instanceof MsgMedia)) {//处理回复消息
                 PushUserUDKey mUdk=PushUserUDKey.buildFromMsg(m);
                 globalMem.sendMem.addUserMsg(mUdk, MessageUtils.buildAckMsg((MsgNormal)m));
             }

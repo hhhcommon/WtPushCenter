@@ -66,6 +66,7 @@ public class PushGlobalMemory {
         typeMsg=new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
         sendMsg=new ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Message>>();
         notifyMsg=new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
+        sendedNeedCtlAffirmMsg=new ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Map<String, Object>>>();
 
         REF_deviceANDsocket=new HashMap<String, SocketHandler>();
         REF_userdtypeANDsocket=new HashMap<String, SocketHandler>();
@@ -118,6 +119,15 @@ public class PushGlobalMemory {
      * </pre>
      */
     private ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>> notifyMsg;
+    
+    /**
+     * 已发送的需要控制回复的消息，此类消息与设备号绑定
+     * <pre>
+     * Key    用户Id
+     * Value  消息Map:FirstSendTime,Message
+     * </pre>
+     */
+    private ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Map<String, Object>>> sendedNeedCtlAffirmMsg;
 
 //    private Object LOCK_unionKey=new Object(); //同一Key锁
     private Map<String, SocketHandler> REF_deviceANDsocket;   //设备和Socket处理线程的对应表； Key——设备标识：DeviceId::PCDType；Value——Socket处理线程
@@ -385,6 +395,44 @@ public class PushGlobalMemory {
 //        return msg;
 //    }
 
+    //已发送队列处理：sendedNeedCtlAffirmMsg
+    public void addSendedNeedCtlAffirmMsg(PushUserUDKey pUdk, Message msg) {
+        ConcurrentLinkedQueue<Map<String, Object>> mq=sendedNeedCtlAffirmMsg.get(pUdk);
+        if (mq==null) {
+            mq=new ConcurrentLinkedQueue<Map<String, Object>>();
+            sendedNeedCtlAffirmMsg.put(pUdk, mq);
+        }
+        //看看有无重复
+        boolean canAdd=true;
+        if (mq.size()>0) {
+            for (Map<String, Object> _m: mq) {
+                Message _msg=(Message)_m.get("message");
+                if (_msg!=null) {
+                    if ((_msg instanceof MsgNormal)&&(msg instanceof MsgMedia)) {
+                        if (((MsgNormal)_msg).getMsgId().equals(((MsgNormal)msg).getMsgId())) {
+                            canAdd=false;
+                            break;
+                        }
+                    }
+                    if ((_msg instanceof MsgMedia)&&(msg instanceof MsgMedia)) {
+                        if (((MsgMedia)_msg).getTalkId().equals(((MsgMedia)msg).getTalkId())
+                          &&((MsgMedia)_msg).getSeqNo()==((MsgMedia)msg).getSeqNo()) {
+                            canAdd=false;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if (canAdd) {
+            Map<String, Object> m=new HashMap<String, Object>();
+            m.put("firstSendTime", msg.getSendTime());
+            m.put("message", msg);
+            m.put("sendSum", 1);
+            mq.add(m);
+        }
+    }
+
     public ReceiveMemory receiveMem=null;
     public SendMemory sendMem=null;
     public UserAndGroupMemory uANDgMem=null;
@@ -545,12 +593,21 @@ public class PushGlobalMemory {
                 Queue<Message> mQueue=notifyMsg.get(pUdk.getUserId());
                 if (mQueue!=null) m=mQueue.poll();
             }
-            if (m==null) { //从未发布成功的消息中获取消息
-                /*
-                SendMessageList hasSl=sm.getSendedMessagList(mk);
-                if (hasSl.size()>0) {
-                    m=hasSl.get(0);
-                }*/
+            return m;
+        }
+        public Message getResendMsg(PushUserUDKey pUdk, SocketHandler sh) {
+            if (pUdk==null||sh==null) return null;
+
+            Message m=null;
+            //从发送队列取一条消息
+//            boolean canRead=true;
+//            synchronized(LOCK_usersocketMap) {
+//                canRead=sh.equals(REF_udkANDsocket.get(pUdk))||pUdk.equals(REF_socketANDudk.get(sh));
+//            }
+//            if (canRead) {
+            if (sh.equals(REF_udkANDsocket.get(pUdk))||pUdk.equals(REF_socketANDudk.get(sh))) {
+                Queue<Message> mQueue=notifyMsg.get(pUdk.getUserId());
+                if (mQueue!=null) m=mQueue.poll();
             }
             return m;
         }

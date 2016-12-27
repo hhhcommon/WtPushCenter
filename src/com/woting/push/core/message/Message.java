@@ -16,7 +16,7 @@ public abstract class Message implements Comparable<Message>, Serializable {
     public final static int _MAXLENGTH=20480; //最大字节数
 
     protected int msgType; //消息类型:0主动发出；1回复类型
-    protected int affirm; //是否需要确认;0不需要1需要，默认值=0不需要确认
+    protected int affirm; //是否需要确认;0不需要1需要控制回复2不需要控制回复，需要业务回复3需要控制回复和业务回复
     protected long sendTime; //发送时间
 
     //1服务器；0设备
@@ -59,13 +59,21 @@ public abstract class Message implements Comparable<Message>, Serializable {
     }
 
     /**
-     * 该条消息是否需要确认
+     * 该条消息是否需要控制确认
      * @return 需要确认返回true，否则返回false
      */
-    public boolean isAffirm() {
-        return affirm==1;
+    public boolean isCtlAffirm() {
+        return affirm==1||affirm==3;
     }
 
+    /**
+     * 该条消息是否需要业务确认
+     * @return 需要确认返回true，否则返回false
+     */
+    public boolean isBizAffirm() {
+        return affirm==2||affirm==3;
+    }
+    
     /**
      * 用于消息排序
      */

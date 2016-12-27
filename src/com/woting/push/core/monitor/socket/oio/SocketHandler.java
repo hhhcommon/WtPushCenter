@@ -700,7 +700,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         protected void __loopProcess() throws Exception {
             if (_pushUserKey!=null) {
                 canAdd=true;
-                //获得控制消息
+                //获得**具体给这个设备**的消息
                 Message m=globalMem.sendMem.getUserMsg(_pushUserKey, SocketHandler.this);
                 if (m!=null) {
                     long t=System.currentTimeMillis();
@@ -719,10 +719,17 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                         }
                         try {
                             _sendMsgQueue.add(m.toBytes());
+                            //若需要控制确认，插入已发送列表
+                            if (m instanceof MsgNormal) {
+                                if (((MsgNormal)m).isCtlAffirm()) {
+                                    globalMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
+                                }
+                            }
                         } catch(Exception e) {
                         }
                     }
                 }
+                //获得**给此用户的通知消息**（与设备无关）
                 canAdd=true;
                 Message nm=globalMem.sendMem.getUserNotifyMsg(_pushUserKey, SocketHandler.this);
                 if (nm!=null) {
@@ -740,6 +747,12 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                         }
                         try {
                             _sendMsgQueue.add(nm.toBytes());
+                            //若需要控制确认，插入已发送列表
+                            if (m instanceof MsgNormal) {
+                                if (((MsgNormal)m).isCtlAffirm()) {
+                                    globalMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
+                                }
+                            }
                         } catch(Exception e) {
                         }
                     }

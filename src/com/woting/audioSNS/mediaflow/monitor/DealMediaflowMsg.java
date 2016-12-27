@@ -172,7 +172,7 @@ public class DealMediaflowMsg extends AbstractLoopMoniter<MediaflowConfig> {
             } else oc.setLastUsedTime();
 
             //发送正常回执
-            if (sourceMsg.isAffirm()) {
+            if (sourceMsg.isCtlAffirm()) {
                 retMm.setReturnType(0x01);
                 globalMem.sendMem.addUnionUserMsg(pUdk, retMm);
             }
