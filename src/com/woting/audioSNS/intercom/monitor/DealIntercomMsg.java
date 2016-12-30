@@ -75,45 +75,42 @@ public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
             return ;
         }
         //组对象为空
-        if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==1) {//进入组
+        if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==1) { //进入组
             RedisOperService roService=new RedisOperService(redisConn, 4);
             ExpirableBlockKey rLock=RedisBlockLock.lock(groupId, roService, new BlockLockConfig(5, 2, 0, 50));
             try {
-                om=intercomMem.getOneMeet(groupId);
-                if (om!=null) om.addPreMsg(sourceMsg);
-                else {
-                    //创建组对象
-                    Group g=globalMem.uANDgMem.getGroupById(groupId);
-                    if (g==null) {
-                        retMsg.setCommand(9);
-                        retMsg.setReturnType(0x20);
-                        Map<String, Object> dataMap=new HashMap<String, Object>();
-                        dataMap.put("GroupId", groupId);
-                        MapContent mc=new MapContent(dataMap);
-                        retMsg.setMsgContent(mc);
-                        globalMem.sendMem.addUserMsg(pUdk, retMsg);
-                        return;
-                    }
-                    om=new OneMeet(1, g);
-                    om.addPreMsg(sourceMsg);
-                    //加入内存
-                    int addFlag=intercomMem.addOneMeet(om);
-                    if (addFlag!=1) {
-                        retMsg.setCommand(9);
-                        retMsg.setReturnType(addFlag==0?0x81:0x82);
-                        Map<String, Object> dataMap=new HashMap<String, Object>();
-                        dataMap.put("GroupId", groupId);
-                        MapContent mc=new MapContent(dataMap);
-                        retMsg.setMsgContent(mc);
-                        globalMem.sendMem.addUserMsg(pUdk, retMsg);
-                        return;
-                    }
-                    om.setStatus_1();
-                    //启动处理进程
-                    IntercomHandler interHandler=new IntercomHandler(conf, om);
-                    interHandler.setDaemon(true);
-                    interHandler.start();
+                //创建组对象
+                Group g=globalMem.uANDgMem.getGroupById(groupId);
+                if (g==null) {
+                    retMsg.setCommand(9);
+                    retMsg.setReturnType(0x20);
+                    Map<String, Object> dataMap=new HashMap<String, Object>();
+                    dataMap.put("GroupId", groupId);
+                    MapContent mc=new MapContent(dataMap);
+                    retMsg.setMsgContent(mc);
+                    globalMem.sendMem.addUserMsg(pUdk, retMsg);
+                    return;
                 }
+                om=new OneMeet(1, g);
+                //加入内存
+                int addFlag=intercomMem.addOneMeet(om);
+                if (addFlag!=1) {
+                    retMsg.setCommand(9);
+                    retMsg.setReturnType(addFlag==0?0x81:0x82);
+                    Map<String, Object> dataMap=new HashMap<String, Object>();
+                    dataMap.put("GroupId", groupId);
+                    MapContent mc=new MapContent(dataMap);
+                    retMsg.setMsgContent(mc);
+                    globalMem.sendMem.addUserMsg(pUdk, retMsg);
+                    return;
+                }
+                om.setStatus_1();
+
+                om.addPreMsg(sourceMsg);
+                //启动处理进程
+                IntercomHandler interHandler=new IntercomHandler(conf, om);
+                interHandler.setDaemon(true);
+                interHandler.start();
             } finally {
                 rLock.unlock();
                 if (roService!=null) roService.close();

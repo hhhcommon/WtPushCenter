@@ -191,6 +191,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         return retFlag==1?1:3;
     }
 
+    //推出组处理
     private int exitGroup(MsgNormal m) {
         if (m==null) return 2;
         PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(m);
