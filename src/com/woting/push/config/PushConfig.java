@@ -1,6 +1,6 @@
-package com.woting.push;
+package com.woting.push.config;
 
-import com.woting.push.config.Config;
+import com.woting.push.core.config.Config;
 
 /**
  * 服务端配置信息

@@ -1,6 +1,6 @@
 package com.woting.audioSNS.sync;
 
-import com.woting.push.config.Config;
+import com.woting.push.core.config.Config;
 
 /**
  * 同步消息（用于业务系统与消息系统同步数据，目前主要是组信息）控制的配置。<br/>

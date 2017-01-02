@@ -396,6 +396,11 @@ public class PushGlobalMemory {
 //    }
 
     //已发送队列处理：sendedNeedCtlAffirmMsg
+    /**
+     * 放入已发送队列
+     * @param pUdk 用户设备Key
+     * @param msg 消息（可以是控制消息，也可以是媒体消息）
+     */
     public void addSendedNeedCtlAffirmMsg(PushUserUDKey pUdk, Message msg) {
         ConcurrentLinkedQueue<Map<String, Object>> mq=sendedNeedCtlAffirmMsg.get(pUdk);
         if (mq==null) {
@@ -487,7 +492,8 @@ public class PushGlobalMemory {
      */
     public class SendMemory {
         /**
-         * 把消息(msg)加入所对应用户(pUDkey)的传送队列<br/>
+         * [消息队列-直接对应（设备+用户）]
+         * 把消息(msg)加入所对应用户设备(pUDkey)的传送队列<br/>
          * 若消息已经存在于传送队列中，就不加入了。
          * @param pUDkey 用户Key
          * @param msg 消息
@@ -579,6 +585,7 @@ public class PushGlobalMemory {
             }
             return m;
         }
+
         public Message getUserNotifyMsg(PushUserUDKey pUdk, SocketHandler sh) {
             if (pUdk==null||sh==null) return null;
 
@@ -595,6 +602,7 @@ public class PushGlobalMemory {
             }
             return m;
         }
+
         public Message getResendMsg(PushUserUDKey pUdk, SocketHandler sh) {
             if (pUdk==null||sh==null) return null;
 

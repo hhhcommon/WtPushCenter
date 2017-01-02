@@ -1,6 +1,6 @@
 package com.woting.audioSNS.intercom;
 
-import com.woting.push.config.Config;
+import com.woting.push.core.config.Config;
 
 public class IntercomConfig implements Config {
     /**
@@ -29,7 +29,7 @@ public class IntercomConfig implements Config {
         this._ExpireSpeakerTime=_ExpireSpeakerTime;
     }
     public long get_ExpireSpeakerTime() {
-        return _ExpireTime;
+        return _ExpireSpeakerTime;
     }
     public void set_ExpireSpeakerTime(long _ExpireSpeakerTime) {
         this._ExpireSpeakerTime=_ExpireSpeakerTime;

@@ -1,6 +1,6 @@
 package com.woting.audioSNS.calling;
 
-import com.woting.push.config.Config;
+import com.woting.push.core.config.Config;
 
 /**
  * 电话处理的配置。<br/>

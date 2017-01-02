@@ -45,7 +45,13 @@
   "sync":{
     "dealThread":"1"
   },
+
   //===以下为全局参数
+  //媒体消息过期时间
+  "mediaExpireTime": {
+    "audio":"1000", //音频过期1秒
+    "vedio":"1000"  //视频过期1秒
+  },
   //需要控制确认的消息的流程控制参数
   "controlAffirm":{
     "normalMsg":{  //一般消息

@@ -1,6 +1,6 @@
 package com.woting.push.core.monitor;
 
-import com.woting.push.PushConfig;
+import com.woting.push.config.PushConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MessageUtils;
@@ -35,7 +35,7 @@ public class DispatchMessage extends AbstractLoopMoniter<PushConfig> {
     public void oneProcess() throws Exception {
         Message m=globalMem.receiveMem.pollPureMsg();
         if (m!=null) {
-            if (m.isCtlAffirm()&&!(m instanceof MsgMedia)) {//处理回复消息
+            if (m.isCtlAffirm()&&!(m instanceof MsgMedia)) { //处理回复消息
                 PushUserUDKey mUdk=PushUserUDKey.buildFromMsg(m);
                 globalMem.sendMem.addUserMsg(mUdk, MessageUtils.buildAckMsg((MsgNormal)m));
             }

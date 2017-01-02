@@ -22,6 +22,9 @@ import com.woting.audioSNS.notify.NotifyMessageConfig;
 import com.woting.audioSNS.notify.monitor.DealNotifyMsg;
 import com.woting.audioSNS.sync.SyncMessageConfig;
 import com.woting.audioSNS.sync.monitor.DealSyncMsg;
+import com.woting.push.config.AffirmCtlConfig;
+import com.woting.push.config.ConfigLoadUtils;
+import com.woting.push.config.PushConfig;
 import com.woting.push.core.SocketHandleConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
@@ -216,6 +219,9 @@ public class ServerListener {
 
         SyncMessageConfig smc=ConfigLoadUtils.getSyncMessageConfig(jc);
         SystemCache.setCache(new CacheEle<SyncMessageConfig>(PushConstants.SYNC_CONF, "同步消息控制配置", smc));
+
+        AffirmCtlConfig acc=ConfigLoadUtils.getAffirmCtlConfig(jc);
+        SystemCache.setCache(new CacheEle<AffirmCtlConfig>(PushConstants.SYNC_CONF, "控制回复配置", acc));
     }
 
     private void begin() {

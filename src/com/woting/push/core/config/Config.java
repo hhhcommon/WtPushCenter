@@ -1,4 +1,4 @@
-package com.woting.push.config;
+package com.woting.push.core.config;
 
 /**
  * 配置文件的"伪"接口。

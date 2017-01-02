@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.spiritdata.framework.util.StringUtils;
-import com.woting.push.config.Config;
+import com.woting.push.core.config.Config;
 
 /**
  * 监控服务的虚类

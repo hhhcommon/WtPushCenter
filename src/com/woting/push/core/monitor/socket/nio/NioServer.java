@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.spiritdata.framework.util.StringUtils;
-import com.woting.push.PushConfig;
+import com.woting.push.config.PushConfig;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
 
 public class NioServer extends AbstractLoopMoniter<PushConfig> {

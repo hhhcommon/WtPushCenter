@@ -1,4 +1,4 @@
-package com.woting.push;
+package com.woting.push.config;
 
 import com.greenpineyu.fel.FelEngine;
 import com.greenpineyu.fel.FelEngineImpl;
@@ -112,5 +112,20 @@ public abstract class ConfigLoadUtils {
             smc.set_DealThreadCount((int)fel.eval(jc.getString("notify.dealThread")));
         } catch(Exception e) {}
         return smc;
+    }
+
+    public static AffirmCtlConfig getAffirmCtlConfig(JsonConfig jc) {
+        AffirmCtlConfig acc=new AffirmCtlConfig();
+        try {
+            acc.set_N_Type((int)fel.eval(jc.getString("controlAffirm.normalMsg.type")));
+            acc.set_N_ExpireTime((int)fel.eval(jc.getString("controlAffirm.normalMsg.expireTime")));
+            acc.set_N_ExpireLimit((int)fel.eval(jc.getString("controlAffirm.normalMsg.expireLimit")));
+            acc.set_N_InternalResend((int)fel.eval(jc.getString("controlAffirm.normalMsg.internalResend")));
+            acc.set_M_Type((int)fel.eval(jc.getString("controlAffirm.mediaMsg.type")));
+            acc.set_M_ExpireTime((int)fel.eval(jc.getString("controlAffirm.mediaMsg.expireTime")));
+            acc.set_M_ExpireLimit((int)fel.eval(jc.getString("controlAffirm.mediaMsg.expireLimit")));
+            acc.set_M_InternalResend((int)fel.eval(jc.getString("controlAffirm.mediaMsg.internalResend")));
+        } catch(Exception e) {}
+        return acc;
     }
 }

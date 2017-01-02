@@ -1,6 +1,6 @@
 package com.woting.audioSNS.notify;
 
-import com.woting.push.config.Config;
+import com.woting.push.core.config.Config;
 
 /**
  * 通知消息控制的配置。<br/>

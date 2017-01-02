@@ -1,6 +1,6 @@
 package com.woting.push.core;
 
-import com.woting.push.config.Config;
+import com.woting.push.core.config.Config;
 
 /**
  * 每个socket通道监控配置。
