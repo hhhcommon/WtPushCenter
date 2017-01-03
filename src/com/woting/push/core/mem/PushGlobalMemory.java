@@ -773,7 +773,7 @@ public class PushGlobalMemory {
                     }
                 }
             }
-            return mq;
+            return (mq==null||mq.isEmpty())?null:mq;
         }
 
         /**

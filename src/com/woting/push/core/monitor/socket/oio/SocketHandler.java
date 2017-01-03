@@ -336,6 +336,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                 }
             }
         }
+
         private void __dealOneMsg(Message _msg) {
             if (_msg!=null&&!_msg.isAck()) {
                 if (_msg instanceof MsgNormal) {
@@ -727,8 +728,32 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                     }
                 }
                 //获得**给此用户的通知消息**（与设备无关）
+                Message nm=globalMem.sendMem.getNotifyMsg(_pushUserKey, SocketHandler.this);
+                if (nm!=null&&!(nm instanceof MsgMedia)) {
+                    if (fos!=null) {
+                        try {
+                            byte[] aa=JsonUtils.objToJson(m).getBytes();
+                            fos.write(aa, 0, aa.length);
+                            fos.write(13);
+                            fos.write(10);
+                            fos.flush();
+                        } catch (IOException e) {
+                        }
+                    }
+                    try {
+                        _sendMsgQueue.add(nm.toBytes());
+                        //若需要控制确认，插入已发送列表
+                        if (m instanceof MsgNormal) {
+                            if (((MsgNormal)m).isCtlAffirm()) {
+                                globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
+                            }
+                        }
+                    } catch(Exception e) {
+                    }
+                }
+                //获得**需要重复发送的消息**
                 ConcurrentLinkedQueue<Map<String, Object>> mmq=globalMem.sendMem.getResendMsg(_pushUserKey, SocketHandler.this);
-                while (!mmq.isEmpty()) {
+                while (mmq!=null&&!mmq.isEmpty()) {
                     Map<String, Object> _m=mmq.poll();
                     if (_m==null||_m.isEmpty()) continue;
                     Message _msg=(Message)_m.get("message");
