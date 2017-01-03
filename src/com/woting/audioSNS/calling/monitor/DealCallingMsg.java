@@ -52,31 +52,33 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
         //进入处理
         if (sourceMsg.getCmdType()==3&&sourceMsg.getCommand()==0) {
             List<Map<String, Object>> clm=callingMem.getActiveCallingList(pUdk.getUserId());
-            retMsg.setFromType(1);
-            retMsg.setToType(0);
-            retMsg.setCmdType(3);
-            retMsg.setCommand(0);
-            Map<String, Object> dataMap=new HashMap<String, Object>();
-            if (clm==null||clm.isEmpty()) retMsg.setReturnType(0);
-            else {
-                retMsg.setReturnType(1);
-                List<Map<String, Object>> callingList=new ArrayList<Map<String, Object>>();
-                for (Map<String, Object> ci: clm) {
-                    UserPo caller=globalMem.uANDgMem.getUserById(ci.get("CallerId")+"");
-                    UserPo calleder=globalMem.uANDgMem.getUserById(ci.get("CallederId")+"");
-                    Map<String, Object> cm=new HashMap<String, Object>();
-                    cm.put("CallId", ci.get("CallId"));
-                    cm.put("CallerId", ci.get("CallerId"));
-                    cm.put("CallederId", ci.get("CallederId"));
-                    if (caller!=null) cm.put("CallerInfo", caller.toHashMap4View());
-                    if (calleder!=null) cm.put("CallederInfo", calleder.toHashMap4View());
-                    callingList.add(cm);
+            if (clm!=null&&!clm.isEmpty()) {
+                retMsg.setFromType(1);
+                retMsg.setToType(0);
+                retMsg.setCmdType(3);
+                retMsg.setCommand(0);
+                Map<String, Object> dataMap=new HashMap<String, Object>();
+                if (clm==null||clm.isEmpty()) retMsg.setReturnType(0);
+                else {
+                    retMsg.setReturnType(1);
+                    List<Map<String, Object>> callingList=new ArrayList<Map<String, Object>>();
+                    for (Map<String, Object> ci: clm) {
+                        UserPo caller=globalMem.uANDgMem.getUserById(ci.get("CallerId")+"");
+                        UserPo calleder=globalMem.uANDgMem.getUserById(ci.get("CallederId")+"");
+                        Map<String, Object> cm=new HashMap<String, Object>();
+                        cm.put("CallId", ci.get("CallId"));
+                        cm.put("CallerId", ci.get("CallerId"));
+                        cm.put("CallederId", ci.get("CallederId"));
+                        if (caller!=null) cm.put("CallerInfo", caller.toHashMap4View());
+                        if (calleder!=null) cm.put("CallederInfo", calleder.toHashMap4View());
+                        callingList.add(cm);
+                    }
+                    dataMap.put("CallingList", callingList);
+                    MapContent mc=new MapContent(dataMap);
+                    retMsg.setMsgContent(mc);
                 }
-                dataMap.put("CallingList", callingList);
-                MapContent mc=new MapContent(dataMap);
-                retMsg.setMsgContent(mc);
+                globalMem.sendMem.addDeviceMsg(pUdk, retMsg);
             }
-            globalMem.sendMem.addDeviceMsg(pUdk, retMsg);
             return ;
         }
 

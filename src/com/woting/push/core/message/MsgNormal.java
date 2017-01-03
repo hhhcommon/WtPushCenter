@@ -285,7 +285,7 @@ public class MsgNormal extends Message {
         //四、命令
         zeroByte=0;
         zeroByte|=(((byte)bizType)<<4);
-        if (bizType!=0&&bizType!=15) zeroByte|=((((byte)cmdType)<<4)>>4);
+        zeroByte|=((((byte)cmdType)<<4)>>4);
         ret[_offset++]=zeroByte;
         if (bizType!=0&&bizType!=15) ret[_offset++]=(byte)command;
         //五、回复

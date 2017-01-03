@@ -87,6 +87,9 @@ public class PushGlobalMemory {
         uANDgMem=new UserAndGroupMemory();
 
         uANDgMem.loadFromDB();
+        //TODO del
+        System.out.println("===========================");
+        //TODO del
     }
 
     //==========其他配置信息
@@ -669,7 +672,7 @@ public class PushGlobalMemory {
                 ConcurrentLinkedQueue<Map<String, Object>> _mq=sendedNeedCtlAffirmMsg.get(pUdk);
                 int tmpI=0;
                 long tmpL=0l;
-                while (!_mq.isEmpty()) {
+                while (_mq!=null&&!_mq.isEmpty()) {
                     Map<String, Object> _m=_mq.poll();
                     if (_m==null||_m.isEmpty()) continue;
 

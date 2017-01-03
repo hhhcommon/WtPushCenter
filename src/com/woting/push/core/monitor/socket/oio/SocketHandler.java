@@ -344,6 +344,11 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                     if (_pUdk!=null) {
                         if (_ms.getBizType()!=15) {
                             if (_pUdk.equals(_pushUserKey)) globalMem.receiveMem.addPureMsg(_ms);
+                            else {
+                                MsgNormal noLogMsg=MessageUtils.buildAckMsg((MsgNormal)_ms);
+                                noLogMsg.setCmdType(1);
+                                try { _sendMsgQueue.add(noLogMsg.toBytes()); } catch(Exception e) {}
+                            }
                         } else {//是注册消息
                             boolean bindDeviceFlag=false;
                             if (_ms.getFromType()==1) {//从服务器来的消息，对于服务器，先到的占用。

@@ -64,6 +64,12 @@ public class GroupService {
         if (gl!=null&&gl.size()>0) {
             Group item=null;
             for (GroupPo gp: gl) {
+                //TODO del
+                if (gp.getGroupId().equals("0a41e9ae4543")) {
+                    System.out.println("DEBUG========+++++");
+                    continue;
+                }
+                //TODO del
                 item=new Group();
                 item.buildFromPo(gp);
                 gm.put(gp.getGroupId(), item);
@@ -77,6 +83,12 @@ public class GroupService {
                 List<UserPo> userList=null;
                 while (i<ul.size()) {
                     ui=ul.get(i++);
+                    //TODO del
+                    if (((String)ui.get("groupId")).equals("0a41e9ae4543")) {
+                        System.out.println("DEBUG=2=======+++++"+(String)ui.get("id"));
+                        continue;
+                    }
+                    //TODO del
                     up=um.get((String)ui.get("id"));
                     if (up==null) {
                         up=new UserPo(ui);
