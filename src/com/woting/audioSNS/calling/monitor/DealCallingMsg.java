@@ -76,7 +76,7 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
                 MapContent mc=new MapContent(dataMap);
                 retMsg.setMsgContent(mc);
             }
-            globalMem.sendMem.addUserMsg(pUdk, retMsg);
+            globalMem.sendMem.addDeviceMsg(pUdk, retMsg);
             return ;
         }
 
@@ -105,7 +105,7 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
                     MapContent mc=new MapContent(dataMap);
                     retMsg.setMsgContent(mc);
                     retMsg.setReturnType(addFlag==0?0x81:0x82);
-                    globalMem.sendMem.addUserMsg(pUdk, retMsg);
+                    globalMem.sendMem.addDeviceMsg(pUdk, retMsg);
                 } else {
                     //启动处理进程
                     CallHandler callHandler=new CallHandler(conf, oneCall, sessionService);
@@ -120,7 +120,7 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
                 MapContent mc=new MapContent(dataMap);
                 retMsg.setMsgContent(mc);
                 retMsg.setReturnType(0x83);
-                globalMem.sendMem.addUserMsg(pUdk, retMsg);
+                globalMem.sendMem.addDeviceMsg(pUdk, retMsg);
             }
         } else {//其他消息，放到具体的独立处理线程中处理
             //查找是否有对应的内存数据，如果没有，则说明通话已经结束，告诉传来者
@@ -133,7 +133,7 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
                 dataMap.put("ServerMsg", "服务器处理进程不存在");
                 MapContent mc=new MapContent(dataMap);
                 retMsg.setMsgContent(mc);
-                globalMem.sendMem.addUserMsg(pUdk, retMsg);
+                globalMem.sendMem.addDeviceMsg(pUdk, retMsg);
             } else oneCall.addPreMsg(sourceMsg);//把消息压入队列
         }
     }

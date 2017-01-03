@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -676,7 +677,6 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
     }
     //获取发送消息类
     class _FatchMsg extends _LoopThread {
-        private boolean canAdd=false;
         private FileOutputStream fos=null;
 
         protected _FatchMsg(String name) {
@@ -699,62 +699,48 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         @Override
         protected void __loopProcess() throws Exception {
             if (_pushUserKey!=null) {
-                canAdd=true;
                 //获得**具体给这个设备**的消息
-                Message m=globalMem.sendMem.getUserMsg(_pushUserKey, SocketHandler.this);
+                Message m=globalMem.sendMem.getDeviceMsg(_pushUserKey, SocketHandler.this);
                 if (m!=null) {
-                    long t=System.currentTimeMillis();
-                    //根据消息情况，判断该消息是否还需要发送：主要是看是否过期
-                    if ((m instanceof MsgMedia)&&(t-m.getSendTime()>60*1000)) canAdd=false;
-                    if (canAdd) {
-                        if (fos!=null) {
-                            try {
-                                byte[] aa=JsonUtils.objToJson(m).getBytes();
-                                fos.write(aa, 0, aa.length);
-                                fos.write(13);
-                                fos.write(10);
-                                fos.flush();
-                            } catch (IOException e) {
-                            }
-                        }
+                    if (fos!=null) {//记日志
                         try {
-                            _sendMsgQueue.add(m.toBytes());
-                            //若需要控制确认，插入已发送列表
-                            if (m instanceof MsgNormal) {
-                                if (((MsgNormal)m).isCtlAffirm()) {
-                                    globalMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
-                                }
-                            }
-                        } catch(Exception e) {
+                            byte[] aa=JsonUtils.objToJson(m).getBytes();
+                            fos.write(aa, 0, aa.length);
+                            fos.write(13);
+                            fos.write(10);
+                            fos.flush();
+                        } catch (IOException e) {
                         }
+                    }
+                    try {//传消息
+                        _sendMsgQueue.add(m.toBytes());
+                        //若需要控制确认，插入已发送列表
+                        if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
+                    } catch(Exception e) {
                     }
                 }
                 //获得**给此用户的通知消息**（与设备无关）
-                canAdd=true;
-                Message nm=globalMem.sendMem.getUserNotifyMsg(_pushUserKey, SocketHandler.this);
-                if (nm!=null) {
-                    if (nm instanceof MsgMedia) canAdd=false;
-                    if (canAdd) {
-                        if (fos!=null) {
-                            try {
-                                byte[] aa=JsonUtils.objToJson(m).getBytes();
-                                fos.write(aa, 0, aa.length);
-                                fos.write(13);
-                                fos.write(10);
-                                fos.flush();
-                            } catch (IOException e) {
-                            }
-                        }
+                ConcurrentLinkedQueue<Map<String, Object>> mmq=globalMem.sendMem.getResendMsg(_pushUserKey, SocketHandler.this);
+                while (!mmq.isEmpty()) {
+                    Map<String, Object> _m=mmq.poll();
+                    if (_m==null||_m.isEmpty()) continue;
+                    Message _msg=(Message)_m.get("message");
+                    if (_msg==null) continue;
+                    if (fos!=null) {
                         try {
-                            _sendMsgQueue.add(nm.toBytes());
-                            //若需要控制确认，插入已发送列表
-                            if (m instanceof MsgNormal) {
-                                if (((MsgNormal)m).isCtlAffirm()) {
-                                    globalMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
-                                }
-                            }
-                        } catch(Exception e) {
+                            byte[] aa=JsonUtils.objToJson(m).getBytes();
+                            fos.write(aa, 0, aa.length);
+                            fos.write(13);
+                            fos.write(10);
+                            fos.flush();
+                        } catch (IOException e) {
                         }
+                    }
+                    try {
+                        _sendMsgQueue.add(_msg.toBytes());
+                        //更新信息
+                        if (((MsgNormal)m).isCtlAffirm()) globalMem.sendMem.updateSendedNeedCtlAffirmMsg(_pushUserKey, _m);
+                    } catch(Exception e) {
                     }
                 }
             }

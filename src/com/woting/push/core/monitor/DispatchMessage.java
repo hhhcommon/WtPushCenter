@@ -37,7 +37,7 @@ public class DispatchMessage extends AbstractLoopMoniter<PushConfig> {
         if (m!=null) {
             if (m.isCtlAffirm()&&!(m instanceof MsgMedia)) { //处理回复消息
                 PushUserUDKey mUdk=PushUserUDKey.buildFromMsg(m);
-                globalMem.sendMem.addUserMsg(mUdk, MessageUtils.buildAckMsg((MsgNormal)m));
+                globalMem.sendMem.addDeviceMsg(mUdk, MessageUtils.buildAckMsg((MsgNormal)m));
             }
             globalMem.receiveMem.addTypeMsg(""+((MsgNormal)m).getBizType(), m);
         }

@@ -109,14 +109,14 @@ public class DealMediaflowMsg extends AbstractLoopMoniter<MediaflowConfig> {
                 om=intercomMem.getOneMeet(objId);
                 if (om==null) {
                     retMm.setReturnType(0x10);//对讲组内存数据不存在
-                    globalMem.sendMem.addUnionUserMsg(pUdk, retMm);
+                    globalMem.sendMem.addDeviceMsg(pUdk, retMm);
                     return;
                 }
             } else {//电话
                 oc=callingMem.getOneCall(objId);
                 if (oc==null) {
                     retMm.setReturnType(0x10);//电话内存数据不存在
-                    globalMem.sendMem.addUnionUserMsg(pUdk, retMm);
+                    globalMem.sendMem.addDeviceMsg(pUdk, retMm);
                     return;
                 }
             }
@@ -174,7 +174,7 @@ public class DealMediaflowMsg extends AbstractLoopMoniter<MediaflowConfig> {
             //发送正常回执
             if (sourceMsg.isCtlAffirm()) {
                 retMm.setReturnType(0x01);
-                globalMem.sendMem.addUnionUserMsg(pUdk, retMm);
+                globalMem.sendMem.addDeviceMsg(pUdk, retMm);
             }
 
 //            if (new String(ts.getData()).equals("####")) System.out.println("deCode:::====="+new String(ts.getData()));
@@ -190,7 +190,7 @@ public class DealMediaflowMsg extends AbstractLoopMoniter<MediaflowConfig> {
             bMsg.setSeqNo(seqNum);
             bMsg.setMediaData(sourceMsg.getMediaData());
             for (String k: ts.getSendUserMap().keySet()) {
-                globalMem.sendMem.addUnionUserMsg(ts.getSendUserMap().get(k), bMsg);
+                globalMem.sendMem.addDeviceMsg(ts.getSendUserMap().get(k), bMsg);
                 //处理流数据
                 ts.getSendFlagMap().put(k, 0);
                 ts.getSendTimeMap().get(k).add(System.currentTimeMillis());

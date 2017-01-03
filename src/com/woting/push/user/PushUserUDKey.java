@@ -79,4 +79,13 @@ public class PushUserUDKey extends UserDeviceKey implements Serializable {
         if (PCDType>0) retMap.put("PCDType", PCDType);
         return retMap.isEmpty()?null:retMap;
     }
+
+    /**
+     * 得到用户Id，若用户Id为空，则获得设备Id
+     */
+    @Override
+    public String getUserId() {
+        if (StringUtils.isNullOrEmptyOrSpace(userId)) return deviceId;
+        return userId;
+    }
 }

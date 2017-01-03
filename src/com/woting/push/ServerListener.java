@@ -24,6 +24,7 @@ import com.woting.audioSNS.sync.SyncMessageConfig;
 import com.woting.audioSNS.sync.monitor.DealSyncMsg;
 import com.woting.push.config.AffirmCtlConfig;
 import com.woting.push.config.ConfigLoadUtils;
+import com.woting.push.config.MediaExpiredConfig;
 import com.woting.push.config.PushConfig;
 import com.woting.push.core.SocketHandleConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
@@ -221,7 +222,10 @@ public class ServerListener {
         SystemCache.setCache(new CacheEle<SyncMessageConfig>(PushConstants.SYNC_CONF, "同步消息控制配置", smc));
 
         AffirmCtlConfig acc=ConfigLoadUtils.getAffirmCtlConfig(jc);
-        SystemCache.setCache(new CacheEle<AffirmCtlConfig>(PushConstants.SYNC_CONF, "控制回复配置", acc));
+        SystemCache.setCache(new CacheEle<AffirmCtlConfig>(PushConstants.AFFCTL_CONF, "控制回复配置", acc));
+
+        MediaExpiredConfig mec=ConfigLoadUtils.getMediaExpiredConfig(jc);
+        SystemCache.setCache(new CacheEle<MediaExpiredConfig>(PushConstants.MEXPIRED_CONF, "媒体包过期配置", mec));
     }
 
     private void begin() {

@@ -14,4 +14,5 @@ public class PushConstants {
     public final static String NOTIFY_CONF="Notify-Config";//通知消息处理配置
     public final static String SYNC_CONF="Sync-Config";//同步消息处理配置
     public final static String AFFCTL_CONF="AffirmCtl-Config";//控制回复配置
+    public final static String MEXPIRED_CONF="MediaExpired-Config";//媒体包过期配置
 }

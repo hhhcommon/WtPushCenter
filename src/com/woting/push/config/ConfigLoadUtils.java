@@ -128,4 +128,13 @@ public abstract class ConfigLoadUtils {
         } catch(Exception e) {}
         return acc;
     }
+
+    public static MediaExpiredConfig getMediaExpiredConfig(JsonConfig jc) {
+        MediaExpiredConfig mec=new MediaExpiredConfig();
+        try {
+            mec.set_AudioExpiredTime((int)fel.eval(jc.getString("mediaExpireTime.audio")));
+            mec.set_VedioExpiredTime((int)fel.eval(jc.getString("mediaExpireTime.vedio")));
+        } catch(Exception e) {}
+        return mec;
+    }
 }

@@ -257,4 +257,20 @@ public class MsgMedia extends Message {
         else if (mediaData!=null&&_m.mediaData==null) return false;
         return true;
     }
+
+    /**
+     * 是否是音频包
+     * @return
+     */
+    public boolean isAudio() {
+        return mediaType==1;
+    }
+
+    /**
+     * 是否是视频包
+     * @return
+     */
+    public boolean isVedio() {
+        return mediaType==2;
+    }
 }
