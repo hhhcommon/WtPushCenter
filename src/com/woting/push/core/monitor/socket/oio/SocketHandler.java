@@ -345,9 +345,11 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                         if (_ms.getBizType()!=15) {
                             if (_pUdk.equals(_pushUserKey)) globalMem.receiveMem.addPureMsg(_ms);
                             else {
-                                MsgNormal noLogMsg=MessageUtils.buildAckMsg((MsgNormal)_ms);
-                                noLogMsg.setCmdType(1);
-                                try { _sendMsgQueue.add(noLogMsg.toBytes()); } catch(Exception e) {}
+                                if (_ms.isCtlAffirm()||_ms.isBizAffirm()) {
+                                    MsgNormal noLogMsg=MessageUtils.buildAckMsg((MsgNormal)_ms);
+                                    noLogMsg.setCmdType(1);
+                                    try { _sendMsgQueue.add(noLogMsg.toBytes()); } catch(Exception e) {}
+                                }
                             }
                         } else {//是注册消息
                             boolean bindDeviceFlag=false;

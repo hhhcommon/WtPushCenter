@@ -144,7 +144,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         else if (meetData==null) retMsg.setReturnType(0x02);
         else {
             retFlag=meetData.insertEntryUser(pUdk);
-            if (retFlag==4||retFlag==5) retMsg.setReturnType(0x40);//该用户不在指定组
+            if (retFlag==4||retFlag==5) retMsg.setReturnType(0x04);//该用户不在指定组
             else if (retFlag==2) retMsg.setReturnType(0x08);//该用户已经在指定组
             else retMsg.setReturnType(0x01);//正确加入组
         }
@@ -215,7 +215,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         else if (meetData==null) retMsg.setReturnType(0x02);
         else {
             retFlag=meetData.deleteEntryUser(pUdk);
-            if (retFlag==4||retFlag==5) retMsg.setReturnType(0x40);//该用户不在指定组
+            if (retFlag==4||retFlag==5) retMsg.setReturnType(0x04);//该用户不在指定组
             else if (retFlag==3) retMsg.setReturnType(0x08);//该用户不在指定组
             else retMsg.setReturnType(0x01);//正确离开组
         }
