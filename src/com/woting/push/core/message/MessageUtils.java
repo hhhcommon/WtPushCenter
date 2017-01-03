@@ -112,32 +112,6 @@ public abstract class MessageUtils {
         return null;
     }
 
-
-    /**
-     * 根据原始媒体消息生成应答消息
-     * @param orgMsg 一般消息
-     * @param returnType 返回类型
-     * @return 应答消息
-     */
-    public static MsgMedia buildAckMsg(MsgMedia orgMsg, int returnType) {
-        MsgMedia ret=new MsgMedia();
-
-        ret.setAffirm(0);
-        ret.setMsgType(1);
-        ret.setFromType(orgMsg.getToType());
-        ret.setToType(orgMsg.getFromType());
-
-        ret.setBizType(orgMsg.getBizType());
-        ret.setMediaType(orgMsg.getMediaType());
-        ret.setTalkId(orgMsg.getTalkId());
-        ret.setSeqNo(orgMsg.getSeqNo());
-        ret.setReturnType(returnType);
-
-        ret.setObjId(orgMsg.getObjId()); //准备删除
-
-        return ret;
-    }
-
     /**
      * 根据原始一般消息(非媒体消息)生成应答消息
      * @param orgMsg 一般消息
@@ -157,10 +131,7 @@ public abstract class MessageUtils {
         ret.setBizType(0);
         ret.setCmdType(0);
 
-        ret.setIMEI(orgMsg.getIMEI());
-        ret.setUserId(orgMsg.getUserId());
-        ret.setPCDType(orgMsg.getPCDType());
-
+        ret.setSendTime(System.currentTimeMillis());
         return ret;
     }
 
