@@ -47,6 +47,7 @@ public class ServerListener {
     private int socketType=0; //0=oio；1=nio
 
     public static void main(String[] args) {
+        System.out.println("=================================测试");
         //处理参数，看是用nio还是用oio
         ServerListener sl=ServerListener.getInstance();
         try {

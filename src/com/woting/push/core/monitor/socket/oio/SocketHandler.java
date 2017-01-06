@@ -361,8 +361,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                     globalMem.bindPushUserANDSocket(_pUdk, SocketHandler.this);//处理注册
                                     _deviceKey=_pUdk.getDeviceId()+"::"+_pUdk.getPCDType();
                                 } else {//与之前的注册不一致，关闭掉这个Socket
-                                    MsgNormal ackM=MessageUtils.buildAckMsg(_ms);
-                                    ackM.setBizType(15);
+                                    MsgNormal ackM=MessageUtils.buildAckEntryMsg(_ms);
                                     ackM.setReturnType(0);//失败
                                     ackM.setSendTime(System.currentTimeMillis());
                                     try { _sendMsgQueue.add(ackM.toBytes()); } catch(Exception e) {}
@@ -389,8 +388,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
 
                                 Map<String, Object> retM=sessionService.dealUDkeyEntry(_pUdk, "socket/entry");
                                 if (!(""+retM.get("ReturnType")).equals("1001")) {
-                                    MsgNormal ackM=MessageUtils.buildAckMsg(_ms);
-                                    ackM.setBizType(15);
+                                    MsgNormal ackM=MessageUtils.buildAckEntryMsg(_ms);
                                     ackM.setReturnType(0);//失败
                                     ackM.setSendTime(System.currentTimeMillis());
                                     try { _sendMsgQueue.add(ackM.toBytes()); } catch(Exception e) {}
@@ -398,8 +396,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                     _pUdk.setUserId(""+retM.get("UserId"));
                                     _pushUserKey=_pUdk;
 
-                                    MsgNormal ackM=MessageUtils.buildAckMsg(_ms);
-                                    ackM.setBizType(15);
+                                    MsgNormal ackM=MessageUtils.buildAckEntryMsg(_ms);
                                     ackM.setReturnType(1);//成功
                                     ackM.setSendTime(System.currentTimeMillis());
                                     try { _sendMsgQueue.add(ackM.toBytes()); } catch(Exception e) { }

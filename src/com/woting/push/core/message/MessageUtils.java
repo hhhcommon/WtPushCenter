@@ -135,6 +135,27 @@ public abstract class MessageUtils {
         return ret;
     }
 
+    public static MsgNormal buildAckEntryMsg(MsgNormal orgMsg) {
+        MsgNormal ret=new MsgNormal();
+
+        ret.setReMsgId(orgMsg.getMsgId());
+
+        ret.setToType(orgMsg.getFromType());
+        ret.setFromType(orgMsg.getToType());
+
+        ret.setMsgType(1);
+        ret.setAffirm(0);
+
+        ret.setBizType(15);
+        ret.setCmdType(0);
+
+        ret.setIMEI(orgMsg.getIMEI());
+        ret.setUserId(orgMsg.getUserId());
+        ret.setPCDType(orgMsg.getPCDType());
+
+        return ret;
+    }
+
     /**
      * 根据原消息，生成返回消息的壳 
      * @param msg 愿消息
