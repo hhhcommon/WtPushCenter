@@ -28,11 +28,12 @@ public class DealSyncMsg extends AbstractLoopMoniter<SyncMessageConfig> {
     public DealSyncMsg(SyncMessageConfig smc, int index) {
         super(smc);
         super.setName("同步消息处理线程"+index);
+        this.setLoopDelay(5);
     }
 
     @Override
     public void oneProcess() throws Exception {
-        Message m=globalMem.receiveMem.pollTypeMsg("8");
+        Message m=globalMem.receiveMem.takeTypeMsg("8");
         if (m==null||!(m instanceof MsgNormal)) return;
 
         MsgNormal mn=(MsgNormal)m;

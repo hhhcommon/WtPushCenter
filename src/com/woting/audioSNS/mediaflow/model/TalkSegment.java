@@ -19,7 +19,7 @@ public class TalkSegment {
         this.sendTimeMap=new HashMap<String, List<Long>>();
     }
 
-    private WholeTalk wt; //本段话对应的完整对话
+    private OneTalk wt; //本段话对应的完整对话
     private byte[] data; //本段对话的实际数据
     private long begin; //开始时间点：离通话开始时间
     private long end; //本包结束的时间点：离通话开始时间
@@ -28,10 +28,10 @@ public class TalkSegment {
     public Map<String/*userId*/, Integer/*状态：0未传送；1已传送；2传送成功；3传送失败(无须重传了)*/> sendFlagMap; //为各用户传送数据的结果情况
     public Map<String/*userId*/, List<Long>> sendTimeMap; //为各用户传送数据的结果情况
 
-    public WholeTalk getWt() {
+    public OneTalk getWt() {
         return wt;
     }
-    public void setWt(WholeTalk wt) {
+    public void setWt(OneTalk wt) {
         this.wt=wt;
     }
     public byte[] getData() {
@@ -64,7 +64,7 @@ public class TalkSegment {
     }
     public void setSendUserMap(Map<String, PushUserUDKey> sendUserMap) {
         for (String k: sendUserMap.keySet()) {
-            if (!k.equals(this.wt.getTalkerMk().toString())) {
+            if (!k.equals(this.wt.getTalkerUdk().toString())) {
                 this.sendUserMap.put(k, sendUserMap.get(k));
                 this.sendFlagMap.put(k, 0);
                 this.sendTimeMap.put(k, new ArrayList<Long>());

@@ -4,9 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.spiritdata.framework.core.cache.SystemCache;
 import com.spiritdata.framework.util.StringUtils;
@@ -18,7 +17,7 @@ import com.woting.passport.UGA.service.GroupService;
 import com.woting.passport.UGA.service.UserService;
 import com.woting.push.PushConstants;
 import com.woting.push.config.AffirmCtlConfig;
-import com.woting.push.config.MediaExpiredConfig;
+import com.woting.push.config.MediaConfig;
 import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MsgMedia;
 import com.woting.push.core.message.MsgNormal;
@@ -64,17 +63,28 @@ public class PushGlobalMemory {
         userService=(UserService)SpringShell.getBean("userService");
 
         acc=(AffirmCtlConfig)SystemCache.getCache(PushConstants.AFFCTL_CONF).getContent();
-        mec=(MediaExpiredConfig)SystemCache.getCache(PushConstants.MEXPIRED_CONF).getContent();
+        mc=(MediaConfig)SystemCache.getCache(PushConstants.MEDIA_CONF).getContent();
 
         groupMap=new ConcurrentHashMap<String, Group>();
         userMap=new ConcurrentHashMap<String, UserPo>();
 
-        pureMsgQueue=new ConcurrentLinkedQueue<Message>();
-        typeMsg=new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
+        pureMsgQueue=new ArrayBlockingQueue<Message>(102400); //TODO 从配置文件读取
+        //初始化分类消息队列
+        typeMsg=new ConcurrentHashMap<String, ArrayBlockingQueue<Message>>();
+        ArrayBlockingQueue<Message> typeDeque1=new ArrayBlockingQueue<Message>(10240); //TODO 改成配置文件
+        typeMsg.put("1", typeDeque1);
+        ArrayBlockingQueue<Message> typeDeque2=new ArrayBlockingQueue<Message>(10240); //TODO 改成配置文件
+        typeMsg.put("2", typeDeque2);
+        ArrayBlockingQueue<Message> typeDeque4=new ArrayBlockingQueue<Message>(10240); //TODO 改成配置文件
+        typeMsg.put("4", typeDeque4);
+        ArrayBlockingQueue<Message> typeDeque8=new ArrayBlockingQueue<Message>(10240); //TODO 改成配置文件
+        typeMsg.put("8", typeDeque8);
+        ArrayBlockingQueue<Message> typeDequeMedia=new ArrayBlockingQueue<Message>(10240); //TODO 改成配置文件
+        typeMsg.put("media", typeDequeMedia);
 
-        send2DeviceMsg=new ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Message>>();
-        notifyMsg=new ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>>();
-        sendedNeedCtlAffirmMsg=new ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Map<String, Object>>>();
+        send2DeviceMsg=new ConcurrentHashMap<PushUserUDKey, ArrayBlockingQueue<Message>>();
+        notifyMsg=new ConcurrentHashMap<String, ArrayBlockingQueue<Message>>();
+        sendedNeedCtlAffirmMsg=new ConcurrentHashMap<PushUserUDKey, ArrayBlockingQueue<Map<String, Object>>>();
 
         REF_deviceANDsocket=new HashMap<String, SocketHandler>();
         REF_userdtypeANDsocket=new HashMap<String, SocketHandler>();
@@ -87,14 +97,11 @@ public class PushGlobalMemory {
         uANDgMem=new UserAndGroupMemory();
 
         uANDgMem.loadFromDB();
-        //TODO del
-        System.out.println("===========================");
-        //TODO del
     }
 
     //==========其他配置信息
     private AffirmCtlConfig acc;
-    private MediaExpiredConfig mec;
+    private MediaConfig mc;
     //==========接收消息内存
     /**
      * 组信息缓存，目前缓存所有组信息
@@ -107,7 +114,7 @@ public class PushGlobalMemory {
     /**
      * 总接收(纯净)队列所有收到的信息都会暂时先放入这个队列中
      */
-    private ConcurrentLinkedQueue<Message> pureMsgQueue;
+    private ArrayBlockingQueue<Message> pureMsgQueue;
     /**
      * 分类接收队列，不同类型的消息会由不同类去处理
      * <pre>
@@ -115,7 +122,7 @@ public class PushGlobalMemory {
      * Value  是要处理的队列
      * </pre>
      */
-    private ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>> typeMsg;
+    private ConcurrentHashMap<String, ArrayBlockingQueue<Message>> typeMsg;
     //==========发送消息内存
     /**
      * 发送消息队列——发送给具体的设备
@@ -124,7 +131,7 @@ public class PushGlobalMemory {
      * Value  消息队列
      * </pre>
      */
-    private ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Message>> send2DeviceMsg;
+    private ConcurrentHashMap<PushUserUDKey, ArrayBlockingQueue<Message>> send2DeviceMsg;
     /**
      * 给用户发送的消息队列——通知消息
      * <pre>
@@ -132,7 +139,7 @@ public class PushGlobalMemory {
      * Value  消息队列
      * </pre>
      */
-    private ConcurrentHashMap<String, ConcurrentLinkedQueue<Message>> notifyMsg;
+    private ConcurrentHashMap<String, ArrayBlockingQueue<Message>> notifyMsg;
     
     /**
      * 已发送的需要控制回复的消息，此类消息与设备号绑定
@@ -141,7 +148,7 @@ public class PushGlobalMemory {
      * Value  消息Map:FirstSendTime,Message
      * </pre>
      */
-    private ConcurrentHashMap<PushUserUDKey, ConcurrentLinkedQueue<Map<String, Object>>> sendedNeedCtlAffirmMsg;
+    private ConcurrentHashMap<PushUserUDKey, ArrayBlockingQueue<Map<String, Object>>> sendedNeedCtlAffirmMsg;
 
 //    private Object LOCK_unionKey=new Object(); //同一Key锁
     private Map<String, SocketHandler> REF_deviceANDsocket;   //设备和Socket处理线程的对应表； Key——设备标识：DeviceId::PCDType；Value——Socket处理线程
@@ -398,42 +405,39 @@ public class PushGlobalMemory {
      * @author wanghui
      */
     public class ReceiveMemory {
-        public boolean addPureMsg(Message msg) {
-            return pureMsgQueue==null?false:pureMsgQueue.offer(msg);
+        public void putPureMsg(Message msg) throws InterruptedException {
+            if (pureMsgQueue!=null) pureMsgQueue.put(msg);
         }
 
         /**
          * 从总接收队列中获得并移除第一个元素
          * @return 从队列中获取的元素
+         * @throws InterruptedException 
          */
-        public Message pollPureMsg() {
-            return pureMsgQueue==null?null:pureMsgQueue.poll();
+        public Message takePureMsg() throws InterruptedException {
+            return pureMsgQueue==null?null:pureMsgQueue.take();
         }
 
         /**
          * 加入分类处理的消息队列
          * @param type 分类标志
          * @param msg 消息
+         * @throws InterruptedException
          */
-        public boolean addTypeMsg(String type, Message msg) {
-            ConcurrentLinkedQueue<Message> typeDeque=typeMsg.get(type);
-            if (typeDeque==null) {
-                synchronized(typeMsg) {
-                    typeDeque=new ConcurrentLinkedQueue<Message>();
-                    typeMsg.put(type, typeDeque);
-                }
-            }
-            return typeDeque.offer(msg);
+        public void putTypeMsg(String type, Message msg) throws InterruptedException {
+            ArrayBlockingQueue<Message> typeDeque=typeMsg.get(type);
+            if (typeDeque!=null) typeDeque.put(msg);
         }
 
         /**
          * 从分类处理的队列获取消息，并从该队列移除消息
          * @param type 分类标志
          * @return 消息
+         * @throws InterruptedException 
          */
-        public Message pollTypeMsg(String type) {
-            if (typeMsg==null||typeMsg.get(type)==null) return null;
-            return typeMsg.get(type).poll();
+        public Message takeTypeMsg(String type) throws InterruptedException {
+            //if (typeMsg==null||typeMsg.get(type)==null) return null;
+            return typeMsg.get(type).take();
         }
     }
 
@@ -449,12 +453,13 @@ public class PushGlobalMemory {
          * @param pUDkey 用户Key
          * @param msg 消息
          * @return 加入成功返回true(若消息已经存在，也放回true)，否则返回false
+         * @throws InterruptedException 
          */
-        public boolean addDeviceMsg(PushUserUDKey pUDkey, Message msg) {
-            if (send2DeviceMsg==null||msg==null||pUDkey==null) return false;
-            ConcurrentLinkedQueue<Message> _deviceQueue=send2DeviceMsg.get(pUDkey);
+        public void putDeviceMsg(PushUserUDKey pUDkey, Message msg) throws InterruptedException {
+            if (send2DeviceMsg==null||msg==null||pUDkey==null) ;
+            ArrayBlockingQueue<Message> _deviceQueue=send2DeviceMsg.get(pUDkey);
             if (_deviceQueue==null) {
-                _deviceQueue=new ConcurrentLinkedQueue<Message>();
+                _deviceQueue=new ArrayBlockingQueue<Message>(10240);//TODO 改成配置文件
                 send2DeviceMsg.put(pUDkey, _deviceQueue);
             }
             if (msg.getSendTime()==0) msg.setSendTime(System.currentTimeMillis());
@@ -466,8 +471,7 @@ public class PushGlobalMemory {
                     break;
                 }
             }
-            if (_exist) return true;
-            return _deviceQueue.offer(msg);
+            if (!_exist) _deviceQueue.put(msg);
         }
 
         /**
@@ -476,8 +480,9 @@ public class PushGlobalMemory {
          * @param pUDkey 用户Key
          * @param msg 消息
          * @return 加入成功返回true(若消息已经存在，也放回true)，否则返回false
+         * @throws InterruptedException 
          */
-        public Message getDeviceMsg(PushUserUDKey pUdk, SocketHandler sh) {
+        public Message takeDeviceMsg(PushUserUDKey pUdk, SocketHandler sh) throws InterruptedException {
             if (pUdk==null||sh==null) return null;
 
             Message m=null;
@@ -488,23 +493,23 @@ public class PushGlobalMemory {
 //            }
 //            if (canRead) {
             if (sh.equals(REF_udkANDsocket.get(pUdk))||pUdk.equals(REF_socketANDudk.get(sh))) {
-                Queue<Message> mQueue=send2DeviceMsg.get(pUdk);
-                if (mQueue!=null) m=mQueue.poll();
+                ArrayBlockingQueue<Message> mQueue=send2DeviceMsg.get(pUdk);
+                if (mQueue!=null) m=mQueue.take();
                 //检查是否过期
                 if (m!=null&&(m instanceof MsgMedia)) {
-                    if (((MsgMedia)m).isAudio()&&(System.currentTimeMillis()-((MsgMedia)m).getSendTime())>mec.get_AudioExpiredTime()) m=null;
+                    if (((MsgMedia)m).isAudio()&&(System.currentTimeMillis()-((MsgMedia)m).getSendTime())>mc.get_AudioPackExpiredTime()) m=null;
                     else
-                    if (((MsgMedia)m).isVedio()&&(System.currentTimeMillis()-((MsgMedia)m).getSendTime())>mec.get_VedioExpiredTime()) m=null;
+                    if (((MsgMedia)m).isVedio()&&(System.currentTimeMillis()-((MsgMedia)m).getSendTime())>mc.get_VedioPackExpiredTime()) m=null;
                 }
             }
             return m;
         }
 
-        public boolean addNotifyMsg(String userId, Message msg) {
-            if (msg==null||userId==null||userId.trim().length()==0) return false;
-            ConcurrentLinkedQueue<Message> _userQueue=notifyMsg.get(userId);
+        public void putNotifyMsg(String userId, Message msg) throws InterruptedException {
+            if (msg==null||userId==null||userId.trim().length()==0) return;
+            ArrayBlockingQueue<Message> _userQueue=notifyMsg.get(userId);
             if (_userQueue==null) {
-                _userQueue=new ConcurrentLinkedQueue<Message>();
+                _userQueue=new ArrayBlockingQueue<Message>(10240); //TODO 改成配置文件
                 notifyMsg.put(userId, _userQueue);
             }
 //            synchronized(_userQueue) {
@@ -517,10 +522,10 @@ public class PushGlobalMemory {
                 _userQueue.remove(m);
             }
             if (msg.getSendTime()==0) msg.setSendTime(System.currentTimeMillis());
-            return _userQueue.add(msg);
+            _userQueue.put(msg);
         }
 
-        public Message getNotifyMsg(PushUserUDKey pUdk, SocketHandler sh) {
+        public Message takeNotifyMsg(PushUserUDKey pUdk, SocketHandler sh) throws InterruptedException {
             if (pUdk==null||sh==null) return null;
 
             Message m=null;
@@ -531,8 +536,8 @@ public class PushGlobalMemory {
 //            }
 //            if (canRead) {
             if (sh.equals(REF_udkANDsocket.get(pUdk))||pUdk.equals(REF_socketANDudk.get(sh))) {
-                Queue<Message> mQueue=notifyMsg.get(pUdk.getUserId());
-                if (mQueue!=null) m=mQueue.poll();
+                ArrayBlockingQueue<Message> mQueue=notifyMsg.get(pUdk.getUserId());
+                if (mQueue!=null) m=mQueue.take();
             }
             return m;
         }
@@ -543,14 +548,14 @@ public class PushGlobalMemory {
          * @param pUdk 用户设备Key
          * @param msg 消息（可以是控制消息，也可以是媒体消息）
          */
-        public boolean addSendedNeedCtlAffirmMsg(PushUserUDKey pUdk, Message msg) {
-            if (pUdk==null||msg==null) return false;
-            if ((msg instanceof MsgMedia)&&(acc.get_M_Type()==0)) return false;
-            if ((msg instanceof MsgNormal)&&(acc.get_N_Type()==0)) return false;
+        public void addSendedNeedCtlAffirmMsg(PushUserUDKey pUdk, Message msg) {
+            if (pUdk==null||msg==null) return ;
+            if ((msg instanceof MsgMedia)&&(acc.get_M_Type()==0)) return ;
+            if ((msg instanceof MsgNormal)&&(acc.get_N_Type()==0)) return ;
 
-            ConcurrentLinkedQueue<Map<String, Object>> mq=sendedNeedCtlAffirmMsg.get(pUdk);
+            ArrayBlockingQueue<Map<String, Object>> mq=sendedNeedCtlAffirmMsg.get(pUdk);
             if (mq==null) {
-                mq=new ConcurrentLinkedQueue<Map<String, Object>>();
+                mq=new ArrayBlockingQueue<Map<String, Object>>(10240); //TODO 写到配置文件中
                 sendedNeedCtlAffirmMsg.put(pUdk, mq);
             }
             //看看有无重复
@@ -584,7 +589,6 @@ public class PushGlobalMemory {
                 mq.add(m);//加入内存
                 //TODO 数据库处理
             }
-            return canAdd;
         }
         /**
          * 更新已发送队列
@@ -597,9 +601,9 @@ public class PushGlobalMemory {
             if ((m instanceof MsgMedia)&&(acc.get_M_Type()==0)) return;
             if ((m instanceof MsgNormal)&&(acc.get_N_Type()==0)) return;
 
-            ConcurrentLinkedQueue<Map<String, Object>> mq=sendedNeedCtlAffirmMsg.get(pUdk);
+            ArrayBlockingQueue<Map<String, Object>> mq=sendedNeedCtlAffirmMsg.get(pUdk);
             if (mq==null) {
-                mq=new ConcurrentLinkedQueue<Map<String, Object>>();
+                mq=new ArrayBlockingQueue<Map<String, Object>>(10240); //写到配置文件中
                 sendedNeedCtlAffirmMsg.put(pUdk, mq);
             }
             //看看有无重复
@@ -658,10 +662,10 @@ public class PushGlobalMemory {
          * @param sh
          * @return
          */
-        public ConcurrentLinkedQueue<Map<String, Object>> getResendMsg(PushUserUDKey pUdk, SocketHandler sh) {
+        public ArrayBlockingQueue<Map<String, Object>> getResendMsg(PushUserUDKey pUdk, SocketHandler sh) {
             if (pUdk==null||sh==null) return null;
 
-            ConcurrentLinkedQueue<Map<String, Object>> mq=new ConcurrentLinkedQueue<Map<String, Object>>();
+            ArrayBlockingQueue<Map<String, Object>> mq=new ArrayBlockingQueue<Map<String, Object>>(1024); //TODO 写到配置文件中？
             //从发送队列取一条消息
 //            boolean canRead=true;
 //            synchronized(LOCK_usersocketMap) {
@@ -669,7 +673,7 @@ public class PushGlobalMemory {
 //            }
 //            if (canRead) {
             if (sh.equals(REF_udkANDsocket.get(pUdk))||pUdk.equals(REF_socketANDudk.get(sh))) {
-                ConcurrentLinkedQueue<Map<String, Object>> _mq=sendedNeedCtlAffirmMsg.get(pUdk);
+                ArrayBlockingQueue<Map<String, Object>> _mq=sendedNeedCtlAffirmMsg.get(pUdk);
                 int tmpI=0;
                 long tmpL=0l;
                 while (_mq!=null&&!_mq.isEmpty()) {
@@ -720,7 +724,7 @@ public class PushGlobalMemory {
                                 tmpI=0;
                             }
                             if (tmpI==2||tmpI==3) {
-                                //TODO 跟新数据库
+                                //TODO 更新数据库
                             } else mq.add(_m);
                         }
                     }
@@ -767,7 +771,7 @@ public class PushGlobalMemory {
                                 tmpI=0;
                             }
                             if (tmpI==2||tmpI==3) {
-                                //TODO 跟新数据库
+                                //TODO 更新数据库
                             } else mq.add(_m);
                         }
                     }
@@ -782,7 +786,7 @@ public class PushGlobalMemory {
          */
         public void cleanMsg4Call(PushUserUDKey pUdk, String callId) {
             if (pUdk!=null) {
-                ConcurrentLinkedQueue<Message> userMsgQueue=send2DeviceMsg.get(pUdk);
+                ArrayBlockingQueue<Message> userMsgQueue=send2DeviceMsg.get(pUdk);
                 if (userMsgQueue!=null&&!userMsgQueue.isEmpty()) {
                     synchronized(userMsgQueue) {
                         for (Message m: userMsgQueue) {
@@ -815,7 +819,7 @@ public class PushGlobalMemory {
                     List<PushUserUDKey> al=sessionService.getActivedUserUDKs(userId);
                     if (al!=null&&!al.isEmpty()) {
                         for (PushUserUDKey _pUdk: al) {
-                            ConcurrentLinkedQueue<Message> userMsgQueue=send2DeviceMsg.get(_pUdk);
+                            ArrayBlockingQueue<Message> userMsgQueue=send2DeviceMsg.get(_pUdk);
                             if (userMsgQueue!=null&&!userMsgQueue.isEmpty()) {
                                 synchronized(userMsgQueue) {
                                     for (Message m: userMsgQueue) {

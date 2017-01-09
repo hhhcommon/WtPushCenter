@@ -3,14 +3,14 @@ package com.woting.audioSNS.intercom.model;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
 
 //import com.woting.audioSNS.calling.mem.CallingMemory;
 import com.woting.audioSNS.intercom.mem.IntercomMemory;
 import com.woting.audioSNS.intercom.monitor.IntercomHandler;
-import com.woting.audioSNS.mediaflow.model.WholeTalk;
+import com.woting.audioSNS.mediaflow.model.OneTalk;
 import com.woting.passport.UGA.model.Group;
 import com.woting.passport.UGA.persis.pojo.UserPo;
 import com.woting.push.core.message.MsgNormal;
@@ -33,7 +33,6 @@ public class OneMeet implements Serializable {
     //private CallingMemory callingMem=CallingMemory.getInstance();
 
     private volatile Object statusLck=new Object();
-    private volatile Object preMsgLck=new Object();
     private volatile Object speakerLck=new Object();
 
     //=1是对讲模式；=2是会议模式；若是0，则表明未设置，采用默认值1
@@ -140,11 +139,11 @@ public class OneMeet implements Serializable {
      */
     public int releaseSpeaker(PushUserUDKey pUdk) {
         synchronized(speakerLck) {
+            setStatus_1();
             if (speaker==null) return 2;//不存在对讲者
             if (!speaker.equals(pUdk)) return 3; //停止者与当前对讲人不一致
             speaker=null;
             interMem.removeUserTalk(pUdk.getUserId());
-            setStatus_1();
             return 1;
         }
     }
@@ -164,24 +163,24 @@ public class OneMeet implements Serializable {
     }
 
     //五、消息相关
-    private LinkedList<MsgNormal> preMsgQueue=null;//预处理(还未处理)的本对讲(会议)消息
+    private ArrayBlockingQueue<MsgNormal> preMsgQueue=null;//预处理(还未处理)的本对讲(会议)消息
     private List<ProcessedMsg> processedMsgList=null;//已经处理过的消息
-    private Map<PushUserUDKey, List<WholeTalk>> wtsMap=null; //本次对讲所涉及的通话数据
+    private Map<PushUserUDKey, List<OneTalk>> wtsMap=null; //本次对讲所涉及的通话数据
     /**
      * 向预处理队列加入消息
      * @param msg 消息
+     * @throws InterruptedException 
      */
-    public void addPreMsg(MsgNormal msg) {
-        synchronized(preMsgLck) {
-            this.preMsgQueue.add(msg);
-        }
+    public void putPreMsg(MsgNormal msg) throws InterruptedException {
+        preMsgQueue.put(msg);
     }
     /**
      * 按照FIFO的队列方式，获取一条待处理的消息，并删除它
      * @return 待处理的消息
+     * @throws InterruptedException 
      */
-    public MsgNormal pollPreMsg() {
-        return preMsgQueue.poll();
+    public MsgNormal takePreMsg() throws InterruptedException {
+        return preMsgQueue.take();
     }
 
     public void addProcessedMsg(ProcessedMsg pm) {
@@ -196,12 +195,12 @@ public class OneMeet implements Serializable {
      * @param pUdk
      * @param callerWt
      */
-    public void addWt(PushUserUDKey pUdk, WholeTalk wt) {
-        List<WholeTalk> pl=wtsMap.get(pUdk);
-        if (pl==null) pl=new ArrayList<WholeTalk>();
+    public void addWt(PushUserUDKey pUdk, OneTalk wt) {
+        List<OneTalk> pl=wtsMap.get(pUdk);
+        if (pl==null) pl=new ArrayList<OneTalk>();
         boolean find=false;
         if (!pl.isEmpty()) {
-            for (WholeTalk _wt: pl) {
+            for (OneTalk _wt: pl) {
                 if (_wt.getTalkId().equals(wt.getTalkId())) {
                     find=true;
                     break;
@@ -317,9 +316,9 @@ public class OneMeet implements Serializable {
         lastTalkTime=System.currentTimeMillis();
         lastUsedTime=lastTalkTime;
 
-        preMsgQueue=new LinkedList<MsgNormal>();
+        preMsgQueue=new ArrayBlockingQueue<MsgNormal>(512); //TODO 配置文件
         processedMsgList=new ArrayList<ProcessedMsg>();
-        wtsMap=new HashMap<PushUserUDKey, List<WholeTalk>>();
+        wtsMap=new HashMap<PushUserUDKey, List<OneTalk>>();
     }
 
     /**

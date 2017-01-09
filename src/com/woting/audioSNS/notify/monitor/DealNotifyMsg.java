@@ -37,12 +37,13 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
     @Override
     public boolean initServer() {
         groupService=(GroupService)SpringShell.getBean("groupService");
+        this.setLoopDelay(5);
         return groupService!=null;
     }
 
     @Override
     public void oneProcess() throws Exception {
-        Message m=globalMem.receiveMem.pollTypeMsg("4");
+        Message m=globalMem.receiveMem.takeTypeMsg("4");
         if (m==null||!(m instanceof MsgNormal)) return;
 
         MsgNormal mn=(MsgNormal)m;
@@ -159,7 +160,7 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
 
                 //4-发送消息
                 for (String userId: userIdL) {
-                    globalMem.sendMem.addNotifyMsg(userId, nm);
+                    globalMem.sendMem.putNotifyMsg(userId, nm);
                 }
             } catch(Exception e) {
                 logger.debug(StringUtils.getAllMessage(e));

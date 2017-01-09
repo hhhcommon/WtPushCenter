@@ -129,12 +129,20 @@ public abstract class ConfigLoadUtils {
         return acc;
     }
 
-    public static MediaExpiredConfig getMediaExpiredConfig(JsonConfig jc) {
-        MediaExpiredConfig mec=new MediaExpiredConfig();
+    public static MediaConfig getMediaConfig(JsonConfig jc) {
+        MediaConfig mc=new MediaConfig();
         try {
-            mec.set_AudioExpiredTime((int)fel.eval(jc.getString("mediaExpireTime.audio")));
-            mec.set_VedioExpiredTime((int)fel.eval(jc.getString("mediaExpireTime.vedio")));
+            mc.set_AudioPackT((int)fel.eval(jc.getString("mediaMessage.audio.packT")));
+            mc.set_AudioPackExpiredTime((int)fel.eval(jc.getString("mediaMessage.audio.packExpired")));
+            mc.set_AudioExpiredType((int)fel.eval(jc.getString("mediaMessage.audio.expired.type")));
+            mc.set_AudioExpiredTNum((int)fel.eval(jc.getString("mediaMessage.audio.expired.expiredTime")));
+            mc.set_AudioExpiredTime((int)fel.eval(jc.getString("mediaMessage.audio.expired.expiredTNum")));
+            mc.set_VedioPackT((int)fel.eval(jc.getString("mediaMessage.vedio.packT")));
+            mc.set_VedioPackExpiredTime((int)fel.eval(jc.getString("mediaMessage.vedio.packExpired")));
+            mc.set_VedioExpiredType((int)fel.eval(jc.getString("mediaMessage.vedio.expired.type")));
+            mc.set_VedioExpiredTNum((int)fel.eval(jc.getString("mediaMessage.vedio.expired.expiredTime")));
+            mc.set_VedioExpiredTime((int)fel.eval(jc.getString("mediaMessage.vedio.expired.expiredTNum")));
         } catch(Exception e) {}
-        return mec;
+        return mc;
     }
 }

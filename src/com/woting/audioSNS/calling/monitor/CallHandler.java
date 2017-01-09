@@ -3,6 +3,8 @@ package com.woting.audioSNS.calling.monitor;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +39,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     private boolean isCallederTalked=false; //是否“呼叫者”说话
 
     private SessionService sessionService=null;
+    private Timer moniterTimer=new Timer();
 
     /**
      * 构造函数，必须给定一个通话控制数据
@@ -45,10 +48,12 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     protected CallHandler(CallingConfig conf, OneCall oneCall, SessionService sessionService) {
         super(conf);
         super.setName("电话处理["+oneCall.getCallId()+"]监控主线程");
-        setLoopDelay(10);
+        //setLoopDelay(10);
         callData=oneCall;
         this.sessionService=sessionService;
         callData.setCallHandler(this);
+        //启动监控线程
+        moniterTimer.scheduleAtFixedRate(new MonitorOneCall(), 0, conf.get_CleanInternal());
     }
 
     @Override
@@ -59,40 +64,8 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     @Override
     public void oneProcess() throws Exception {
         try {
-            //结束进程 或 已经挂断了
-            if (callData.getStatus()==9||callData.getStatus()==4) shutdown();
-
-            //一段时间后未收到自动回复，的处理
-            if (callData.getStatus()==1
-              &&callData.getBeginDialTime()!=-1
-              &&(System.currentTimeMillis()-callData.getBeginDialTime()>conf.get_ExpireOnline()))
-            {
-                dealOutLine();
-                shutdown();
-            }
-            //一段时间后未收到“被叫者”手工应答Ack，的处理
-            if ((callData.getStatus()==1||callData.getStatus()==2)
-              &&callData.getBeginDialTime()!=-1
-              &&(System.currentTimeMillis()-callData.getBeginDialTime()>conf.get_ExpireAck()))
-            {
-                dealNoAck();
-                shutdown();
-            }
-            //一段时间后未收到任何消息，通话过期
-            if ((callData.getStatus()==1||callData.getStatus()==2||callData.getStatus()==3)
-              &&(System.currentTimeMillis()-callData.getLastUsedTime()>conf.get_ExpireTime()))
-            {
-                dealCallExpire();
-                shutdown();
-            }
-
-            //“呼叫者”第一次说话
-            if (!isCallederTalked&&callData.getCallederWts().size()==1) {
-                dealCallerFirstTalk(callData.getCallederWts().get(0).getTalkerMk());
-                isCallederTalked=true;
-            }
             //读取预处理的消息
-            MsgNormal m=callData.pollPreMsg();//第一条必然是呼叫信息
+            MsgNormal m=callData.takePreMsg();//第一条必然是呼叫信息
             if (m==null) return;
 
             callData.setLastUsedTime();
@@ -114,6 +87,11 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                     if (m.getCommand()==2) endPTT(m); //结束对讲
                 }
                 pMsg.setStatus(flag);
+                //“呼叫者”第一次说话
+                if (!isCallederTalked&&callData.getCallederWts().size()==1) {
+                    dealCallerFirstTalk(callData.getCallederWts().get(0).getTalkerUdk());
+                    isCallederTalked=true;
+                }
             } catch(Exception e) {
                 logger.debug(StringUtils.getAllMessage(e));
                 pMsg.setStatus(-1);
@@ -128,7 +106,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
 
     //===========以下是分步处理过程，全部是私有函数
     //处理呼叫(CALL:1)
-    private void dial(MsgNormal m) {
+    private void dial(MsgNormal m) throws InterruptedException {
         callData.setBeginDialTime();
 
         callData.setCallerKey(PushUserUDKey.buildFromMsg(m));
@@ -178,7 +156,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         if (returnType==0&&callingMem.isTalk(callederId, callId)) returnType=4;
         if (returnType==0) returnType=1;
         toCallerMsg.setReturnType(returnType);
-        globalMem.sendMem.addDeviceMsg(callData.getCallerKey(), toCallerMsg);
+        globalMem.sendMem.putDeviceMsg(callData.getCallerKey(), toCallerMsg);
         //记录到已发送列表
         callData.addSendedMsg(toCallerMsg);
         callingMem.addUserInCall(callerId, callData);
@@ -212,7 +190,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 callerInfo.put("Descn", u.getDescn());
                 dataMap.put("CallerInfo", callerInfo);
                 toCallederMsg.setPCDType(0);
-                globalMem.sendMem.addDeviceMsg(_pUdk, toCallederMsg);
+                globalMem.sendMem.putDeviceMsg(_pUdk, toCallederMsg);
                 //记录到已发送列表
                 callData.addSendedMsg(toCallederMsg);
             }
@@ -223,7 +201,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     }
 
     //处理“被叫者”的自动呼叫反馈(CALL:-b1)
-    private int dealAutoDialFeedback(MsgNormal m) {
+    private int dealAutoDialFeedback(MsgNormal m) throws InterruptedException {
         if (callData.getStatus()==1) {//状态正确，如果是其他状态，这个消息抛弃
             //发送给呼叫者的消息
             MsgNormal toCallerMsg=new MsgNormal();
@@ -243,7 +221,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             MapContent mc=new MapContent(dataMap);
             toCallerMsg.setMsgContent(mc);
             toCallerMsg.setPCDType(0);
-            globalMem.sendMem.addDeviceMsg(callData.getCallerKey(), toCallerMsg);
+            globalMem.sendMem.putDeviceMsg(callData.getCallerKey(), toCallerMsg);
             callData.addSendedMsg(toCallerMsg);//记录到已发送列表
 
             callData.setStatus_2();//修改状态，已收到“自动应答”
@@ -252,7 +230,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     }
 
     //处理“被叫者”应答(CALL:2)
-    private int ackDial(MsgNormal m) {
+    private int ackDial(MsgNormal m) throws InterruptedException {
         if (callData.getStatus()==1||callData.getStatus()==2) {//状态正确，如果是其他状态，这个消息抛弃
             PushUserUDKey ackUdkey=PushUserUDKey.buildFromMsg(m);
             callData.setCallederKey(ackUdkey);
@@ -282,7 +260,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             MapContent mc=new MapContent(dataMap);
             toCallerMsg.setMsgContent(mc);
             toCallerMsg.setPCDType(0);
-            globalMem.sendMem.addDeviceMsg(callData.getCallerKey(), toCallerMsg);
+            globalMem.sendMem.putDeviceMsg(callData.getCallerKey(), toCallerMsg);
             callData.addSendedMsg(toCallerMsg);//记录到已发送列表
             //告诉其他被叫设备
             for (PushUserUDKey _pUdkey: callData.getCallederList()) {
@@ -304,7 +282,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                     MapContent _mc=new MapContent(_dataMap);
                     toOtherCallederMsg.setMsgContent(_mc);
                     toOtherCallederMsg.setPCDType(0);
-                    globalMem.sendMem.addDeviceMsg(_pUdkey, toOtherCallederMsg);
+                    globalMem.sendMem.putDeviceMsg(_pUdkey, toOtherCallederMsg);
                     callData.addSendedMsg(toOtherCallederMsg);
                 }
             }
@@ -317,7 +295,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     }
 
     //处理“挂断”(CALL:3)
-    private int hangup(MsgNormal m) {
+    private int hangup(MsgNormal m) throws InterruptedException {
         //首先判断是那方在进行挂断
         List<PushUserUDKey> _others=callData.getOthers(PushUserUDKey.buildFromMsg(m));
         if (_others==null||_others.isEmpty()) return 3;
@@ -342,7 +320,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             MapContent mc=new MapContent(dataMap);
             otherMsg.setMsgContent(mc);
             otherMsg.setPCDType(0);
-            globalMem.sendMem.addDeviceMsg(_pUdkey, otherMsg);
+            globalMem.sendMem.putDeviceMsg(_pUdkey, otherMsg);
             callData.addSendedMsg(otherMsg);//记录到已发送列表
         }
         
@@ -351,7 +329,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     }
 
     //处理开始对讲(PTT:1)
-    private void beginPTT(MsgNormal m) {
+    private void beginPTT(MsgNormal m) throws InterruptedException {
         MsgNormal toSpeakerMsg=new MsgNormal();
         toSpeakerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
         toSpeakerMsg.setFromType(1);
@@ -388,13 +366,13 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         toSpeakerMsg.setMsgContent(mc);
         PushUserUDKey _pUdk=PushUserUDKey.buildFromMsg(m);
         toSpeakerMsg.setPCDType(0);
-        globalMem.sendMem.addDeviceMsg(_pUdk, toSpeakerMsg);
+        globalMem.sendMem.putDeviceMsg(_pUdk, toSpeakerMsg);
         //记录到已发送列表
         callData.addSendedMsg(toSpeakerMsg);
     }
 
     //处理结束对讲(PTT:2)
-    private void endPTT(MsgNormal m) {
+    private void endPTT(MsgNormal m) throws InterruptedException {
         MsgNormal toSpeakerMsg=new MsgNormal();
         toSpeakerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
         toSpeakerMsg.setFromType(1);
@@ -431,14 +409,14 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         toSpeakerMsg.setMsgContent(mc);
         PushUserUDKey otherUdk=callData.getOtherUdk(PushUserUDKey.buildFromMsg(m));
         toSpeakerMsg.setPCDType(0);
-        globalMem.sendMem.addDeviceMsg(otherUdk, toSpeakerMsg);
+        globalMem.sendMem.putDeviceMsg(otherUdk, toSpeakerMsg);
         //记录到已发送列表
         callData.addSendedMsg(toSpeakerMsg);
     }
 
     //=======以下3个超时处理
     //处理“被叫者”不在线
-    private void dealOutLine() {
+    private void dealOutLine() throws InterruptedException {
         //发送给“呼叫者”的消息
         MsgNormal toCallerMsg=new MsgNormal();
         toCallerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
@@ -457,12 +435,12 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         MapContent mc=new MapContent(dataMap);
         toCallerMsg.setMsgContent(mc);
         toCallerMsg.setPCDType(0);
-        globalMem.sendMem.addDeviceMsg(callData.getCallerKey(), toCallerMsg);
+        globalMem.sendMem.putDeviceMsg(callData.getCallerKey(), toCallerMsg);
         callData.addSendedMsg(toCallerMsg);//记录到已发送列表
     }
 
     //处理“被叫者”未手工应答
-    private void dealNoAck() {
+    private void dealNoAck() throws InterruptedException {
         //1、构造“应答传递ACK”消息，并发送给“呼叫者”
         MsgNormal toCallerMsg=new MsgNormal();
         toCallerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
@@ -481,7 +459,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         MapContent mc=new MapContent(dataMap);
         toCallerMsg.setMsgContent(mc);
         toCallerMsg.setPCDType(0);
-        globalMem.sendMem.addDeviceMsg(callData.getCallerKey(), toCallerMsg);
+        globalMem.sendMem.putDeviceMsg(callData.getCallerKey(), toCallerMsg);
         callData.addSendedMsg(toCallerMsg);//记录到已发送列表
 
         //2、构造“挂断传递”消息，并发送给“被叫者”
@@ -504,7 +482,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             MapContent _mc=new MapContent(dataMap);
             toCallederMsg.setMsgContent(_mc);
             toCallederMsg.setPCDType(0);
-            globalMem.sendMem.addDeviceMsg(callData.getCallederKey(), toCallederMsg);
+            globalMem.sendMem.putDeviceMsg(callData.getCallederKey(), toCallederMsg);
             callData.addSendedMsg(toCallederMsg);//记录到已发送列表
         } else {
             if (callData.getCallederList()!=null) {
@@ -526,7 +504,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                     MapContent _mc=new MapContent(dataMap);
                     toCallederMsg.setMsgContent(_mc);
                     toCallederMsg.setPCDType(0);
-                    globalMem.sendMem.addDeviceMsg(_pUdkey, toCallederMsg);
+                    globalMem.sendMem.putDeviceMsg(_pUdkey, toCallederMsg);
                     callData.addSendedMsg(toCallederMsg);//记录到已发送列表
                 }
             }
@@ -534,7 +512,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     }
 
     //服务器发现电话过程过期
-    private void dealCallExpire() {
+    private void dealCallExpire() throws InterruptedException {
         //发送给“呼叫者”的消息
         MsgNormal toCallerMsg=new MsgNormal();
         toCallerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
@@ -553,7 +531,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         MapContent mc=new MapContent(callerMap);
         toCallerMsg.setMsgContent(mc);
         toCallerMsg.setPCDType(0);
-        globalMem.sendMem.addDeviceMsg(callData.getCallerKey(), toCallerMsg);
+        globalMem.sendMem.putDeviceMsg(callData.getCallerKey(), toCallerMsg);
         callData.addSendedMsg(toCallerMsg);//记录到已发送列表
 
         //发送给“被叫者”的消息
@@ -577,7 +555,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             MapContent _mc=new MapContent(callederMap);
             toCallederMsg.setMsgContent(_mc);
             toCallederMsg.setPCDType(0);
-            globalMem.sendMem.addDeviceMsg(callData.getCallederKey(), toCallederMsg);
+            globalMem.sendMem.putDeviceMsg(callData.getCallederKey(), toCallederMsg);
             callData.addSendedMsg(toCallederMsg);
         } else {
             if (callData.getCallederList()!=null) {
@@ -599,7 +577,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                     MapContent _mc=new MapContent(callederMap);
                     toCallederMsg.setMsgContent(_mc);
                     toCallederMsg.setPCDType(0);
-                    globalMem.sendMem.addDeviceMsg(_pUdkey, toCallederMsg);
+                    globalMem.sendMem.putDeviceMsg(_pUdkey, toCallederMsg);
                     callData.addSendedMsg(toCallederMsg);
                 }
             }
@@ -607,7 +585,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     }
 
     //===处理第一次被叫者说话的特殊流程
-    private void  dealCallerFirstTalk(PushUserUDKey callederKey) {
+    private void  dealCallerFirstTalk(PushUserUDKey callederKey) throws InterruptedException {
         if (callData.getStatus()==1||callData.getStatus()==2) {//等同于“被叫者”手工应答
             callData.setCallederKey(callederKey);
             callingMem.addUserInCall(callederKey.getUserId(), callData);
@@ -631,7 +609,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 MapContent mc=new MapContent(dataMap);
                 toCallerMsg.setMsgContent(mc);
                 toCallerMsg.setPCDType(0);
-                globalMem.sendMem.addDeviceMsg(callData.getCallerKey(), toCallerMsg);
+                globalMem.sendMem.putDeviceMsg(callData.getCallerKey(), toCallerMsg);
                 callData.addSendedMsg(toCallerMsg);
             } else if (callData.getCallederList()!=null) {
                 //告诉其他被叫设备
@@ -654,7 +632,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                         MapContent _mc=new MapContent(_dataMap);
                         toOtherCallederMsg.setMsgContent(_mc);
                         toOtherCallederMsg.setPCDType(0);
-                        globalMem.sendMem.addDeviceMsg(_pUdkey, toOtherCallederMsg);
+                        globalMem.sendMem.putDeviceMsg(_pUdkey, toOtherCallederMsg);
                         callData.addSendedMsg(toOtherCallederMsg);
                     }
                 }
@@ -675,6 +653,62 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 callingMem.removeUserInCall(callData.getCallerId(), callData);
                 callingMem.removeUserInCall(callData.getCallederId(), callData);
                 callingMem.removeOneCall(callData.getCallId());
+                moniterTimer.cancel();
+                moniterTimer=null;
+            }
+        }
+    }
+
+    class MonitorOneCall extends TimerTask {
+        @Override
+        public void run() {
+            //结束进程 或 已经挂断了
+            if (CallHandler.this.callData.getStatus()==9||CallHandler.this.callData.getStatus()==4) shutdown();
+
+            //一段时间后未收到自动回复，的处理
+            if (CallHandler.this.callData.getStatus()==1
+              &&CallHandler.this.callData.getBeginDialTime()!=-1
+              &&(System.currentTimeMillis()-CallHandler.this.callData.getBeginDialTime()>CallHandler.this.conf.get_ExpireOnline()))
+            {
+                try {
+                    dealOutLine();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                shutdown();
+            }
+            //一段时间后未收到“被叫者”手工应答Ack，的处理
+            if ((CallHandler.this.callData.getStatus()==1||CallHandler.this.callData.getStatus()==2)
+              &&CallHandler.this.callData.getBeginDialTime()!=-1
+              &&(System.currentTimeMillis()-CallHandler.this.callData.getBeginDialTime()>CallHandler.this.conf.get_ExpireAck()))
+            {
+                try {
+                    dealNoAck();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                shutdown();
+            }
+            //一段时间后未收到任何消息，通话过期
+            if ((CallHandler.this.callData.getStatus()==1||CallHandler.this.callData.getStatus()==2||CallHandler.this.callData.getStatus()==3)
+              &&(System.currentTimeMillis()-CallHandler.this.callData.getLastUsedTime()>CallHandler.this.conf.get_ExpireTime()))
+            {
+                try {
+                    dealCallExpire();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                shutdown();
+            }
+
+            //“呼叫者”第一次说话
+            if (!CallHandler.this.isCallederTalked&&callData.getCallederWts().size()==1) {
+                try {
+                    dealCallerFirstTalk(CallHandler.this.callData.getCallederWts().get(0).getTalkerUdk());
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                CallHandler.this.isCallederTalked=true;
             }
         }
     }

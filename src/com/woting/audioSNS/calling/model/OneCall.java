@@ -2,12 +2,12 @@ package com.woting.audioSNS.calling.model;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.calling.monitor.CallHandler;
-import com.woting.audioSNS.mediaflow.model.WholeTalk;
+import com.woting.audioSNS.mediaflow.model.OneTalk;
 import com.woting.push.user.PushUserUDKey;
 import com.woting.push.core.message.MsgNormal;
 import com.woting.push.core.message.ProcessedMsg;
@@ -28,7 +28,6 @@ public class OneCall implements Serializable {
     }
 
     private volatile PushUserUDKey speaker;
-    private volatile Object preMsglock=new Object();
     private volatile Object statuslock=new Object();
     private volatile Object speakerlock=new Object();
 
@@ -137,7 +136,7 @@ public class OneCall implements Serializable {
     }
 
     //以下两个对象用来记录App->Server的消息
-    private LinkedList<MsgNormal> preMsgQueue;//预处理(还未处理)的本呼叫的消息
+    private ArrayBlockingQueue<MsgNormal> preMsgQueue;//预处理(还未处理)的本呼叫的消息
     private List<ProcessedMsg> processedMsgList;//已经处理过的消息
     //以下对象用来记录Server->app的消息
     private List<MsgNormal> sendedMsgList;//已经发出的消息，这里记录仅仅是作为日志的材料
@@ -171,20 +170,21 @@ public class OneCall implements Serializable {
 
         this.status=0;//仅创建，还未处理
 
-        this.preMsgQueue=new LinkedList<MsgNormal>();
+        this.preMsgQueue=new ArrayBlockingQueue<MsgNormal>(512); //TODO 配置文件
         this.processedMsgList=new ArrayList<ProcessedMsg>();
         this.sendedMsgList=new ArrayList<MsgNormal>();
 
-        this.callerWts=new ArrayList<WholeTalk>();
-        this.callederWts=new ArrayList<WholeTalk>();
+        this.callerWts=new ArrayList<OneTalk>();
+        this.callederWts=new ArrayList<OneTalk>();
     }
 
     /**
      * 按照FIFO的队列方式，获取一条待处理的消息，并删除他
      * @return 待处理的消息
+     * @throws InterruptedException 
      */
-    public MsgNormal pollPreMsg() {
-        return preMsgQueue.poll();
+    public MsgNormal takePreMsg() throws InterruptedException {
+        return preMsgQueue.take();
     }
     public List<ProcessedMsg> getProcessedMsgList() {
         return processedMsgList;
@@ -194,10 +194,8 @@ public class OneCall implements Serializable {
     }
 
     //以下为添加对象的方法
-    public void addPreMsg(MsgNormal msg) {
-        synchronized(preMsglock) {
-            this.preMsgQueue.add(msg);
-        }
+    public void putPreMsg(MsgNormal msg) throws InterruptedException {
+        preMsgQueue.put(msg);
     }
 
     public void addSendedMsg(MsgNormal msg) {
@@ -311,10 +309,10 @@ public class OneCall implements Serializable {
     }
 
     //呼叫者语音信息
-    private List<WholeTalk> callerWts=null;
-    public void addCallerWt(WholeTalk callerWt) {
+    private List<OneTalk> callerWts=null;
+    public void addCallerWt(OneTalk callerWt) {
         boolean canAdd=true;
-        for (WholeTalk wt: this.callerWts) {
+        for (OneTalk wt: this.callerWts) {
             if (wt.getTalkId().equals(callerWt.getTalkId())) {
                 canAdd=false;
                 break;
@@ -322,14 +320,14 @@ public class OneCall implements Serializable {
         }
         if (canAdd) this.callerWts.add(callerWt);
     }
-    public List<WholeTalk> getCallerWts() {
+    public List<OneTalk> getCallerWts() {
         return this.callerWts;
     }
     //被叫者语音信息
-    private List<WholeTalk> callederWts=null;
-    public void addCallederWt(WholeTalk callederWt) {
+    private List<OneTalk> callederWts=null;
+    public void addCallederWt(OneTalk callederWt) {
         boolean canAdd=true;
-        for (WholeTalk wt: this.callederWts) {
+        for (OneTalk wt: this.callederWts) {
             if (wt.getTalkId().equals(callederWt.getTalkId())) {
                 canAdd=false;
                 break;
@@ -337,7 +335,7 @@ public class OneCall implements Serializable {
         }
         if (canAdd) this.callederWts.add(callederWt);
     }
-    public List<WholeTalk> getCallederWts() {
+    public List<OneTalk> getCallederWts() {
         return this.callederWts;
     }
 

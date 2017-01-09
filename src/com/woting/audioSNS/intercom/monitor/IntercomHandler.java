@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,13 +35,15 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
 
     private OneMeet meetData=null;
     private volatile Object shutdownLock=new Object();
+    private Timer moniterTimer=new Timer();
 
     protected IntercomHandler(IntercomConfig conf, OneMeet om) {
         super(conf);
         super.setName("组对讲处理["+om.getGroupId()+"]监控主线程");
-        setLoopDelay(10);
+        //setLoopDelay(10);
         meetData=om;
         meetData.setIntercomHandler(this);
+        moniterTimer.scheduleAtFixedRate(new MonitorOneMeet(), 0, conf.get_ExpireSpeakerTime());
     }
 
     @Override
@@ -51,28 +55,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
     @Override
     public void oneProcess() throws Exception {
         try {
-            //首先判断，是否可以继续通话
-            int _s=meetData.getStatus();
-            if (_s==9||_s==4) {
-                shutdown();//结束进程
-                return;
-            }
-
-            //一段时间后未收到任何消息，通话过期
-            if ((meetData.getStatus()==1||meetData.getStatus()==2||meetData.getStatus()==3)
-              &&(System.currentTimeMillis()-meetData.getLastUsedTime()>conf.get_ExpireTime()))
-            {
-                shutdown();
-                return;
-            }
-            //一段时间后未通话，删除通话者
-            if ((meetData.getStatus()==2||meetData.getStatus()==3)
-              &&(meetData.getSpeaker()!=null)
-              &&(System.currentTimeMillis()-meetData.getLastTalkTime()>conf.get_ExpireSpeakerTime()))
-            {
-                meetData.clearSpeaker();
-            }
-            MsgNormal m=meetData.pollPreMsg();
+            MsgNormal m=meetData.takePreMsg();
             if (m==null) return;
 
             meetData.setLastUsedTime();
@@ -121,7 +104,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
     }
 
     //进入组处理
-    private int enterGroup(MsgNormal m) {
+    private int enterGroup(MsgNormal m) throws InterruptedException {
         if (m==null) return 2;
         PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(m);
         if (pUdk==null) return 2;
@@ -148,7 +131,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             else if (retFlag==2) retMsg.setReturnType(0x08);//该用户已经在指定组
             else retMsg.setReturnType(0x01);//正确加入组
         }
-        globalMem.sendMem.addDeviceMsg(pUdk, retMsg);
+        globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
 
         //进组成功广播消息信息组织
         if (retFlag==1&&meetData.getEntryGroupUserMap()!=null&&meetData.getEntryGroupUserMap().size()>1) {
@@ -175,7 +158,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                 List<PushUserUDKey> al=sessionService.getActivedUserUDKs(k);
                 if (al!=null&&!al.isEmpty()) {
                     for (PushUserUDKey _pUdk: al) {
-                        globalMem.sendMem.addDeviceMsg(_pUdk, bMsg);
+                        globalMem.sendMem.putDeviceMsg(_pUdk, bMsg);
                     }
                 }
             }
@@ -192,7 +175,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
     }
 
     //推出组处理
-    private int exitGroup(MsgNormal m) {
+    private int exitGroup(MsgNormal m) throws InterruptedException {
         if (m==null) return 2;
         PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(m);
         if (pUdk==null) return 2;
@@ -219,7 +202,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             else if (retFlag==3) retMsg.setReturnType(0x08);//该用户不在指定组
             else retMsg.setReturnType(0x01);//正确离开组
         }
-        globalMem.sendMem.addDeviceMsg(pUdk, retMsg);
+        globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
 
         //广播消息信息组织
         if (retFlag==1&&meetData.getEntryGroupUserMap()!=null) {
@@ -248,7 +231,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                     List<PushUserUDKey> al=sessionService.getActivedUserUDKs(k);
                     if (al!=null&&!al.isEmpty()) {
                         for (PushUserUDKey _pUdk: al) {
-                            globalMem.sendMem.addDeviceMsg(_pUdk, bMsg);
+                            globalMem.sendMem.putDeviceMsg(_pUdk, bMsg);
                         }
                     }
                 }
@@ -266,7 +249,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         return retFlag==1?1:3;
     }
 
-    private int beginPTT(MsgNormal m) {
+    private int beginPTT(MsgNormal m) throws InterruptedException {
         if (m==null) return 2;
         PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(m);
         if (pUdk==null) return 2;
@@ -301,7 +284,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             else if (retFlag==7) retMsg.setReturnType(0x07);//自己在电话通话
             else retMsg.setReturnType(0x01);//正确加入组
         }
-        globalMem.sendMem.addDeviceMsg(pUdk, retMsg);
+        globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
 
         if (retFlag==1) meetData.setStatus_3();
         if (retFlag==1&&meetData.getEntryGroupUserMap()!=null&&meetData.getEntryGroupUserMap().size()>1) {
@@ -320,7 +303,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                 if (al!=null&&!al.isEmpty()) {
                     for (PushUserUDKey _pUdk: al) {
                         if (_pUdk.equals(pUdk)) continue;
-                        globalMem.sendMem.addDeviceMsg(_pUdk, bMsg);
+                        globalMem.sendMem.putDeviceMsg(_pUdk, bMsg);
                     }
                 }
             }
@@ -328,7 +311,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         return retFlag==1?1:3;
     }
 
-    private int endPTT(MsgNormal m) {
+    private int endPTT(MsgNormal m) throws InterruptedException {
         if (m==null) return 2;
         PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(m);
         if (pUdk==null) return 2;
@@ -357,7 +340,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             //删除语音内容
             //globalMem.sendMem.cleanMsg4InterComSpeak(meetData.getGroupId(), ); //清除说话者未发出的语音信息
         }
-        globalMem.sendMem.addDeviceMsg(pUdk, retMsg);
+        globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
 
         if (retFlag==1) {
             MsgNormal bMsg=MessageUtils.clone(retMsg);
@@ -375,7 +358,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                 if (al!=null&&!al.isEmpty()) {
                     for (PushUserUDKey _pUdk: al) {
                         if (_pUdk.equals(pUdk)) continue;
-                        globalMem.sendMem.addDeviceMsg(_pUdk, bMsg);
+                        globalMem.sendMem.putDeviceMsg(_pUdk, bMsg);
                     }
                 }
             }
@@ -392,6 +375,35 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                 interMem.removeOneMeet(meetData.getGroupId());
                 meetData.clear();
                 globalMem.sendMem.cleanMsg4Intercom(meetData); //清除本对讲所涉及的未发出的消息
+                moniterTimer.cancel();
+                moniterTimer=null;
+            }
+        }
+    }
+
+    class MonitorOneMeet extends TimerTask {
+        @Override
+        public void run() {
+            //首先判断，是否可以继续通话
+            int _s=IntercomHandler.this.meetData.getStatus();
+            if (_s==9||_s==4) {
+                shutdown();//结束进程
+                return;
+            }
+
+            //一段时间后未收到任何消息，通话过期
+            if ((IntercomHandler.this.meetData.getStatus()==1||IntercomHandler.this.meetData.getStatus()==2||IntercomHandler.this.meetData.getStatus()==3)
+              &&(System.currentTimeMillis()-IntercomHandler.this.meetData.getLastUsedTime()>IntercomHandler.this.conf.get_ExpireTime()))
+            {
+                shutdown();
+                return;
+            }
+            //一段时间后未通话，删除通话者
+            if ((IntercomHandler.this.meetData.getStatus()==2||IntercomHandler.this.meetData.getStatus()==3)
+              &&(IntercomHandler.this.meetData.getSpeaker()!=null)
+              &&(System.currentTimeMillis()-IntercomHandler.this.meetData.getLastTalkTime()>IntercomHandler.this.conf.get_ExpireSpeakerTime()))
+            {
+                IntercomHandler.this.meetData.clearSpeaker();
             }
         }
     }

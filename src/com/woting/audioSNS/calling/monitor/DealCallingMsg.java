@@ -32,7 +32,7 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
     public DealCallingMsg(CallingConfig cc, int index) {
         super(cc);
         super.setName("电话消息处理线程"+index);
-        this.setLoopDelay(10);
+        //this.setLoopDelay(10);
     }
 
     @Override
@@ -43,7 +43,7 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
 
     @Override
     public void oneProcess() throws Exception {
-        MsgNormal sourceMsg=(MsgNormal)globalMem.receiveMem.pollTypeMsg("2");
+        MsgNormal sourceMsg=(MsgNormal)globalMem.receiveMem.takeTypeMsg("2");
         if (sourceMsg==null) return;
 
         PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(sourceMsg);
@@ -77,7 +77,7 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
                     MapContent mc=new MapContent(dataMap);
                     retMsg.setMsgContent(mc);
                 }
-                globalMem.sendMem.addDeviceMsg(pUdk, retMsg);
+                globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
             }
             return ;
         }
@@ -96,7 +96,7 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
             if (oneCall==null) {
                 //创建内存对象
                 oneCall=new OneCall(1, callId, callerId, callederId);
-                oneCall.addPreMsg(sourceMsg);//设置第一个消息
+                oneCall.putPreMsg(sourceMsg);//设置第一个消息
                 //加入内存
                 int addFlag=callingMem.addOneCall(oneCall);
                 if (addFlag!=1) {//返回错误信息
@@ -107,7 +107,7 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
                     MapContent mc=new MapContent(dataMap);
                     retMsg.setMsgContent(mc);
                     retMsg.setReturnType(addFlag==0?0x81:0x82);
-                    globalMem.sendMem.addDeviceMsg(pUdk, retMsg);
+                    globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
                 } else {
                     //启动处理进程
                     CallHandler callHandler=new CallHandler(conf, oneCall, sessionService);
@@ -122,7 +122,7 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
                 MapContent mc=new MapContent(dataMap);
                 retMsg.setMsgContent(mc);
                 retMsg.setReturnType(0x83);
-                globalMem.sendMem.addDeviceMsg(pUdk, retMsg);
+                globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
             }
         } else {//其他消息，放到具体的独立处理线程中处理
             //查找是否有对应的内存数据，如果没有，则说明通话已经结束，告诉传来者
@@ -135,8 +135,8 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
                 dataMap.put("ServerMsg", "服务器处理进程不存在");
                 MapContent mc=new MapContent(dataMap);
                 retMsg.setMsgContent(mc);
-                globalMem.sendMem.addDeviceMsg(pUdk, retMsg);
-            } else oneCall.addPreMsg(sourceMsg);//把消息压入队列
+                globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
+            } else oneCall.putPreMsg(sourceMsg);//把消息压入队列
         }
     }
 
@@ -146,7 +146,6 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
         List<CallHandler> chL=callingMem.getCallHanders();
         if (chL!=null&&!chL.isEmpty()) {
             for (CallHandler ch:chL) ch.stopServer();
-
             boolean allClosed=false;
             int i=0;
             while (i++<10&&!allClosed) {

@@ -37,7 +37,7 @@ public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
 
     @Override
     public void oneProcess() throws Exception {
-        MsgNormal sourceMsg=(MsgNormal)globalMem.receiveMem.pollTypeMsg("1");
+        MsgNormal sourceMsg=(MsgNormal)globalMem.receiveMem.takeTypeMsg("1");
         if (sourceMsg==null||sourceMsg.getBizType()!=1) return;
 
         PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(sourceMsg);
@@ -59,7 +59,7 @@ public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
                     MapContent mc=new MapContent(dataMap);
                     retMsg.setMsgContent(mc);
                 }
-                globalMem.sendMem.addDeviceMsg(pUdk, retMsg);
+                globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
             }
             return ;
         }
@@ -73,7 +73,7 @@ public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
 
         OneMeet om=intercomMem.getOneMeet(groupId);
         if (om!=null) {
-            om.addPreMsg(sourceMsg);
+            om.putPreMsg(sourceMsg);
             return ;
         }
         //组对象为空
@@ -90,7 +90,7 @@ public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
                     dataMap.put("GroupId", groupId);
                     MapContent mc=new MapContent(dataMap);
                     retMsg.setMsgContent(mc);
-                    globalMem.sendMem.addDeviceMsg(pUdk, retMsg);
+                    globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
                     return;
                 }
                 om=new OneMeet(1, g);
@@ -103,12 +103,12 @@ public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
                     dataMap.put("GroupId", groupId);
                     MapContent mc=new MapContent(dataMap);
                     retMsg.setMsgContent(mc);
-                    globalMem.sendMem.addDeviceMsg(pUdk, retMsg);
+                    globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
                     return;
                 }
                 om.setStatus_1();
 
-                om.addPreMsg(sourceMsg);
+                om.putPreMsg(sourceMsg);
                 //启动处理进程
                 IntercomHandler interHandler=new IntercomHandler(conf, om);
                 interHandler.setDaemon(true);
@@ -127,7 +127,7 @@ public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
             dataMap.put("ServerMsg", "服务器处理进程不存在");
             MapContent mc=new MapContent(dataMap);
             retMsg.setMsgContent(mc);
-            globalMem.sendMem.addDeviceMsg(pUdk, retMsg);
+            globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
         }
     }
 

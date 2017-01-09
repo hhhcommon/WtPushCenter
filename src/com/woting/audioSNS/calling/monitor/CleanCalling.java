@@ -1,6 +1,7 @@
 package com.woting.audioSNS.calling.monitor;
 
 import java.util.Map;
+import java.util.Timer;
 
 import com.woting.audioSNS.calling.CallingConfig;
 import com.woting.audioSNS.calling.mem.CallingMemory;
@@ -45,6 +46,10 @@ public class CleanCalling extends AbstractLoopMoniter<CallingConfig> {
                     }
                 }
             }
+        }
+        try {
+            sleep(conf.get_CleanInternal()-((System.currentTimeMillis()-cur)%conf.get_CleanInternal()));
+        } catch(Exception e) {
         }
     }
 

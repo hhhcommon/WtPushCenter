@@ -24,7 +24,7 @@ import com.woting.audioSNS.sync.SyncMessageConfig;
 import com.woting.audioSNS.sync.monitor.DealSyncMsg;
 import com.woting.push.config.AffirmCtlConfig;
 import com.woting.push.config.ConfigLoadUtils;
-import com.woting.push.config.MediaExpiredConfig;
+import com.woting.push.config.MediaConfig;
 import com.woting.push.config.PushConfig;
 import com.woting.push.core.SocketHandleConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
@@ -47,7 +47,6 @@ public class ServerListener {
     private int socketType=0; //0=oio；1=nio
 
     public static void main(String[] args) {
-        System.out.println("=================================测试");
         //处理参数，看是用nio还是用oio
         ServerListener sl=ServerListener.getInstance();
         try {
@@ -225,8 +224,8 @@ public class ServerListener {
         AffirmCtlConfig acc=ConfigLoadUtils.getAffirmCtlConfig(jc);
         SystemCache.setCache(new CacheEle<AffirmCtlConfig>(PushConstants.AFFCTL_CONF, "控制回复配置", acc));
 
-        MediaExpiredConfig mec=ConfigLoadUtils.getMediaExpiredConfig(jc);
-        SystemCache.setCache(new CacheEle<MediaExpiredConfig>(PushConstants.MEXPIRED_CONF, "媒体包过期配置", mec));
+        MediaConfig mc=ConfigLoadUtils.getMediaConfig(jc);
+        SystemCache.setCache(new CacheEle<MediaConfig>(PushConstants.MEDIA_CONF, "媒体包配置", mc));
     }
 
     private void begin() {
@@ -236,10 +235,10 @@ public class ServerListener {
             public void run() {
                 logger.info("正在正在关闭服务... ");
                 stopServers();
-                try{
+                try {
                     mainT.join();
                     logger.info("服务已关闭");
-                }catch(Exception e){
+                } catch(Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -247,11 +246,7 @@ public class ServerListener {
 
         boolean initOk=initEnvironment();
 
-        if (initOk) {
-            startServers();//开始运行子进程
-            listener();
-            stopServers(); //若listener不结束，不会执行这里的内容
-        }
+        if (initOk) startServers();//开始运行子进程
     }
 
     @SuppressWarnings("unchecked")
@@ -264,7 +259,6 @@ public class ServerListener {
         } else {
             tcpCtlServer=new NioServer(pc);
         }
-        tcpCtlServer.setDaemon(true);
         tcpCtlServer.start();
         //2-启动{接收消息分发}线程
         dispatchList=new ArrayList<DispatchMessage>();
@@ -325,11 +319,17 @@ public class ServerListener {
         }
         _RUN_STATUS=2;//==================启动成功
     }
-    private void listener() {
-        while (_RUN_STATUS==2) {
-            ;
-        }
-    }
+//    private void listener() {
+//        synchronized(runningLck) {
+//            while (_RUN_STATUS==2) {
+//                try {
+//                    runningLck.wait();
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }
+//    }
     private void stopServers() {
 //        boolean allClosed=false;
 //        int i=0;

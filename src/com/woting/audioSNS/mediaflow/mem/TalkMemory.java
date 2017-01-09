@@ -1,7 +1,7 @@
 package com.woting.audioSNS.mediaflow.mem;
 
 import java.util.concurrent.ConcurrentHashMap;
-import com.woting.audioSNS.mediaflow.model.WholeTalk;
+import com.woting.audioSNS.mediaflow.model.OneTalk;
 
 public class TalkMemory {
     //java的占位单例模式===begin
@@ -13,9 +13,9 @@ public class TalkMemory {
     }
     //java的占位单例模式===end
 
-    protected ConcurrentHashMap<String, WholeTalk> talkMap;//对讲组信息Map
+    protected ConcurrentHashMap<String, OneTalk> talkMap;//对讲组信息Map
     private TalkMemory() {
-        this.talkMap=new ConcurrentHashMap<String, WholeTalk>();
+        this.talkMap=new ConcurrentHashMap<String, OneTalk>();
     }
 
     /**
@@ -23,7 +23,7 @@ public class TalkMemory {
      * @param talkId 对话Id
      * @return 一个对话数据
      */
-    public WholeTalk getWholeTalk(String talkId) {
+    public OneTalk getOneTalk(String talkId) {
         return talkMap.get(talkId);
     }
 
@@ -31,7 +31,7 @@ public class TalkMemory {
      * 删除一个对话数据
      * @param talkId 对话Id
      */
-    public void removeWholeTalk(String talkId) {
+    public void removeOneTalk(String talkId) {
         talkMap.remove(talkId);
     }
 
@@ -39,7 +39,7 @@ public class TalkMemory {
      * 删除一个对话数据
      * @param wt 对话数据
      */
-    public void removeWholeTalk(WholeTalk wt) {
+    public void removeOneTalk(OneTalk wt) {
         talkMap.remove(wt.getTalkId());
     }
 
@@ -48,7 +48,7 @@ public class TalkMemory {
      * @param wt 对话数据
      * @return 返回内存中与这个对讲对应的结构，若内存中已经存在，则返回内存中的结构，否则返回这个新结构
      */
-    public void addWholeTalk(WholeTalk wt) {
+    public void addOneTalk(OneTalk wt) {
         talkMap.put(wt.getTalkId(), wt);
     }
 
@@ -63,7 +63,7 @@ public class TalkMemory {
 //
 //            PushMemoryManage pmm=PushMemoryManage.getInstance();
 //            for (String k: talkMap.keySet()) {
-//                WholeTalk wt=talkMap.get(k);
+//                OneTalk wt=talkMap.get(k);
 //                if (wt.getTalkType()==1) {//对讲
 //                    GroupMemoryManage gmm=GroupMemoryManage.getInstance();
 //                    GroupInterCom gic=gmm.getGroupInterCom(wt.getObjId());
@@ -115,9 +115,9 @@ public class TalkMemory {
     public void cleanCallData(String callId) {
         if (talkMap!=null&&!talkMap.isEmpty()) {
             for (String k: talkMap.keySet()) {
-                WholeTalk wt=talkMap.get(k);
+                OneTalk wt=talkMap.get(k);
                 if (wt.getTalkType()==2&&wt.getObjId().equals(callId)) {
-                    this.removeWholeTalk(wt);
+                    this.removeOneTalk(wt);
                 }
             }
         }
@@ -130,9 +130,9 @@ public class TalkMemory {
     public void cleanIntercomData(String talkId, String groupId) {
         if (talkMap!=null&&!talkMap.isEmpty()) {
             for (String k: talkMap.keySet()) {
-                WholeTalk wt=talkMap.get(k);
+                OneTalk wt=talkMap.get(k);
                 if (wt.getTalkType()==1&&wt.getObjId().equals(groupId)) {
-                    this.removeWholeTalk(wt);
+                    this.removeOneTalk(wt);
                 }
             }
         }

@@ -22,7 +22,7 @@ public class DispatchMessage extends AbstractLoopMoniter<PushConfig> {
 
     @Override
     public boolean initServer() {
-        this.setLoopDelay(10);
+        //this.setLoopDelay(10);
         return true;
     }
 
@@ -33,13 +33,13 @@ public class DispatchMessage extends AbstractLoopMoniter<PushConfig> {
 
     @Override
     public void oneProcess() throws Exception {
-        Message m=globalMem.receiveMem.pollPureMsg();
+        Message m=globalMem.receiveMem.takePureMsg();
         if (m!=null) {
             if (m.isCtlAffirm()&&!(m instanceof MsgMedia)) { //处理回复消息
                 PushUserUDKey mUdk=PushUserUDKey.buildFromMsg(m);
-                globalMem.sendMem.addDeviceMsg(mUdk, MessageUtils.buildAckMsg((MsgNormal)m));
+                globalMem.sendMem.putDeviceMsg(mUdk, MessageUtils.buildAckMsg((MsgNormal)m));
             }
-            globalMem.receiveMem.addTypeMsg(""+((MsgNormal)m).getBizType(), m);
+            globalMem.receiveMem.putTypeMsg(""+((MsgNormal)m).getBizType(), m);
         }
     }
 }
