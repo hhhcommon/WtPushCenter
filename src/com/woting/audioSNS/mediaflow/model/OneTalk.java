@@ -21,17 +21,22 @@ import com.woting.push.user.PushUserUDKey;
  * @author wanghui
  */
 public class OneTalk {
-    private final Object lock=new Object();
+    private final Object addLck=new Object();
     private long lastReceiveTime=System.currentTimeMillis();//最后一次收到数据的时间
     private long _expired=-1;
     //以上是控制时间的周期
 
-    public OneTalk() {
+    public OneTalk(String talkId, PushUserUDKey talkerUdk, String objId, int talkType) {
         super();
         setBeginTime(System.currentTimeMillis());
         _expired=((MediaConfig)SystemCache.getCache(PushConstants.MEDIA_CONF).getContent()).getVedioExpiedTime();
         talkData=new HashMap<Integer, TalkSegment>();
+        this.talkId=talkId;
+        this.talkerUdk=talkerUdk;
+        this.objId=objId;
+        this.talkType=talkType;
         //启动监控线程
+        moniterTimer=new Timer("通话["+talkId+"::"+talkType+"::"+objId+"::"+talkerUdk.getUserId()+"]监控线程", true);
         moniterTimer.scheduleAtFixedRate(new MonitorOneTalk(), 0, ((MediaConfig)SystemCache.getCache(PushConstants.MEDIA_CONF).getContent()).get_AudioPackT());
     }
 
@@ -42,8 +47,7 @@ public class OneTalk {
     private int talkType; //通话类型，目前仅有两类：1=对讲；2=电话
     private String objId; //通话所对应的对讲的Id，当为对讲时是groupId，当为电话时是callId
     private PushUserUDKey talkerUdk; //讲话人Id
-    private int maxNum=0; //当前通话的最大包数
-    private int lastNum=0; //最后一个包号
+    private int lastNum=-1; //最后一个包号
     private Map<Integer, TalkSegment> talkData; //通话的完整数据
     private boolean receiveAll=false, sendAll=false;
     private long beginTime=0;
@@ -111,7 +115,8 @@ public class OneTalk {
      */
     public void addSegment(TalkSegment ts) {
         if (ts.getWt()==null||!ts.getWt().getTalkId().equals(talkId)) throw new IllegalArgumentException("对话段的主对话与当前对话段不匹配");
-        synchronized(lock) {
+        lastReceiveTime=System.currentTimeMillis();
+        synchronized(addLck) {
             int _num=ts.getSeqNum();
             if (talkData.get(lastNum)!=null) return;
             if (_num<0) {
@@ -119,8 +124,6 @@ public class OneTalk {
                 else lastNum=-_num;
             }
             talkData.put(_num, ts);
-            maxNum=lastNum>0?lastNum:(_num>maxNum?_num:maxNum);
-            lastReceiveTime=System.currentTimeMillis();
             //计算是否接收完成
             if (lastNum>0&&!receiveAll) {
                 boolean _receiveAll=true;
@@ -135,6 +138,7 @@ public class OneTalk {
                     receiveAll=true;
                 }
             }
+            addLck.notifyAll();
         }
     }
 
@@ -143,7 +147,7 @@ public class OneTalk {
      * @return
      */
     public boolean isCompleted() {
-        if (sendAll&&receiveAll||(_expired!=-1&&System.currentTimeMillis()-lastReceiveTime>_expired)) {
+        if (_expired!=-1&&System.currentTimeMillis()-lastReceiveTime>_expired) {
             sendAll=true;
             receiveAll=true;
             return true;

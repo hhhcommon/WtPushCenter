@@ -35,14 +35,15 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
 
     private OneMeet meetData=null;
     private volatile Object shutdownLock=new Object();
-    private Timer moniterTimer=new Timer();
+    private Timer moniterTimer=null;
 
     protected IntercomHandler(IntercomConfig conf, OneMeet om) {
         super(conf);
-        super.setName("组对讲处理["+om.getGroupId()+"]监控主线程");
-        //setLoopDelay(10);
+        super.setName("组对讲["+om.getGroupId()+"]消息处理线程");
         meetData=om;
         meetData.setIntercomHandler(this);
+        //启动监控线程
+        moniterTimer=new Timer("组对讲["+om.getGroupId()+"]监控线程", true);
         moniterTimer.scheduleAtFixedRate(new MonitorOneMeet(), 0, conf.get_ExpireSpeakerTime());
     }
 
@@ -56,7 +57,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
     public void oneProcess() throws Exception {
         try {
             MsgNormal m=meetData.takePreMsg();
-            if (m==null) return;
+            if (m==null||m.getMsgId().equals("-1")) return;
 
             meetData.setLastUsedTime();
             ProcessedMsg pMsg=new ProcessedMsg(m, System.currentTimeMillis(), getClass().getName());
@@ -100,7 +101,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
 
     @Override
     public boolean canContinue() {
-        return true;
+        return meetData.getStatus()!=9;
     }
 
     //进入组处理
@@ -132,6 +133,20 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             else retMsg.setReturnType(0x01);//正确加入组
         }
         globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
+        //判断组内是否有人说话，若有发广播消息
+        if (meetData.getSpeaker()!=null) {
+            MsgNormal hasSpeaker=MessageUtils.clone(retMsg);
+            hasSpeaker.setReMsgId(null);
+            hasSpeaker.setMsgType(0);
+            hasSpeaker.setCmdType(2);
+            hasSpeaker.setCommand(0x10);
+            dataMap=new HashMap<String, Object>();
+            dataMap.put("GroupId", groupId);
+            dataMap.put("SpeakerId", meetData.getSpeaker().getUserId());
+            MapContent _mc=new MapContent(dataMap);
+            hasSpeaker.setMsgContent(_mc);
+            globalMem.sendMem.putDeviceMsg(pUdk, hasSpeaker);
+        }
 
         //进组成功广播消息信息组织
         if (retFlag==1&&meetData.getEntryGroupUserMap()!=null&&meetData.getEntryGroupUserMap().size()>1) {
@@ -174,7 +189,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         return retFlag==1?1:3;
     }
 
-    //推出组处理
+    //退出组处理
     private int exitGroup(MsgNormal m) throws InterruptedException {
         if (m==null) return 2;
         PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(m);
@@ -206,9 +221,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
 
         //广播消息信息组织
         if (retFlag==1&&meetData.getEntryGroupUserMap()!=null) {
-            if (meetData.getEntryGroupUserMap().isEmpty()) {
-                meetData.clearSpeaker();
-            } else {
+            if (!meetData.getEntryGroupUserMap().isEmpty()) {
                 MsgNormal bMsg=MessageUtils.clone(retMsg);
                 bMsg.setReMsgId(null);
                 bMsg.setMsgType(0);
@@ -286,7 +299,6 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         }
         globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
 
-        if (retFlag==1) meetData.setStatus_3();
         if (retFlag==1&&meetData.getEntryGroupUserMap()!=null&&meetData.getEntryGroupUserMap().size()>1) {
             MsgNormal bMsg=MessageUtils.clone(retMsg);
             bMsg.setReMsgId(null);
@@ -374,6 +386,13 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                 meetData.setStatus_9();
                 interMem.removeOneMeet(meetData.getGroupId());
                 meetData.clear();
+                MsgNormal dualMsg=new MsgNormal();
+                dualMsg.setMsgId("-1");
+                try {
+                    meetData.putPreMsg(dualMsg);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 globalMem.sendMem.cleanMsg4Intercom(meetData); //清除本对讲所涉及的未发出的消息
                 moniterTimer.cancel();
                 moniterTimer=null;
@@ -390,7 +409,6 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                 shutdown();//结束进程
                 return;
             }
-
             //一段时间后未收到任何消息，通话过期
             if ((IntercomHandler.this.meetData.getStatus()==1||IntercomHandler.this.meetData.getStatus()==2||IntercomHandler.this.meetData.getStatus()==3)
               &&(System.currentTimeMillis()-IntercomHandler.this.meetData.getLastUsedTime()>IntercomHandler.this.conf.get_ExpireTime()))

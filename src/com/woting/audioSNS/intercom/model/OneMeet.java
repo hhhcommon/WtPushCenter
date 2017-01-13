@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 //import com.woting.audioSNS.calling.mem.CallingMemory;
 import com.woting.audioSNS.intercom.mem.IntercomMemory;
@@ -110,7 +110,7 @@ public class OneMeet implements Serializable {
         synchronized(speakerLck) {
             setStatus_2();
             Map<String, Object> ret=new HashMap<String, Object>();
-            int retFlag=0;
+            int retFlag=1; //如果是会议模式，总是允许说话
             if (meetType==1) { //如果是对讲模式
                 if (entryGroupUserMap.size()==0) retFlag=2;//无人在组
                 else if (entryGroupUserMap.size()<2) retFlag=3;//少于2人，无需通话
@@ -119,8 +119,6 @@ public class OneMeet implements Serializable {
                 //else if (interMem.getUserTalk(pUdk.getUserId())!=null) retFlag=6;//自己正在用其他设备通话
                 //else if (callingMem.isTalk(pUdk.getUserId())) retFlag=7;//自己正在用点对点通话
                 else retFlag=1;
-            } else {
-                retFlag=1; //如果是会议模式，总是允许说话
             }
             ret.put("retFlag", retFlag);
             if (retFlag==5) ret.put("speakerId", speaker.getUserId());
@@ -155,15 +153,16 @@ public class OneMeet implements Serializable {
         return speaker;
     }
     /**
-     * 获得讲话者
-     * @return 讲话者UdKey
+     * 清除讲话者
      */
     public void clearSpeaker() {
-        speaker=null;
+        synchronized(speakerLck) {
+            speaker=null;
+        }
     }
 
     //五、消息相关
-    private ArrayBlockingQueue<MsgNormal> preMsgQueue=null;//预处理(还未处理)的本对讲(会议)消息
+    private LinkedBlockingQueue<MsgNormal> preMsgQueue=null;//预处理(还未处理)的本对讲(会议)消息
     private List<ProcessedMsg> processedMsgList=null;//已经处理过的消息
     private Map<PushUserUDKey, List<OneTalk>> wtsMap=null; //本次对讲所涉及的通话数据
     /**
@@ -316,7 +315,7 @@ public class OneMeet implements Serializable {
         lastTalkTime=System.currentTimeMillis();
         lastUsedTime=lastTalkTime;
 
-        preMsgQueue=new ArrayBlockingQueue<MsgNormal>(512); //TODO 配置文件
+        preMsgQueue=new LinkedBlockingQueue<MsgNormal>(512); //TODO 配置文件
         processedMsgList=new ArrayList<ProcessedMsg>();
         wtsMap=new HashMap<PushUserUDKey, List<OneTalk>>();
     }
@@ -325,7 +324,6 @@ public class OneMeet implements Serializable {
      * 清除数据
      */
     public void clear() {
-        this.speaker=null;
         if (entryGroupUserMap!=null&&!entryGroupUserMap.isEmpty()) {
             for (String userId: entryGroupUserMap.keySet()) {
                 interMem.removeUserInMeet(userId, this);

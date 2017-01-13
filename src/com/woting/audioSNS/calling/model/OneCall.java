@@ -3,7 +3,7 @@ package com.woting.audioSNS.calling.model;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.calling.monitor.CallHandler;
@@ -102,6 +102,15 @@ public class OneCall implements Serializable {
     public void setLastUsedTime() {
         this.lastUsedTime=System.currentTimeMillis();
     }
+    private long lastTalkTime=-1;//最后讲话时间，用于定期清除对讲者
+    public long getLastTalkTime() {
+        return lastTalkTime;
+    }
+    public void setLastTalkTime(String userId) {
+        if (speaker!=null&&userId!=null&&userId.equals(speaker.getUserId())) {
+            this.lastTalkTime=System.currentTimeMillis();
+        }
+    }
 
     private volatile int status=0; //通话过程的状态:初始状态
     public int getStatus() {
@@ -136,7 +145,7 @@ public class OneCall implements Serializable {
     }
 
     //以下两个对象用来记录App->Server的消息
-    private ArrayBlockingQueue<MsgNormal> preMsgQueue;//预处理(还未处理)的本呼叫的消息
+    private LinkedBlockingQueue<MsgNormal> preMsgQueue;//预处理(还未处理)的本呼叫的消息
     private List<ProcessedMsg> processedMsgList;//已经处理过的消息
     //以下对象用来记录Server->app的消息
     private List<MsgNormal> sendedMsgList;//已经发出的消息，这里记录仅仅是作为日志的材料
@@ -170,7 +179,7 @@ public class OneCall implements Serializable {
 
         this.status=0;//仅创建，还未处理
 
-        this.preMsgQueue=new ArrayBlockingQueue<MsgNormal>(512); //TODO 配置文件
+        this.preMsgQueue=new LinkedBlockingQueue<MsgNormal>(512); //TODO 配置文件
         this.processedMsgList=new ArrayList<ProcessedMsg>();
         this.sendedMsgList=new ArrayList<MsgNormal>();
 
@@ -281,6 +290,19 @@ public class OneCall implements Serializable {
             }
         }
         return ret;
+    }
+    /**
+     * 获得讲话者
+     * @return 讲话者UdKey
+     */
+    public PushUserUDKey getSpeaker() {
+        return speaker;
+    }
+    /**
+     * 清除讲话者
+     */
+    public void clearSpeaker() {
+        speaker=null;
     }
 
     /**

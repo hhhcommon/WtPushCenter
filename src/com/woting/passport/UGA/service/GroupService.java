@@ -91,6 +91,10 @@ public class GroupService {
                     }
                     userList.add(up);
                 }
+                //处理最后一个
+                if (userList!=null&&gm.get(addGroupId)!=null) {
+                    gm.get(addGroupId).setUserList(userList);
+                }
             }
         }
     }

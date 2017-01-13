@@ -45,6 +45,7 @@ import ch.qos.logback.core.joran.spi.JoranException;
  */
 public class ServerListener {
     private int socketType=0; //0=oio；1=nio
+    private Object runningLck=new Object();
 
     public static void main(String[] args) {
         //处理参数，看是用nio还是用oio
@@ -225,6 +226,7 @@ public class ServerListener {
         SystemCache.setCache(new CacheEle<AffirmCtlConfig>(PushConstants.AFFCTL_CONF, "控制回复配置", acc));
 
         MediaConfig mc=ConfigLoadUtils.getMediaConfig(jc);
+        mc.getAudioExpiedTime();
         SystemCache.setCache(new CacheEle<MediaConfig>(PushConstants.MEDIA_CONF, "媒体包配置", mc));
     }
 
@@ -247,6 +249,7 @@ public class ServerListener {
         boolean initOk=initEnvironment();
 
         if (initOk) startServers();//开始运行子进程
+        listener();
     }
 
     @SuppressWarnings("unchecked")
@@ -259,6 +262,7 @@ public class ServerListener {
         } else {
             tcpCtlServer=new NioServer(pc);
         }
+        tcpCtlServer.setDaemon(true);
         tcpCtlServer.start();
         //2-启动{接收消息分发}线程
         dispatchList=new ArrayList<DispatchMessage>();
@@ -319,17 +323,17 @@ public class ServerListener {
         }
         _RUN_STATUS=2;//==================启动成功
     }
-//    private void listener() {
-//        synchronized(runningLck) {
-//            while (_RUN_STATUS==2) {
-//                try {
-//                    runningLck.wait();
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//        }
-//    }
+    private void listener() {
+        synchronized(runningLck) {
+            while (_RUN_STATUS==2) {
+                try {
+                    runningLck.wait();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
     private void stopServers() {
 //        boolean allClosed=false;
 //        int i=0;

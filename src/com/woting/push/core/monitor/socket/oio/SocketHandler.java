@@ -13,7 +13,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +31,6 @@ import com.woting.push.core.message.MessageUtils;
 import com.woting.push.core.message.MsgMedia;
 import com.woting.push.core.message.MsgNormal;
 import com.woting.push.core.message.content.MapContent;
-import com.woting.push.core.monitor.AbstractLoopMoniter;
 import com.woting.push.core.service.SessionService;
 import com.woting.push.ext.SpringShell;
 import com.woting.push.user.PushUserUDKey;
@@ -38,10 +39,11 @@ import com.woting.push.user.PushUserUDKey;
  * 对某一Socket连接的监控服务
  * @author wanghui
  */
-public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
+public class SocketHandler {
     private Logger logger=LoggerFactory.getLogger(SocketHandler.class);
     private final Object waitBind=new Object();
 
+    private SocketHandleConfig conf;
     private Socket _socket;
     private BufferedInputStream _socketIn=null;
     private BufferedOutputStream _socketOut=null;
@@ -51,8 +53,8 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
         return _pushUserKey;
     }
 
-    protected ArrayBlockingQueue<byte[]> _sendMsgQueue=new ArrayBlockingQueue<byte[]>(512); //512条待发布消息的缓存
-    protected ArrayBlockingQueue<Message> _recvMsgQueue=new ArrayBlockingQueue<Message>(512); //512条待处理消息的缓存
+    protected LinkedBlockingQueue<byte[]> _sendMsgQueue=new LinkedBlockingQueue<byte[]>(512); //512条待发布消息的缓存
+    protected LinkedBlockingQueue<Message> _recvMsgQueue=new LinkedBlockingQueue<Message>(512); //512条待处理消息的缓存
 
     private SessionService sessionService=null;
 
@@ -64,32 +66,30 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
     private _DealMsg dealMsg;
     private _FatchMsg fatchMsg;
     private _SendMsg sendMsg;
+    private Timer moniterTimer;
 
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
 
     public volatile Object stopLck=new Object();
-    private volatile boolean canRunning=true; //是否可以运行
+    private volatile boolean isRunning=true; //是否可以运行
 
     protected SocketHandler(SocketHandleConfig conf, Socket socket) {
-        super(conf);
-        super.setName("Socket["+socket.getRemoteSocketAddress()+"::"+socket.hashCode()+"]监控主线程");
         socketDesc="Socket["+socket.getRemoteSocketAddress()+"::"+socket.hashCode()+"]";
+        this.conf=conf;
         _socket=socket;
     }
 
-    @Override
-    public boolean initServer() {
+    public void start() {
         try {
             _socket.setTcpNoDelay(true);
             _socketIn=new BufferedInputStream(_socket.getInputStream());
             _socketOut=new BufferedOutputStream(_socket.getOutputStream());
             if (_socketIn==null) throw new NullPointerException("输入流");
             if (_socketOut==null) throw new NullPointerException("输出流");
+
             //创建SessionService对象
             sessionService=(SessionService)SpringShell.getBean("sessionService");
             lastVisitTime=System.currentTimeMillis();
-
-            setLoopDelay(conf.get_MonitorDelay());//设置监控周期
 
             //启动下级线程
             dealMsg=new _DealMsg(socketDesc+"处理消息体线程");
@@ -108,59 +108,20 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
             sendMsg.start();
             logger.debug(socketDesc+"发送信息线程-启动");
 
-            return true;
+            //启动监控线程
+            moniterTimer=new Timer(socketDesc+"监控主线程", true);
+            moniterTimer.scheduleAtFixedRate(new MonitorSocket(), 0, conf.get_MonitorDelay());
         } catch(Exception e) {
-            return false;
+            e.printStackTrace();
         }
     }
 
-    @Override
-    public boolean canContinue() {
-        long __period=System.currentTimeMillis()-lastVisitTime;
-        if (__period>conf.get_ExpireTime()) {
-            long t=System.currentTimeMillis();
-            if (StringUtils.isNullOrEmptyOrSpace(closeCause)) closeCause="超时关闭:最后访问时间["
-              +DateUtils.convert2LocalStr("yyyy-MM-dd HH:mm:ss:SSS", new Date(lastVisitTime))+"("+lastVisitTime+")],当前时间["
-              +DateUtils.convert2LocalStr("yyyy-MM-dd HH:mm:ss:SSS", new Date(t))+"("+t+")],过期时间["
-              +conf.get_ExpireTime()+"]，超时时长["+__period+"]";
-            return false;
-        }
-        return socketOk()&&canRunning;
-    }
     public boolean socketOk() {
         return _socket!=null&&_socket.isBound()&&_socket.isConnected()&&!_socket.isClosed();
     }
 
-    /**
-     * 监控这个服务是否健康，主要是子线程是否运行正常
-     */
-    @Override
-    public void oneProcess() throws Exception {
-        if (dealMsg.__isInterrupted||!dealMsg.__isRunning) {
-            receiveMsg.__interrupt();
-            sendMsg.__interrupt();
-            fatchMsg.__interrupt();
-            canRunning=false;
-        }
-
-        if (receiveMsg.__isInterrupted||!receiveMsg.__isRunning) {
-            dealMsg.__interrupt();
-            sendMsg.__interrupt();
-            fatchMsg.__interrupt();
-            canRunning=false;
-        }
-        if (fatchMsg.__isInterrupted||!fatchMsg.__isRunning) {
-            dealMsg.__interrupt();
-            receiveMsg.__interrupt();
-            sendMsg.__interrupt();
-            canRunning=false;
-        }
-        if (sendMsg.__isInterrupted||!sendMsg.__isRunning) {
-            dealMsg.__interrupt();
-            receiveMsg.__interrupt();
-            fatchMsg.__interrupt();
-            canRunning=false;
-        }
+    public boolean isStoped() {
+        return !isRunning;
     }
 
     /**
@@ -181,8 +142,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
      * 2-释放socket相关的资源
      * 3-解除用户和服务的绑定
      */
-    @Override
-    public void destroyServer() {
+    public void destroyHandler() {
         synchronized(stopLck) {
             try {
                 if (StringUtils.isNullOrEmptyOrSpace(closeCause)) closeCause="未知原因";
@@ -191,7 +151,14 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                 //1-停止下级服务
                 if (dealMsg!=null) {try {dealMsg.__interrupt();} catch(Exception e) {}}
                 if (receiveMsg!=null) {try {receiveMsg.__interrupt();} catch(Exception e) {}}
-                if (fatchMsg!=null) {try {fatchMsg.__interrupt();} catch(Exception e) {}}
+                if (fatchMsg!=null) {
+                    try {
+                        fatchMsg.__interrupt();
+                        synchronized(SocketHandler.this.waitBind) {
+                            SocketHandler.this.waitBind.notifyAll();
+                        }
+                    } catch(Exception e) {}
+                }
                 if (sendMsg!=null) {try {sendMsg.__interrupt();} catch(Exception e) {}}
 
                 boolean canClose=false;
@@ -211,13 +178,18 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                             continue;
                         }
                     }
-                    try { sleep(10); } catch (InterruptedException e) {};
+                    try { Thread.sleep(10); } catch (InterruptedException e) {};
                 }
+
+                if (dealMsg!=null) {try {dealMsg.interrupt();} catch(Exception e) {}}
+                if (receiveMsg!=null) {try {receiveMsg.interrupt();} catch(Exception e) {}}
+                if (fatchMsg!=null) {try {fatchMsg.interrupt();} catch(Exception e) {}}
+                if (sendMsg!=null) {try {sendMsg.interrupt();} catch(Exception e) {}}
                 dealMsg=null;
                 receiveMsg=null;
                 fatchMsg=null;
                 sendMsg=null;
-
+                
                 //2-释放Socket的相关资源
                 try {
                     try {_socketIn.close();} catch(Exception e) {};
@@ -238,6 +210,9 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                     _tpUdk.setPCDType(Integer.parseInt(sp[1]));
                     globalMem.unbindDeviceANDsocket(_tpUdk, this);
                 }
+                moniterTimer.cancel();
+                moniterTimer=null;
+                isRunning=false;
             } finally {
                 stopLck.notifyAll();
             }
@@ -272,7 +247,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                 if (StringUtils.isNullOrEmptyOrSpace(closeCause)) closeCause="<"+this.getName()+">运行异常关闭:"+e.getClass().getName()+" | "+e.getMessage();
             }
             try {
-                while (__isRunning&&!__isInterrupted&&socketOk()&&canRunning) {
+                while (__isRunning&&!__isInterrupted&&socketOk()&&isRunning) {
                     try {
                         __loopProcess();
                         continueErrCodunt=0;
@@ -355,7 +330,9 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                             boolean bindDeviceFlag=false;
                             if (_ms.getFromType()==1) {//从服务器来的消息，对于服务器，先到的占用。
                                 _pushUserKey=_pUdk;
-                                SocketHandler.this.waitBind.notifyAll();
+                                synchronized(SocketHandler.this.waitBind) {
+                                    SocketHandler.this.waitBind.notifyAll();
+                                }
                                 bindDeviceFlag=globalMem.bindDeviceANDsocket(_pUdk, SocketHandler.this, false);
                                 if (bindDeviceFlag) {
                                     globalMem.bindPushUserANDSocket(_pUdk, SocketHandler.this);//处理注册
@@ -365,7 +342,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                     ackM.setReturnType(0);//失败
                                     ackM.setSendTime(System.currentTimeMillis());
                                     try { _sendMsgQueue.put(ackM.toBytes()); } catch(Exception e) {}
-                                    SocketHandler.this.stopServer();
+                                    SocketHandler.this.destroyHandler();
                                 }
                             } else {//从客户端来的消息
                                 //绑定客户端
@@ -373,8 +350,8 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                 if (!bindDeviceFlag) { //与原来记录的不一致，则删除原来的，对于客户端，后到的占用。
                                     SocketHandler _sh=globalMem.getSocketByDevice(_pUdk);
                                     synchronized(_sh.stopLck) {
-                                        _sh.stopServer();
-                                        if (_sh.getRUN_STATUS()<4&&_sh.canRunning==true) {
+                                        _sh.destroyHandler();
+                                        if (_sh.isRunning) {
                                             try {
                                                 _sh.stopLck.wait();
                                             } catch (InterruptedException e) {
@@ -395,23 +372,24 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                                 } else {//登录成功
                                     _pUdk.setUserId(""+retM.get("UserId"));
                                     _pushUserKey=_pUdk;
-                                    SocketHandler.this.waitBind.notifyAll();
-
+                                    synchronized(SocketHandler.this.waitBind) {
+                                        SocketHandler.this.waitBind.notifyAll();
+                                    }
                                     MsgNormal ackM=MessageUtils.buildAckEntryMsg(_ms);
                                     ackM.setReturnType(1);//成功
                                     ackM.setSendTime(System.currentTimeMillis());
                                     try { _sendMsgQueue.put(ackM.toBytes()); } catch(Exception e) { }
 
-                                    //判断剔出
+                                    //判断踢出
                                     SocketHandler _oldSh=globalMem.getSocketByUser(_pUdk); //和该用户对应的旧的Socket处理
                                     PushUserUDKey _oldUk=(_oldSh==null?null:_oldSh.getPuUDKey()); //旧Socket处理所绑定的UserKey
                                     if (_oldSh!=null&&_oldUk!=null&&!_oldSh.equals(SocketHandler.this)  //1-旧Socket处理不为空；2-旧Socket处理中绑定用户Key不为空；3-新旧Socket处理不相等
                                       &&_oldUk.getPCDType()==_pUdk.getPCDType() //新旧Socket对应设备类型相同
                                       &&_oldUk.getUserId().equals(_pUdk.getUserId()) //新旧Socket对应用户相同
-                                      &&!_oldUk.getDeviceId().equals(_pUdk.getDeviceId()) //新旧Socket对应设备号不同
+                                      &&!_oldUk.getDeviceId().equals(_pUdk.getDeviceId())
+                                      &&sessionService.isUserLoginInDevice(_oldUk) //旧账号在登录状态
                                     )
-                                    //剔出
-                                    {
+                                    {//踢出
                                         globalMem.kickOut(_pUdk, _oldSh);
                                         MsgNormal msg=new MsgNormal();
                                         msg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
@@ -569,7 +547,10 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                 }
             }//一条消息读取完成
 
-            if (i<3) return;
+            if (i<3) {//出现了问题，让Cpu休息一下
+                sleep(100);
+                return;
+            }
             if (fos!=null) {
                 fos.write(13);
                 fos.write(10);
@@ -701,9 +682,12 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
             } catch (IOException e1) {
                 e1.printStackTrace();
             }
+        }
+        @Override
+        protected void __loopProcess() throws Exception {
             //等待绑定后再开始Fatch
             synchronized(SocketHandler.this.waitBind) {
-                while (SocketHandler.this._pushUserKey==null) {
+                if (SocketHandler.this._pushUserKey==null) {
                     try {
                         SocketHandler.this.waitBind.wait();
                     } catch (Exception e) {
@@ -711,12 +695,9 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                     }
                 }
             }
-        }
-        @Override
-        protected void __loopProcess() throws Exception {
             if (_pushUserKey!=null) {
                 //获得**具体给这个设备**的消息
-                Message m=globalMem.sendMem.takeDeviceMsg(_pushUserKey, SocketHandler.this);
+                Message m=globalMem.sendMem.pollDeviceMsg(_pushUserKey, SocketHandler.this);
                 if (m!=null) {
                     if (fos!=null) {//记日志
                         try {
@@ -736,7 +717,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                     }
                 }
                 //获得**给此用户的通知消息**（与设备无关）
-                Message nm=globalMem.sendMem.takeNotifyMsg(_pushUserKey, SocketHandler.this);
+                Message nm=globalMem.sendMem.pollNotifyMsg(_pushUserKey, SocketHandler.this);
                 if (nm!=null&&!(nm instanceof MsgMedia)) {
                     if (fos!=null) {
                         try {
@@ -760,7 +741,7 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                     }
                 }
                 //获得**需要重复发送的消息**
-                ArrayBlockingQueue<Map<String, Object>> mmq=globalMem.sendMem.getResendMsg(_pushUserKey, SocketHandler.this);
+                LinkedBlockingQueue<Map<String, Object>> mmq=globalMem.sendMem.getResendMsg(_pushUserKey, SocketHandler.this);
                 while (mmq!=null&&!mmq.isEmpty()) {
                     Map<String, Object> _m=mmq.poll();
                     if (_m==null||_m.isEmpty()) continue;
@@ -783,11 +764,34 @@ public class SocketHandler extends AbstractLoopMoniter<SocketHandleConfig> {
                     } catch(Exception e) {
                     }
                 }
+                try { sleep(20); } catch(Exception e) {}
             }
         }
         @Override
         protected void __close() {
             try { fos.close(); } catch (Exception e) {} finally{ fos=null; }
+        }
+    }
+
+    class MonitorSocket extends TimerTask {
+        public void run() {
+            boolean canContinue=true;
+            long __period=System.currentTimeMillis()-lastVisitTime;
+            if (__period>conf.get_ExpireTime()) {
+                long t=System.currentTimeMillis();
+                if (StringUtils.isNullOrEmptyOrSpace(closeCause)) {
+                    closeCause="超时关闭:最后访问时间["
+                        +DateUtils.convert2LocalStr("yyyy-MM-dd HH:mm:ss:SSS", new Date(lastVisitTime))+"("+lastVisitTime+")],当前时间["
+                        +DateUtils.convert2LocalStr("yyyy-MM-dd HH:mm:ss:SSS", new Date(t))+"("+t+")],过期时间["
+                        +conf.get_ExpireTime()+"]，超时时长["+__period+"]";
+                }
+                canContinue=false;
+            } else canContinue=socketOk()&&isRunning;
+            if (dealMsg!=null) canContinue=canContinue?(!dealMsg.__isInterrupted&&dealMsg.__isRunning):canContinue;
+            if (receiveMsg!=null) canContinue=canContinue?(!receiveMsg.__isInterrupted&&receiveMsg.__isRunning):canContinue;
+            if (fatchMsg!=null) canContinue=canContinue?(!fatchMsg.__isInterrupted&&fatchMsg.__isRunning):canContinue;
+            if (sendMsg!=null) canContinue=canContinue?(!sendMsg.__isInterrupted&&sendMsg.__isRunning):canContinue;
+            if (!canContinue) destroyHandler();
         }
     }
 }

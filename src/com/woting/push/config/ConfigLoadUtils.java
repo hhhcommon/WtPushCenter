@@ -82,6 +82,9 @@ public abstract class ConfigLoadUtils {
             cc.set_ExpireTime((int)fel.eval(jc.getString("calling.expireTime")));
         } catch(Exception e) {}
         try {
+            cc.set_ExpireSpeakerTime((int)fel.eval(jc.getString("calling.expireSpeakerTime")));
+        } catch(Exception e) {}
+        try {
             cc.set_CleanInternal((int)fel.eval(jc.getString("calling.clean.cleanInternal")));
         } catch(Exception e) {}
         try {
@@ -118,12 +121,26 @@ public abstract class ConfigLoadUtils {
         AffirmCtlConfig acc=new AffirmCtlConfig();
         try {
             acc.set_N_Type((int)fel.eval(jc.getString("controlAffirm.normalMsg.type")));
+        } catch(Exception e) {}
+        try {
             acc.set_N_ExpireTime((int)fel.eval(jc.getString("controlAffirm.normalMsg.expireTime")));
+        } catch(Exception e) {}
+        try {
             acc.set_N_ExpireLimit((int)fel.eval(jc.getString("controlAffirm.normalMsg.expireLimit")));
+        } catch(Exception e) {}
+        try {
             acc.set_N_InternalResend((int)fel.eval(jc.getString("controlAffirm.normalMsg.internalResend")));
+        } catch(Exception e) {}
+        try {
             acc.set_M_Type((int)fel.eval(jc.getString("controlAffirm.mediaMsg.type")));
+        } catch(Exception e) {}
+        try {
             acc.set_M_ExpireTime((int)fel.eval(jc.getString("controlAffirm.mediaMsg.expireTime")));
+        } catch(Exception e) {}
+        try {
             acc.set_M_ExpireLimit((int)fel.eval(jc.getString("controlAffirm.mediaMsg.expireLimit")));
+        } catch(Exception e) {}
+        try {
             acc.set_M_InternalResend((int)fel.eval(jc.getString("controlAffirm.mediaMsg.internalResend")));
         } catch(Exception e) {}
         return acc;
@@ -133,15 +150,33 @@ public abstract class ConfigLoadUtils {
         MediaConfig mc=new MediaConfig();
         try {
             mc.set_AudioPackT((int)fel.eval(jc.getString("mediaMessage.audio.packT")));
+        } catch(Exception e) {}
+        try {
             mc.set_AudioPackExpiredTime((int)fel.eval(jc.getString("mediaMessage.audio.packExpired")));
+        } catch(Exception e) {}
+        try {
             mc.set_AudioExpiredType((int)fel.eval(jc.getString("mediaMessage.audio.expired.type")));
-            mc.set_AudioExpiredTNum((int)fel.eval(jc.getString("mediaMessage.audio.expired.expiredTime")));
-            mc.set_AudioExpiredTime((int)fel.eval(jc.getString("mediaMessage.audio.expired.expiredTNum")));
+        } catch(Exception e) {}
+        try {
+            mc.set_AudioExpiredTime((int)fel.eval(jc.getString("mediaMessage.audio.expired.expiredTime")));
+        } catch(Exception e) {}
+        try {
+            mc.set_AudioExpiredTNum((int)fel.eval(jc.getString("mediaMessage.audio.expired.expiredTNum")));
+        } catch(Exception e) {}
+        try {
             mc.set_VedioPackT((int)fel.eval(jc.getString("mediaMessage.vedio.packT")));
+        } catch(Exception e) {}
+        try {
             mc.set_VedioPackExpiredTime((int)fel.eval(jc.getString("mediaMessage.vedio.packExpired")));
+        } catch(Exception e) {}
+        try {
             mc.set_VedioExpiredType((int)fel.eval(jc.getString("mediaMessage.vedio.expired.type")));
-            mc.set_VedioExpiredTNum((int)fel.eval(jc.getString("mediaMessage.vedio.expired.expiredTime")));
-            mc.set_VedioExpiredTime((int)fel.eval(jc.getString("mediaMessage.vedio.expired.expiredTNum")));
+        } catch(Exception e) {}
+        try {
+            mc.set_VedioExpiredTime((int)fel.eval(jc.getString("mediaMessage.vedio.expired.expiredTime")));
+        } catch(Exception e) {}
+        try {
+            mc.set_VedioExpiredTNum((int)fel.eval(jc.getString("mediaMessage.vedio.expired.expiredTNum")));
         } catch(Exception e) {}
         return mc;
     }

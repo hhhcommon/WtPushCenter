@@ -25,6 +25,10 @@ public class CallingConfig implements Config {
      */
     private long _ExpireTime=60*1000;
     /**
+     * Speaker过期时间，毫秒
+     */
+    private long _ExpireSpeakerTime=5*1000;
+    /**
      * 电话数据清理任务执行间隔时间
      */
     private long _CleanInternal=13*1000;
@@ -59,6 +63,12 @@ public class CallingConfig implements Config {
     }
     public void set_ExpireTime(long _ExpireTime) {
         this._ExpireTime=_ExpireTime;
+    }
+    public long get_ExpireSpeakerTime() {
+        return _ExpireSpeakerTime;
+    }
+    public void set_ExpireSpeakerTime(long _ExpireSpeakerTime) {
+        this._ExpireSpeakerTime=_ExpireSpeakerTime;
     }
     public long get_CleanInternal() {
         return _CleanInternal;

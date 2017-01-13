@@ -19,8 +19,8 @@
   //以下为对讲控制参数
   "intercom":{
     "dealThread":"1",
-    "expireTime":"120*60*1000", //检多长时间没有处理就删除对讲控制，毫秒
-    "expireSpeakerTime":"5*1000" //多长时间未通话，删除speaker
+    "expireTime":"5*60*1000", //检多长时间没有处理就删除对讲控制，毫秒
+    "expireSpeakerTime":"20*1000" //多长时间未通话，删除speaker
   },
   //以下为电话控制参数
   "calling": {
@@ -28,6 +28,7 @@
     "expireOnline":"100*1000", //检查是否在线的过期时间，毫秒
     "expireAck":"3000*1000",  //检查无应答的过期时间，毫秒
     "expireTime":"6000*1000", //检查一次通话的过期时间，毫秒
+    "expireSpeakerTime":"20*1000", //多长时间未通话，删除speaker
     "clean":{
       "cleanInternal":"13*1000",
       "dataExpire":"19*1000"
@@ -44,7 +45,7 @@
   //以下为同步控制参数
   "sync":{
     "dealThread":"1"
-  }//,
+  },
 
   //===以下为全局参数
   //媒体消息配置
@@ -67,7 +68,7 @@
         "expiredTNum":"3"  //过期周期数目，3个周期
       }
     }
-  },
+  }
   //需要控制确认的消息的流程控制参数
 //  "controlAffirm":{
 //    "normalMsg":{  //一般消息

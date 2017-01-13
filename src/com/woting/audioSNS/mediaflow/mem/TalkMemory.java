@@ -53,7 +53,7 @@ public class TalkMemory {
     }
 
     /**
-     * 清除组对讲内存
+     * 清除内存
      */
     public void clean() {
 //        if (talkMap!=null&&!talkMap.isEmpty()) {
@@ -107,34 +107,34 @@ public class TalkMemory {
 //            }
 //        }
     }
-
-    /**
-     * 清除电话通话内容
-     * @param callId 通话id
-     */
-    public void cleanCallData(String callId) {
-        if (talkMap!=null&&!talkMap.isEmpty()) {
-            for (String k: talkMap.keySet()) {
-                OneTalk wt=talkMap.get(k);
-                if (wt.getTalkType()==2&&wt.getObjId().equals(callId)) {
-                    this.removeOneTalk(wt);
-                }
-            }
-        }
-    }
-
-    /**
-     * 清除电话通话内容
-     * @param callId 通话id
-     */
-    public void cleanIntercomData(String talkId, String groupId) {
-        if (talkMap!=null&&!talkMap.isEmpty()) {
-            for (String k: talkMap.keySet()) {
-                OneTalk wt=talkMap.get(k);
-                if (wt.getTalkType()==1&&wt.getObjId().equals(groupId)) {
-                    this.removeOneTalk(wt);
-                }
-            }
-        }
-    }
+//
+//    /**
+//     * 清除电话通话内容
+//     * @param callId 通话id
+//     */
+//    public void cleanCallData(String callId) {
+//        if (talkMap!=null&&!talkMap.isEmpty()) {
+//            for (String k: talkMap.keySet()) {
+//                OneTalk wt=talkMap.get(k);
+//                if (wt.getTalkType()==2&&wt.getObjId().equals(callId)) {
+//                    this.removeOneTalk(wt);
+//                }
+//            }
+//        }
+//    }
+//
+//    /**
+//     * 清除电话通话内容
+//     * @param callId 通话id
+//     */
+//    public void cleanIntercomData(String talkId, String groupId) {
+//        if (talkMap!=null&&!talkMap.isEmpty()) {
+//            for (String k: talkMap.keySet()) {
+//                OneTalk wt=talkMap.get(k);
+//                if (wt.getTalkType()==1&&wt.getObjId().equals(groupId)) {
+//                    this.removeOneTalk(wt);
+//                }
+//            }
+//        }
+//    }
 }

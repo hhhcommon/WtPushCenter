@@ -25,8 +25,8 @@ public class IntercomConfig implements Config {
     public long get_ExpireTime() {
         return _ExpireTime;
     }
-    public void set_ExpireTime(long _ExpireSpeakerTime) {
-        this._ExpireSpeakerTime=_ExpireSpeakerTime;
+    public void set_ExpireTime(long _ExpireTime) {
+        this._ExpireTime=_ExpireTime;
     }
     public long get_ExpireSpeakerTime() {
         return _ExpireSpeakerTime;

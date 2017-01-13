@@ -262,4 +262,23 @@ public class SessionService {
             roService=null;
         }
     }
+
+    /**
+     * 判断用户在某个设备上是否已经登录
+     * @param pUdk 用户设备标识
+     * @return 若登录返回true，否则返回false
+     */
+    public boolean isUserLoginInDevice(PushUserUDKey pUdk) {
+        RedisUserDeviceKey rUdk=new RedisUserDeviceKey(pUdk);
+
+        RedisOperService roService=null;
+        try {
+            roService=new RedisOperService(redisConn, 4);
+            String uStatus=roService.get(rUdk.getKey_UserLoginStatus());
+            return uStatus!=null&&!uStatus.trim().equals("")&&!uStatus.toLowerCase().equals("null");
+        } finally {
+            if (roService!=null) roService.close();
+            roService=null;
+        }
+    }
 }

@@ -39,7 +39,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     private boolean isCallederTalked=false; //是否“呼叫者”说话
 
     private SessionService sessionService=null;
-    private Timer moniterTimer=new Timer();
+    private Timer moniterTimer=null;
 
     /**
      * 构造函数，必须给定一个通话控制数据
@@ -47,12 +47,13 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
      */
     protected CallHandler(CallingConfig conf, OneCall oneCall, SessionService sessionService) {
         super(conf);
-        super.setName("电话处理["+oneCall.getCallId()+"]监控主线程");
+        super.setName("电话["+oneCall.getCallId()+"]消息处理线程");
         //setLoopDelay(10);
         callData=oneCall;
         this.sessionService=sessionService;
         callData.setCallHandler(this);
         //启动监控线程
+        moniterTimer=new Timer("电话["+oneCall.getCallId()+"]监控线程", true);
         moniterTimer.scheduleAtFixedRate(new MonitorOneCall(), 0, conf.get_CleanInternal());
     }
 
@@ -66,7 +67,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         try {
             //读取预处理的消息
             MsgNormal m=callData.takePreMsg();//第一条必然是呼叫信息
-            if (m==null) return;
+            if (m==null||m.getMsgId().equals("-1")) return;
 
             callData.setLastUsedTime();
             int flag=1;
@@ -653,6 +654,14 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 callingMem.removeUserInCall(callData.getCallerId(), callData);
                 callingMem.removeUserInCall(callData.getCallederId(), callData);
                 callingMem.removeOneCall(callData.getCallId());
+                callData.clear();
+                MsgNormal dualMsg=new MsgNormal();
+                dualMsg.setMsgId("-1");
+                try {
+                    callData.putPreMsg(dualMsg);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 moniterTimer.cancel();
                 moniterTimer=null;
             }
@@ -700,7 +709,13 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 }
                 shutdown();
             }
-
+            //一段时间后未通话，删除通话者
+            if (CallHandler.this.callData.getStatus()==3
+              &&CallHandler.this.callData.getSpeaker()!=null
+              &&System.currentTimeMillis()-CallHandler.this.callData.getLastTalkTime()>CallHandler.this.conf.get_ExpireSpeakerTime())
+            {
+                CallHandler.this.callData.clearSpeaker();
+            }
             //“呼叫者”第一次说话
             if (!CallHandler.this.isCallederTalked&&callData.getCallederWts().size()==1) {
                 try {

@@ -30,7 +30,7 @@ public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
 
     public DealIntercomMsg(IntercomConfig conf, int index) {
         super(conf);
-        super.setName("对讲处理线程"+index);
+        super.setName("对讲消息处理线程"+index);
         redisConn=(JedisConnectionFactory) SpringShell.getBean("redisConnFactory");
         this.setLoopDelay(10);
     }

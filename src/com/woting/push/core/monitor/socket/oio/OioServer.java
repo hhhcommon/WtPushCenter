@@ -49,9 +49,8 @@ public class OioServer extends AbstractLoopMoniter<PushConfig> {
         @SuppressWarnings("unchecked")
         SocketHandleConfig shc=((CacheEle<SocketHandleConfig>)SystemCache.getCache(PushConstants.SOCKETHANDLE_CONF)).getContent();
         SocketHandler sh=new SocketHandler(shc, client);
-        sh.setDaemon(true);
         sh.start();
-        globalMem.registSocketHandler(sh);
+        if (!sh.isStoped()) globalMem.registSocketHandler(sh);
     }
     @Override
     public void destroyServer() {
@@ -60,7 +59,7 @@ public class OioServer extends AbstractLoopMoniter<PushConfig> {
         if (shL!=null&&!shL.isEmpty()) {
             for (SocketHandler sh:shL) {
                 synchronized(sh.stopLck) {
-                    sh.stopServer();
+                    sh.destroyHandler();
                     try {
                         sh.stopLck.wait();
                     } catch (InterruptedException e) {

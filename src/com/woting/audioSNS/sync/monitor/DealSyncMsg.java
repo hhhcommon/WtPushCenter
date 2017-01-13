@@ -58,51 +58,31 @@ public class DealSyncMsg extends AbstractLoopMoniter<SyncMessageConfig> {
                 if (mc==null||mc.getContentMap()==null||mc.getContentMap().size()==0) return;
                 String groupId=mc.get("GroupId")+"";
                 if (!StringUtils.isNullOrEmptyOrSpace(groupId)) {
-                    if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==2) { //更改组信息
-                        globalMem.uANDgMem.updateGroup(groupId);
-                    }
-                    if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==3) { //删除组
-                        globalMem.uANDgMem.delGroup(groupId);
-                        OneMeet om=interMem.getOneMeet(groupId);
-                        if (om!=null) {
-                            if (om.getSpeaker()==null) interMem.removeOneMeet(om.getGroupId());
-                            else interMem.addToBeDelOneMeet(om);
+                    if (sourceMsg.getCmdType()==2) {
+                        if (sourceMsg.getCommand()==2) { //更改组信息
+                            globalMem.uANDgMem.updateGroup(groupId);
+                        } else
+                        if (sourceMsg.getCommand()==3) { //删除组
+                            globalMem.uANDgMem.delGroup(groupId);
+                            OneMeet om=interMem.getOneMeet(groupId);
+                            if (om!=null) {
+                                if (om.getSpeaker()==null) interMem.removeOneMeet(om.getGroupId());
+                                else interMem.addToBeDelOneMeet(om);
+                            }
+                        } else
+                        if (sourceMsg.getCommand()==4) { //加入组内成员
+                            Map<String, Object> um=(Map<String, Object>)mc.get("UserInfo");
+                            if (um!=null&&!StringUtils.isNullOrEmptyOrSpace((String)um.get("userId"))) {
+                                globalMem.uANDgMem.addUserToGroup(groupId, (String)um.get("userId"));
+                            }
+                        } else
+                        if (sourceMsg.getCommand()==5) { //删除组内成员
+                            Map<String, Object> um=(Map<String, Object>)mc.get("UserInfo");
+                            if (um!=null&&!StringUtils.isNullOrEmptyOrSpace((String)um.get("userId"))) {
+                                globalMem.uANDgMem.delUserFromGroup(groupId, (String)um.get("userId"));
+                            }
                         }
                     }
-                    if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==4) { //加入组内成员
-                        Map<String, Object> um=(Map<String, Object>)mc.get("UserInfo");
-                        if (um!=null&&!StringUtils.isNullOrEmptyOrSpace((String)um.get("userId"))) {
-                            globalMem.uANDgMem.addUserToGroup(groupId, (String)um.get("userId"));
-                        }
-                    }
-                    if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==5) { //删除组内成员
-                        Map<String, Object> um=(Map<String, Object>)mc.get("UserInfo");
-                        if (um!=null&&!StringUtils.isNullOrEmptyOrSpace((String)um.get("userId"))) {
-                            globalMem.uANDgMem.delUserFromGroup(groupId, (String)um.get("userId"));
-                        }
-                    }
-//
-//                    OneMeet om=interMem.getOneMeet(groupId);
-//                    if (om!=null) {
-//                        if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==2) { //更改组信息
-//                            globalMem.uANDgMem.updateGroup(groupId);
-//                        }
-//                        if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==3) { //删除组
-//                            globalMem.uANDgMem.delGroup(groupId);
-//                            if (om.getSpeaker()==null) interMem.removeOneMeet(om.getGroupId());
-//                            else interMem.addToBeDelOneMeet(om);
-//                        }
-//                        if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==4) { //加入组内成员
-//                            globalMem.uANDgMem.delGroup(groupId);
-//                            UserPo up=new UserPo();
-//                            up.fromHashMap((Map<String, Object>)mc.get("UserInfo"));
-//                            om.getGroup().addOneUser(up);
-//                        }
-//                        if (sourceMsg.getCmdType()==1&&sourceMsg.getCommand()==5) { //删除组内成员
-//                            String userId=mc.get("UserId")+"";
-//                            if (!StringUtils.isNullOrEmptyOrSpace(userId)) om.getGroup().delOneUser(userId);
-//                        }
-//                    }
                 }
             } catch(Exception e) {
                 logger.debug(StringUtils.getAllMessage(e));
