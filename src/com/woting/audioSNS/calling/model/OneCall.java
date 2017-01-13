@@ -179,7 +179,7 @@ public class OneCall implements Serializable {
 
         this.status=0;//仅创建，还未处理
 
-        this.preMsgQueue=new LinkedBlockingQueue<MsgNormal>(512); //TODO 配置文件
+        this.preMsgQueue=new LinkedBlockingQueue<MsgNormal>();
         this.processedMsgList=new ArrayList<ProcessedMsg>();
         this.sendedMsgList=new ArrayList<MsgNormal>();
 

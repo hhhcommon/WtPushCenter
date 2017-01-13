@@ -186,6 +186,7 @@ public class OneTalk {
 
     private void completeTalk() {
         if (getTalkType()==1) { //对讲
+            System.out.println("~~001~~~"+talkId+"~~~~~~~~~~~~~~~~~~~~~~~in OneTalk completeTalk +<<"+System.currentTimeMillis()+"-"+lastReceiveTime+"="+(System.currentTimeMillis()-lastReceiveTime)+">"+_expired);
             OneMeet om=interMem.getOneMeet(getObjId());
             if (om!=null) om.releaseSpeaker(getTalkerUdk());
             om=interMem.getDelData(getObjId());

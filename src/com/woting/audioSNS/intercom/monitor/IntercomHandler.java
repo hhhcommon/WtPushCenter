@@ -345,6 +345,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         if (!pUdk.isUser()) retMsg.setReturnType(0x00);
         else if (meetData==null) retMsg.setReturnType(0x02);
         else {
+            System.out.println("^^005^^^"+meetData.getGroupId()+"^^^^^^^^^^^^^^^^^^^^^^^ in Handler endPTT");
             retFlag=meetData.releaseSpeaker(pUdk);
             if (retFlag==2) retMsg.setReturnType(0x04);//该用户不在指定组
             else if (retFlag==3) retMsg.setReturnType(0x08);//该用户和当前对讲用户不匹配
@@ -421,6 +422,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
               &&(IntercomHandler.this.meetData.getSpeaker()!=null)
               &&(System.currentTimeMillis()-IntercomHandler.this.meetData.getLastTalkTime()>IntercomHandler.this.conf.get_ExpireSpeakerTime()))
             {
+                System.out.println("^^002^^^"+meetData.getGroupId()+"^^^^^^^^^^^^^^^^^^^^^^^"+System.currentTimeMillis()+"-"+IntercomHandler.this.meetData.getLastTalkTime()+"="+(System.currentTimeMillis()-IntercomHandler.this.meetData.getLastTalkTime())+">"+IntercomHandler.this.conf.get_ExpireSpeakerTime());
                 IntercomHandler.this.meetData.clearSpeaker();
             }
         }

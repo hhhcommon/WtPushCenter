@@ -269,6 +269,7 @@ public class SessionService {
      * @return 若登录返回true，否则返回false
      */
     public boolean isUserLoginInDevice(PushUserUDKey pUdk) {
+        if (pUdk==null) return false;
         RedisUserDeviceKey rUdk=new RedisUserDeviceKey(pUdk);
 
         RedisOperService roService=null;

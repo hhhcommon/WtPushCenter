@@ -37,6 +37,9 @@ public class OneMeet implements Serializable {
 
     //=1是对讲模式；=2是会议模式；若是0，则表明未设置，采用默认值1
     private int meetType=1;
+    public int getMeetType() {
+        return meetType;
+    }
 
     //一、组信息
     private Group group;
@@ -140,6 +143,7 @@ public class OneMeet implements Serializable {
             setStatus_1();
             if (speaker==null) return 2;//不存在对讲者
             if (!speaker.equals(pUdk)) return 3; //停止者与当前对讲人不一致
+            System.out.println("__004___"+getGroupId()+"_______________________in OneMeet releaseSpeaker");
             speaker=null;
             interMem.removeUserTalk(pUdk.getUserId());
             return 1;
@@ -157,6 +161,7 @@ public class OneMeet implements Serializable {
      */
     public void clearSpeaker() {
         synchronized(speakerLck) {
+            System.out.println("__003___"+getGroupId()+"_______________________in OneMeet clearSpeaker");
             speaker=null;
         }
     }
@@ -315,7 +320,7 @@ public class OneMeet implements Serializable {
         lastTalkTime=System.currentTimeMillis();
         lastUsedTime=lastTalkTime;
 
-        preMsgQueue=new LinkedBlockingQueue<MsgNormal>(512); //TODO 配置文件
+        preMsgQueue=new LinkedBlockingQueue<MsgNormal>();
         processedMsgList=new ArrayList<ProcessedMsg>();
         wtsMap=new HashMap<PushUserUDKey, List<OneTalk>>();
     }

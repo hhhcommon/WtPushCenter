@@ -53,8 +53,8 @@ public class SocketHandler {
         return _pushUserKey;
     }
 
-    protected LinkedBlockingQueue<byte[]> _sendMsgQueue=new LinkedBlockingQueue<byte[]>(512); //512条待发布消息的缓存
-    protected LinkedBlockingQueue<Message> _recvMsgQueue=new LinkedBlockingQueue<Message>(512); //512条待处理消息的缓存
+    protected LinkedBlockingQueue<byte[]> _sendMsgQueue=new LinkedBlockingQueue<byte[]>();
+    protected LinkedBlockingQueue<Message> _recvMsgQueue=new LinkedBlockingQueue<Message>();
 
     private SessionService sessionService=null;
 
@@ -143,6 +143,7 @@ public class SocketHandler {
      * 3-解除用户和服务的绑定
      */
     public void destroyHandler() {
+        if (moniterTimer==null) return ;
         synchronized(stopLck) {
             try {
                 if (StringUtils.isNullOrEmptyOrSpace(closeCause)) closeCause="未知原因";
@@ -363,6 +364,11 @@ public class SocketHandler {
                                 }
                                 _deviceKey=_pUdk.getDeviceId()+"::"+_pUdk.getPCDType();
 
+                                //准备剔出的数据
+                                SocketHandler _oldSh=globalMem.getSocketByUser(_pUdk); //和该用户对应的旧的Socket处理
+                                PushUserUDKey _oldUk=(_oldSh==null?null:_oldSh.getPuUDKey()); //旧Socket处理所绑定的UserKey
+                                boolean _oldLogin=sessionService.isUserLoginInDevice(_oldUk);
+                                
                                 Map<String, Object> retM=sessionService.dealUDkeyEntry(_pUdk, "socket/entry");
                                 if (!(""+retM.get("ReturnType")).equals("1001")) {
                                     MsgNormal ackM=MessageUtils.buildAckEntryMsg(_ms);
@@ -381,13 +387,11 @@ public class SocketHandler {
                                     try { _sendMsgQueue.put(ackM.toBytes()); } catch(Exception e) { }
 
                                     //判断踢出
-                                    SocketHandler _oldSh=globalMem.getSocketByUser(_pUdk); //和该用户对应的旧的Socket处理
-                                    PushUserUDKey _oldUk=(_oldSh==null?null:_oldSh.getPuUDKey()); //旧Socket处理所绑定的UserKey
                                     if (_oldSh!=null&&_oldUk!=null&&!_oldSh.equals(SocketHandler.this)  //1-旧Socket处理不为空；2-旧Socket处理中绑定用户Key不为空；3-新旧Socket处理不相等
                                       &&_oldUk.getPCDType()==_pUdk.getPCDType() //新旧Socket对应设备类型相同
                                       &&_oldUk.getUserId().equals(_pUdk.getUserId()) //新旧Socket对应用户相同
                                       &&!_oldUk.getDeviceId().equals(_pUdk.getDeviceId())
-                                      &&sessionService.isUserLoginInDevice(_oldUk) //旧账号在登录状态
+                                      &&_oldLogin //旧账号在登录状态
                                     )
                                     {//踢出
                                         globalMem.kickOut(_pUdk, _oldSh);
