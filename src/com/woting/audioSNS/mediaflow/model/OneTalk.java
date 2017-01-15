@@ -147,11 +147,11 @@ public class OneTalk {
      * @return
      */
     public boolean isCompleted() {
-        if (_expired!=-1&&System.currentTimeMillis()-lastReceiveTime>_expired) {
-            sendAll=true;
-            receiveAll=true;
-            return true;
-        }
+//        if (_expired!=-1&&System.currentTimeMillis()-lastReceiveTime>_expired) {
+//            sendAll=true;
+//            receiveAll=true;
+//            return true;
+//        }
 
         //计算是否接收完成
         if (lastNum>0&&!receiveAll) {

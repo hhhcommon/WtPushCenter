@@ -141,8 +141,8 @@ public class DealMediaflowMsg extends AbstractLoopMoniter<MediaflowConfig> {
             }
 
             //在对讲模式下：
-            if (om!=null&&om.getMeetType()==1&&(om.getSpeaker()==null||!om.getSpeaker().equals(pUdk))) return; //说话人不存在或不合法
-            if (oc!=null&&oc.getCallType()==1&&(oc.getSpeaker()==null||!om.getSpeaker().equals(pUdk))) return; //说话人不存在或不合法
+//            if (om!=null&&om.getMeetType()==1&&(om.getSpeaker()==null||!om.getSpeaker().equals(pUdk))) return; //说话人不存在或不合法
+//            if (oc!=null&&oc.getCallType()==1&&(oc.getSpeaker()==null||!om.getSpeaker().equals(pUdk))) return; //说话人不存在或不合法
 
             OneTalk wt=null;
             wt=talkMem.getOneTalk(talkId);

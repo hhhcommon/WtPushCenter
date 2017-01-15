@@ -270,16 +270,8 @@ public class SessionService {
      */
     public boolean isUserLoginInDevice(PushUserUDKey pUdk) {
         if (pUdk==null) return false;
-        RedisUserDeviceKey rUdk=new RedisUserDeviceKey(pUdk);
-
-        RedisOperService roService=null;
-        try {
-            roService=new RedisOperService(redisConn, 4);
-            String uStatus=roService.get(rUdk.getKey_UserLoginStatus());
-            return uStatus!=null&&!uStatus.trim().equals("")&&!uStatus.toLowerCase().equals("null");
-        } finally {
-            if (roService!=null) roService.close();
-            roService=null;
-        }
+        MobileUsedPo mup=muService.getUsedInfo(pUdk);
+        if (mup==null) return false;
+        return mup.getStatus()==1;
     }
 }

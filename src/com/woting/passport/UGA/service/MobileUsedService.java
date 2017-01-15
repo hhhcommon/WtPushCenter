@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import com.spiritdata.framework.core.dao.mybatis.MybatisDAO;
 import com.woting.passport.UGA.persis.pojo.MobileUsedPo;
+import com.woting.push.user.PushUserUDKey;
 
 /**
  * 移动设备用户使用情况
@@ -35,5 +36,18 @@ public class MobileUsedService {
         paraM.put("imei", imei);
         paraM.put("PCDType", PCDType+"");
         return muDao.getInfoObject("getUsedInfo", paraM);
+    }
+
+    /**
+     * 根据手机串号，获取最后使用情况
+     * @param imei 手机串号
+     * @param PCDType 设备类型
+     */
+    public MobileUsedPo getUsedInfo(PushUserUDKey pUdk) {
+        Map<String, String> paraM=new HashMap<String, String>();
+        paraM.put("imei", pUdk.getDeviceId());
+        paraM.put("PCDType", pUdk.getPCDType()+"");
+        paraM.put("userId", pUdk.getUserId());
+        return muDao.getInfoObject("getUsedInfoByPUdk", paraM);
     }
 }

@@ -54,6 +54,9 @@
   <select id="getUsedInfo" resultMap="BaseResultMap" parameterType="java.util.Map">
     select <include refid="Base_Column_List"/> from wt_MobileUsed where imei=#{imei,jdbcType=VARCHAR} and pcdType=#{PCDType,jdbcType=INTEGER} 
   </select>
+  <select id="getUsedInfoByPUdk" resultMap="BaseResultMap" parameterType="java.util.Map">
+    select <include refid="Base_Column_List"/> from wt_MobileUsed where imei=#{imei,jdbcType=VARCHAR} and pcdType=#{PCDType,jdbcType=INTEGER} and userId=#{userId,jdbcType=VARCHAR} 
+  </select>
 
   <!-- 新增数据 -->
   <insert id="insert" parameterType="java.util.Map">
