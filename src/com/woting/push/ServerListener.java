@@ -16,8 +16,6 @@ import com.woting.audioSNS.calling.monitor.CleanCalling;
 import com.woting.audioSNS.calling.monitor.DealCallingMsg;
 import com.woting.audioSNS.intercom.IntercomConfig;
 import com.woting.audioSNS.intercom.monitor.DealIntercomMsg;
-import com.woting.audioSNS.mediaflow.MediaflowConfig;
-import com.woting.audioSNS.mediaflow.monitor.DealMediaflowMsg;
 import com.woting.audioSNS.notify.NotifyMessageConfig;
 import com.woting.audioSNS.notify.monitor.DealNotifyMsg;
 import com.woting.audioSNS.sync.SyncMessageConfig;
@@ -85,7 +83,6 @@ public class ServerListener {
     private List<DealIntercomMsg> dealIntercomList=null; //处理对讲消息线程的记录列表
     private List<DealCallingMsg> dealCallingList=null; //处理电话消息线程的记录列表
     private CleanCalling cleanCalling=null; //电话数据清理线程
-    private List<DealMediaflowMsg> dealMediaFlowList=null; //处理媒体消息线程的记录列表
     private List<DealNotifyMsg> dealNotifyList=null; //处理通知消息线程的记录列表
     private List<DealSyncMsg> dealSyncList=null; //处理同步消息线程的记录列表
 
@@ -213,9 +210,6 @@ public class ServerListener {
         CallingConfig cc=ConfigLoadUtils.getCallingConfig(jc);
         SystemCache.setCache(new CacheEle<CallingConfig>(PushConstants.CALLING_CONF, "电话控制配置", cc));
 
-        MediaflowConfig mfc=ConfigLoadUtils.getMediaFlowConfig(jc);
-        SystemCache.setCache(new CacheEle<MediaflowConfig>(PushConstants.MEDIAFLOW_CONF, "语音控制配置", mfc));
-
         NotifyMessageConfig nmc=ConfigLoadUtils.getNotifyMessageConfig(jc);
         SystemCache.setCache(new CacheEle<NotifyMessageConfig>(PushConstants.NOTIFY_CONF, "通知消息控制配置", nmc));
 
@@ -294,16 +288,7 @@ public class ServerListener {
         cleanCalling=new CleanCalling(cc);
         cleanCalling.setDaemon(true);
         cleanCalling.start();
-        //5-启动{流数据处理}线程
-        MediaflowConfig mfc=((CacheEle<MediaflowConfig>)SystemCache.getCache(PushConstants.MEDIAFLOW_CONF)).getContent();
-        dealMediaFlowList=new ArrayList<DealMediaflowMsg>();
-        for (int i=0;i<mfc.get_DealThreadCount(); i++) {
-            DealMediaflowMsg dmf=new DealMediaflowMsg(mfc, i);
-            dmf.setDaemon(true);
-            dmf.start();
-            dealMediaFlowList.add(dmf);
-        }
-        //6-启动{通知消息处理}线程
+        //5-启动{通知消息处理}线程
         NotifyMessageConfig nmc=((CacheEle<NotifyMessageConfig>)SystemCache.getCache(PushConstants.NOTIFY_CONF)).getContent();
         dealNotifyList=new ArrayList<DealNotifyMsg>();
         for (int i=0;i<nmc.get_DealThreadCount(); i++) {
@@ -312,7 +297,7 @@ public class ServerListener {
             dn.start();
             dealNotifyList.add(dn);
         }
-        //7-启动{同步消息处理}线程
+        //6-启动{同步消息处理}线程
         SyncMessageConfig smc=((CacheEle<SyncMessageConfig>)SystemCache.getCache(PushConstants.SYNC_CONF)).getContent();
         dealSyncList=new ArrayList<DealSyncMsg>();
         for (int i=0;i<smc.get_DealThreadCount(); i++) {
@@ -389,23 +374,11 @@ public class ServerListener {
 //                try { Thread.sleep(50); } catch(Exception e) {}
 //            }
         }
-        //5-停止{流数据处理}线程
-        if (dealMediaFlowList!=null&&!dealMediaFlowList.isEmpty()) {
-            for (DealMediaflowMsg dmf: dealMediaFlowList) dmf.stopServer();
-//            while (!allClosed&&i++<10) {
-//                allClosed=true;
-//                for (DealMediaflow dmf: dealMediaFlowList) {
-//                    allClosed=dmf.isStoped();
-//                    if (!allClosed) break;
-//                }
-//                try { Thread.sleep(50); } catch(Exception e) {}
-//            }
-        }
-        //6-停止{通知消息处理}线程
+        //5-停止{通知消息处理}线程
         if (dealNotifyList!=null&&!dealNotifyList.isEmpty()) {
             for (DealNotifyMsg dn: dealNotifyList) dn.stopServer();
         }
-        //7-停止{同步消息处理}线程
+        //6-停止{同步消息处理}线程
         if (dealSyncList!=null&&!dealSyncList.isEmpty()) {
             for (DealSyncMsg ds: dealSyncList) ds.stopServer();
         }

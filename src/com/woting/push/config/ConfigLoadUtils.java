@@ -4,7 +4,6 @@ import com.greenpineyu.fel.FelEngine;
 import com.greenpineyu.fel.FelEngineImpl;
 import com.spiritdata.framework.jsonconf.JsonConfig;
 import com.woting.audioSNS.calling.CallingConfig;
-import com.woting.audioSNS.mediaflow.MediaflowConfig;
 import com.woting.audioSNS.notify.NotifyMessageConfig;
 import com.woting.audioSNS.sync.SyncMessageConfig;
 import com.woting.push.core.SocketHandleConfig;
@@ -91,14 +90,6 @@ public abstract class ConfigLoadUtils {
             cc.set_CleanDataExpire((int)fel.eval(jc.getString("calling.clean.dataExpire")));
         } catch(Exception e) {}
         return cc;
-    }
-
-    public static MediaflowConfig getMediaFlowConfig(JsonConfig jc) {
-        MediaflowConfig mfc=new MediaflowConfig();
-        try {
-            mfc.set_DealThreadCount((int)fel.eval(jc.getString("mediaflow.dealThread")));
-        } catch(Exception e) {}
-        return mfc;
     }
 
     public static NotifyMessageConfig getNotifyMessageConfig(JsonConfig jc) {

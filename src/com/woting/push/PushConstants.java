@@ -10,7 +10,6 @@ public class PushConstants {
     public final static String SOCKETHANDLE_CONF="SocketHandle-Config";//推送配置
     public final static String INTERCOM_CONF="Intercom-Config";//对讲配置
     public final static String CALLING_CONF="Calling-Config";//电话配置
-    public final static String MEDIAFLOW_CONF="MediaFlow-Config";//流数据处理配置
     public final static String NOTIFY_CONF="Notify-Config";//通知消息处理配置
     public final static String SYNC_CONF="Sync-Config";//同步消息处理配置
     public final static String AFFCTL_CONF="AffirmCtl-Config";//控制回复配置

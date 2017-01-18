@@ -24,6 +24,10 @@ import com.spiritdata.framework.util.DateUtils;
 import com.spiritdata.framework.util.JsonUtils;
 import com.spiritdata.framework.util.SequenceUUID;
 import com.spiritdata.framework.util.StringUtils;
+import com.woting.audioSNS.calling.mem.CallingMemory;
+import com.woting.audioSNS.intercom.mem.IntercomMemory;
+import com.woting.audioSNS.mediaflow.mem.TalkMemory;
+import com.woting.audioSNS.mediaflow.monitor.DealMediaMsg;
 import com.woting.push.core.SocketHandleConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.Message;
@@ -69,6 +73,9 @@ public class SocketHandler {
     private Timer moniterTimer;
 
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
+    private IntercomMemory intercomMem=IntercomMemory.getInstance();
+    private CallingMemory callingMem=CallingMemory.getInstance();
+    private TalkMemory talkMem=TalkMemory.getInstance();
 
     public volatile Object stopLck=new Object();
     private volatile boolean isRunning=true; //是否可以运行
@@ -386,12 +393,12 @@ public class SocketHandler {
                                     //判断踢出
                                     SocketHandler _oldSh=globalMem.getSocketByUser(_pUdk); //和该用户对应的旧的Socket处理
                                     PushUserUDKey _oldUk=(_oldSh==null?null:_oldSh.getPuUDKey()); //旧Socket处理所绑定的UserKey
-                                    boolean _oldLogin=sessionService.isUserLoginInDevice(_oldUk);
+                                    boolean _oldNeedKickOut=sessionService.needKickOut(_oldUk);
                                     if (_oldSh!=null&&_oldUk!=null&&!_oldSh.equals(SocketHandler.this)  //1-旧Socket处理不为空；2-旧Socket处理中绑定用户Key不为空；3-新旧Socket处理不相等
                                       &&_oldUk.getPCDType()==_pUdk.getPCDType() //新旧Socket对应设备类型相同
                                       &&_oldUk.getUserId().equals(_pUdk.getUserId()) //新旧Socket对应用户相同
                                       &&!_oldUk.getDeviceId().equals(_pUdk.getDeviceId())
-                                      &&_oldLogin //旧账号在登录状态
+                                      &&_oldNeedKickOut //旧账号在登录状态
                                     )
                                     {//踢出
                                         globalMem.kickOut(_pUdk, _oldSh);
@@ -432,10 +439,15 @@ public class SocketHandler {
                             }
                         }
                     }
-                } else {//数据流
+                } else { //数据流
                     if (_pushUserKey!=null) {
                         ((MsgMedia)_msg).setExtInfo(_pushUserKey);
-                        globalMem.receiveMem.putTypeMsg("media", _msg);
+                        //globalMem.receiveMem.putTypeMsg("media", _msg);
+                        DealMediaMsg dmm=new DealMediaMsg((((MsgMedia)_msg).getMediaType()==1?"音频":"视频")
+                            +(((MsgMedia)_msg).isAck()?"回执":"数据")+"包处理：[通话类型="+(((MsgMedia)_msg).getBizType()==1?"对讲":"电话")
+                            +"；talkId="+((MsgMedia)_msg).getTalkId()+"；seqNo="+((MsgMedia)_msg).getSeqNo()+"；]"
+                            ,(MsgMedia)_msg, globalMem, intercomMem, callingMem, talkMem, sessionService);
+                        dmm.start();
                     }
                 }
             }

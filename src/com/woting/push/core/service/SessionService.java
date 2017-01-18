@@ -264,14 +264,14 @@ public class SessionService {
     }
 
     /**
-     * 判断用户在某个设备上是否已经登录
+     * 判断某个用户在某设备上是否是被踢出的
      * @param pUdk 用户设备标识
-     * @return 若登录返回true，否则返回false
+     * @return 若是被踢出返回true，否则返回false
      */
-    public boolean isUserLoginInDevice(PushUserUDKey pUdk) {
+    public boolean needKickOut(PushUserUDKey pUdk) {
         if (pUdk==null) return false;
         MobileUsedPo mup=muService.getUsedInfo(pUdk);
         if (mup==null) return false;
-        return mup.getStatus()==1;
+        return mup.getStatus()==3;
     }
 }
