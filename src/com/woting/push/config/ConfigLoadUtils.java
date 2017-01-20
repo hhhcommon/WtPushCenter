@@ -38,7 +38,7 @@ public abstract class ConfigLoadUtils {
             shc.set_TryDestoryAllCount((int)fel.eval(jc.getString("socketmonitor.tryDestoryAllCount")));
         } catch(Exception e) {}
         try {
-            shc.set_BeatDelay((int)fel.eval(jc.getString("socketmonitor.beatDelay")));
+            shc.set_NotifyInternal((int)fel.eval(jc.getString("socketmonitor.notifyInternal")));
         } catch(Exception e) {}
         try {
             shc.set_Err_ContinueCount((int)fel.eval(jc.getString("socketmonitor.errContinueCount")));

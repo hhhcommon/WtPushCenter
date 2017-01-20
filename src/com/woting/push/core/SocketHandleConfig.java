@@ -25,9 +25,9 @@ public class SocketHandleConfig implements Config {
      */
     private long _TryDestoryAllCount=100;
     /**
-     * 多长时间发送一次心跳
+     * 通知消息获取的间隔时间
      */
-    private long _BeatDelay=40*1000;
+    private long _NotifyInternal=10*1000;
     /**
      * 处理中，连续错误|异常消息的次数，若大于这个数量，则系统将认为此Socket为恶意连接，将关闭相应的处理
      */
@@ -60,11 +60,11 @@ public class SocketHandleConfig implements Config {
     public void set_TryDestoryAllCount(long _TryDestoryAllCount) {
         this._TryDestoryAllCount=_TryDestoryAllCount;
     }
-    public long get_BeatDelay() {
-        return _BeatDelay;
+    public long get_NotifyInternal() {
+        return _NotifyInternal;
     }
-    public void set_BeatDelay(long _BeatDelay) {
-        this._BeatDelay=_BeatDelay;
+    public void set_NotifyInternal(long _NotifyInternal) {
+        this._NotifyInternal=_NotifyInternal;
     }
     public long get_Err_ContinueCount() {
         return _Err_ContinueCount;

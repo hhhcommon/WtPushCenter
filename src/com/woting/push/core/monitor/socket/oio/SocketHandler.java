@@ -71,6 +71,7 @@ public class SocketHandler {
     private _FatchMsg fatchMsg;
     private _SendMsg sendMsg;
     private Timer moniterTimer;
+    private Timer notifyTimer;
 
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
     private IntercomMemory intercomMem=IntercomMemory.getInstance();
@@ -118,6 +119,10 @@ public class SocketHandler {
             //启动监控线程
             moniterTimer=new Timer(socketDesc+"监控主线程", true);
             moniterTimer.scheduleAtFixedRate(new MonitorSocket(), 0, conf.get_MonitorDelay());
+
+            //启动通知控制线程
+            notifyTimer=new Timer(socketDesc+"监控主线程", true);
+            notifyTimer.scheduleAtFixedRate(new NotifyBeat(), 0, conf.get_MonitorDelay());
         } catch(Exception e) {
             e.printStackTrace();
         }
@@ -564,7 +569,7 @@ public class SocketHandler {
             }//一条消息读取完成
 
             if (i<3) {//出现了问题，让Cpu休息一下
-                sleep(100);
+                sleep(500);
                 return;
             }
             if (fos!=null) {
@@ -671,8 +676,7 @@ public class SocketHandler {
                         fos.write(13);
                         fos.write(10);
                         fos.flush();
-                    } catch (IOException e) {
-                    }
+                    } catch (IOException e) {}
                 }
             }
             try { fos.close(); } catch (Exception e) {} finally{ fos=null; }
@@ -712,75 +716,96 @@ public class SocketHandler {
                 }
             }
             if (_pushUserKey!=null) {
-                //获得**具体给这个设备**的消息
-                Message m=globalMem.sendMem.pollDeviceMsg(_pushUserKey, SocketHandler.this);
-                if (m!=null) {
-                    if (fos!=null) {//记日志
-                        try {
-                            byte[] aa=JsonUtils.objToJson(m).getBytes();
-                            fos.write(aa, 0, aa.length);
-                            fos.write(13);
-                            fos.write(10);
-                            fos.flush();
-                        } catch (IOException e) {
+                Object _lck=globalMem.sendMem.getSendLock(_pushUserKey);
+                if (_lck!=null) {
+                    synchronized(_lck) {
+                        //获得**具体给这个设备**的消息——控制消息
+                        Message m=globalMem.sendMem.pollDeviceMsgCTL(_pushUserKey, SocketHandler.this);
+                        if (m!=null) {
+                            if (fos!=null) {//记日志
+                                try {
+                                    byte[] aa=JsonUtils.objToJson(m).getBytes();
+                                    fos.write(aa, 0, aa.length);
+                                    fos.write(13);
+                                    fos.write(10);
+                                    fos.flush();
+                                } catch (IOException e) {}
+                            }
+                            try {//传消息
+                                _sendMsgQueue.put(m.toBytes());
+                                //若需要控制确认，插入已发送列表
+                                if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
+                            } catch(Exception e) {}
                         }
-                    }
-                    try {//传消息
-                        _sendMsgQueue.put(m.toBytes());
-                        //若需要控制确认，插入已发送列表
-                        if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
-                    } catch(Exception e) {
-                    }
-                }
-                //获得**给此用户的通知消息**（与设备无关）
-                Message nm=globalMem.sendMem.pollNotifyMsg(_pushUserKey, SocketHandler.this);
-                if (nm!=null&&!(nm instanceof MsgMedia)) {
-                    if (fos!=null) {
-                        try {
-                            byte[] aa=JsonUtils.objToJson(m).getBytes();
-                            fos.write(aa, 0, aa.length);
-                            fos.write(13);
-                            fos.write(10);
-                            fos.flush();
-                        } catch (IOException e) {
-                        }
-                    }
-                    try {
-                        _sendMsgQueue.put(nm.toBytes());
-                        //若需要控制确认，插入已发送列表
-                        if (m instanceof MsgNormal) {
-                            if (((MsgNormal)m).isCtlAffirm()) {
-                                globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
+                        //获得**具体给这个设备**的消息——媒体消息
+                        m=globalMem.sendMem.pollDeviceMsgMDA(_pushUserKey, SocketHandler.this);
+                        if (m!=null) {
+                            if (fos!=null) {//记日志
+                                try {
+                                    byte[] aa=JsonUtils.objToJson(m).getBytes();
+                                    fos.write(aa, 0, aa.length);
+                                    fos.write(13);
+                                    fos.write(10);
+                                    fos.flush();
+                                } catch (IOException e) {}
+                            }
+                            try {//传消息
+                                _sendMsgQueue.put(m.toBytes());
+                                //若需要控制确认，插入已发送列表
+                                if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
+                            } catch(Exception e) {
                             }
                         }
-                    } catch(Exception e) {
-                    }
-                }
-                //获得**需要重复发送的消息**
-                LinkedBlockingQueue<Map<String, Object>> mmq=globalMem.sendMem.getResendMsg(_pushUserKey, SocketHandler.this);
-                while (mmq!=null&&!mmq.isEmpty()) {
-                    Map<String, Object> _m=mmq.poll();
-                    if (_m==null||_m.isEmpty()) continue;
-                    Message _msg=(Message)_m.get("message");
-                    if (_msg==null) continue;
-                    if (fos!=null) {
+                        //获得**给此用户的通知消息**（与设备无关）
+                        Message nm=globalMem.sendMem.pollNotifyMsg(_pushUserKey, SocketHandler.this);
+                        if (nm!=null&&!(nm instanceof MsgMedia)) {
+                            if (fos!=null) {
+                                try {
+                                    byte[] aa=JsonUtils.objToJson(m).getBytes();
+                                    fos.write(aa, 0, aa.length);
+                                    fos.write(13);
+                                    fos.write(10);
+                                    fos.flush();
+                                } catch (IOException e) {}
+                            }
+                            try {
+                                _sendMsgQueue.put(nm.toBytes());
+                                //若需要控制确认，插入已发送列表
+                                if (m instanceof MsgNormal) {
+                                    if (((MsgNormal)m).isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
+                                }
+                            } catch(Exception e) {}
+                        }
+                        //获得**需要重复发送的消息**
+                        LinkedBlockingQueue<Map<String, Object>> mmq=globalMem.sendMem.getResendMsg(_pushUserKey, SocketHandler.this);
+                        while (mmq!=null&&!mmq.isEmpty()) {
+                            Map<String, Object> _m=mmq.poll();
+                            if (_m==null||_m.isEmpty()) continue;
+                            Message _msg=(Message)_m.get("message");
+                            if (_msg==null) continue;
+                            if (fos!=null) {
+                                try {
+                                    byte[] aa=JsonUtils.objToJson(m).getBytes();
+                                    fos.write(aa, 0, aa.length);
+                                    fos.write(13);
+                                    fos.write(10);
+                                    fos.flush();
+                                } catch (IOException e) {}
+                            }
+                            try {
+                                _sendMsgQueue.put(_msg.toBytes());
+                                //更新信息
+                                if (((MsgNormal)m).isCtlAffirm()) globalMem.sendMem.updateSendedNeedCtlAffirmMsg(_pushUserKey, _m);
+                            } catch(Exception e) {}
+                        }
                         try {
-                            byte[] aa=JsonUtils.objToJson(m).getBytes();
-                            fos.write(aa, 0, aa.length);
-                            fos.write(13);
-                            fos.write(10);
-                            fos.flush();
-                        } catch (IOException e) {
+                            _lck.wait();
+                        } catch(Exception e) {
+                            e.printStackTrace();
+                            try { sleep(10); } catch (InterruptedException ie) {};
                         }
                     }
-                    try {
-                        _sendMsgQueue.put(_msg.toBytes());
-                        //更新信息
-                        if (((MsgNormal)m).isCtlAffirm()) globalMem.sendMem.updateSendedNeedCtlAffirmMsg(_pushUserKey, _m);
-                    } catch(Exception e) {
-                    }
                 }
-                try { sleep(20); } catch(Exception e) {}
             }
         }
         @Override
@@ -808,6 +833,21 @@ public class SocketHandler {
             if (fatchMsg!=null) canContinue=canContinue?(!fatchMsg.__isInterrupted&&fatchMsg.__isRunning):canContinue;
             if (sendMsg!=null) canContinue=canContinue?(!sendMsg.__isInterrupted&&sendMsg.__isRunning):canContinue;
             if (!canContinue) destroyHandler();
+        }
+    }
+
+    class NotifyBeat extends TimerTask {
+        public void run() {
+            Object _lck=globalMem.sendMem.getSendLock(_pushUserKey);
+            if (_lck!=null) {
+                synchronized(_lck) {
+                    try {
+                        _lck.notifyAll();
+                    } catch(Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
         }
     }
 }

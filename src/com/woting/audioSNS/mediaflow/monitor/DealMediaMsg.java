@@ -47,10 +47,12 @@ public class DealMediaMsg extends Thread {
     }
 
     public void run() {
+        long beginTime=System.currentTimeMillis();
         if (sourceMsg.isAck()) dealAnswer();
         else {
             if (sourceMsg.getMediaType()==1) dealAudioDatagram();
         }
+        logger.debug(this.getName()+"【用时{}】", System.currentTimeMillis()-beginTime);
     }
 
     //处理应答消息
@@ -105,7 +107,7 @@ public class DealMediaMsg extends Thread {
             if (sourceMsg.isCtlAffirm()) {
                 retMm.setReturnType(0x10);//对讲组内存数据不存在
                 try {
-                    globalMem.sendMem.putDeviceMsg(pUdk, retMm);
+                    globalMem.sendMem.putDeviceMsgMDA(pUdk, retMm);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -116,7 +118,7 @@ public class DealMediaMsg extends Thread {
             if (sourceMsg.isCtlAffirm()) {
                 retMm.setReturnType(0x10);//电话内存数据不存在
                 try {
-                    globalMem.sendMem.putDeviceMsg(pUdk, retMm);
+                    globalMem.sendMem.putDeviceMsgMDA(pUdk, retMm);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -127,7 +129,7 @@ public class DealMediaMsg extends Thread {
         if (sourceMsg.isCtlAffirm()) {
             retMm.setReturnType(0x01);
             try {
-                globalMem.sendMem.putDeviceMsg(pUdk, retMm);
+                globalMem.sendMem.putDeviceMsgMDA(pUdk, retMm);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -194,7 +196,7 @@ public class DealMediaMsg extends Thread {
         bMsg.setMediaData(sourceMsg.getMediaData());
         for (String k: ts.getSendUserMap().keySet()) {
             try {
-                globalMem.sendMem.putDeviceMsg(ts.getSendUserMap().get(k), bMsg);
+                globalMem.sendMem.putDeviceMsgMDA(ts.getSendUserMap().get(k), bMsg);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

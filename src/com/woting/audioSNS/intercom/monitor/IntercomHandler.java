@@ -132,7 +132,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             else if (retFlag==2) retMsg.setReturnType(0x08);//该用户已经在指定组
             else retMsg.setReturnType(0x01);//正确加入组
         }
-        globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
+        globalMem.sendMem.putDeviceMsgCTL(pUdk, retMsg);
         //判断组内是否有人说话，若有发广播消息
         if (meetData.getSpeaker()!=null) {
             MsgNormal hasSpeaker=MessageUtils.clone(retMsg);
@@ -145,7 +145,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             dataMap.put("SpeakerId", meetData.getSpeaker().getUserId());
             MapContent _mc=new MapContent(dataMap);
             hasSpeaker.setMsgContent(_mc);
-            globalMem.sendMem.putDeviceMsg(pUdk, hasSpeaker);
+            globalMem.sendMem.putDeviceMsgCTL(pUdk, hasSpeaker);
         }
 
         //进组成功广播消息信息组织
@@ -173,7 +173,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                 List<PushUserUDKey> al=sessionService.getActivedUserUDKs(k);
                 if (al!=null&&!al.isEmpty()) {
                     for (PushUserUDKey _pUdk: al) {
-                        globalMem.sendMem.putDeviceMsg(_pUdk, bMsg);
+                        globalMem.sendMem.putDeviceMsgCTL(_pUdk, bMsg);
                     }
                 }
             }
@@ -217,7 +217,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             else if (retFlag==3) retMsg.setReturnType(0x08);//该用户不在指定组
             else retMsg.setReturnType(0x01);//正确离开组
         }
-        globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
+        globalMem.sendMem.putDeviceMsgCTL(pUdk, retMsg);
 
         //广播消息信息组织
         if (retFlag==1&&meetData.getEntryGroupUserMap()!=null) {
@@ -244,7 +244,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                     List<PushUserUDKey> al=sessionService.getActivedUserUDKs(k);
                     if (al!=null&&!al.isEmpty()) {
                         for (PushUserUDKey _pUdk: al) {
-                            globalMem.sendMem.putDeviceMsg(_pUdk, bMsg);
+                            globalMem.sendMem.putDeviceMsgCTL(_pUdk, bMsg);
                         }
                     }
                 }
@@ -297,7 +297,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             else if (retFlag==7) retMsg.setReturnType(0x07);//自己在电话通话
             else retMsg.setReturnType(0x01);//正确加入组
         }
-        globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
+        globalMem.sendMem.putDeviceMsgCTL(pUdk, retMsg);
 
         if (retFlag==1&&meetData.getEntryGroupUserMap()!=null&&meetData.getEntryGroupUserMap().size()>1) {
             MsgNormal bMsg=MessageUtils.clone(retMsg);
@@ -315,7 +315,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                 if (al!=null&&!al.isEmpty()) {
                     for (PushUserUDKey _pUdk: al) {
                         if (_pUdk.equals(pUdk)) continue;
-                        globalMem.sendMem.putDeviceMsg(_pUdk, bMsg);
+                        globalMem.sendMem.putDeviceMsgCTL(_pUdk, bMsg);
                     }
                 }
             }
@@ -353,7 +353,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             //删除语音内容
             //globalMem.sendMem.cleanMsg4InterComSpeak(meetData.getGroupId(), ); //清除说话者未发出的语音信息
         }
-        globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
+        globalMem.sendMem.putDeviceMsgCTL(pUdk, retMsg);
 
         if (retFlag==1) {
             MsgNormal bMsg=MessageUtils.clone(retMsg);
@@ -371,7 +371,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                 if (al!=null&&!al.isEmpty()) {
                     for (PushUserUDKey _pUdk: al) {
                         if (_pUdk.equals(pUdk)) continue;
-                        globalMem.sendMem.putDeviceMsg(_pUdk, bMsg);
+                        globalMem.sendMem.putDeviceMsgCTL(_pUdk, bMsg);
                     }
                 }
             }
