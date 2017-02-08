@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.spiritdata.framework.util.SequenceUUID;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.push.core.mem.PushGlobalMemory;
+import com.woting.push.core.message.MessageUtils;
 import com.woting.push.core.message.MsgNormal;
 import com.woting.push.core.message.ProcessedMsg;
 import com.woting.push.core.message.content.MapContent;
@@ -157,7 +158,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         if (returnType==0&&callingMem.isTalk(callederId, callId)) returnType=4;
         if (returnType==0) returnType=1;
         toCallerMsg.setReturnType(returnType);
-        globalMem.sendMem.putDeviceMsgCTL(callData.getCallerKey(), toCallerMsg);
+        globalMem.sendMem.putDeviceMsg(callData.getCallerKey(), toCallerMsg);
         //记录到已发送列表
         callData.addSendedMsg(toCallerMsg);
         callingMem.addUserInCall(callerId, callData);
@@ -191,7 +192,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 callerInfo.put("Descn", u.getDescn());
                 dataMap.put("CallerInfo", callerInfo);
                 toCallederMsg.setPCDType(0);
-                globalMem.sendMem.putDeviceMsgCTL(_pUdk, toCallederMsg);
+                globalMem.sendMem.putDeviceMsg(_pUdk, toCallederMsg);
                 //记录到已发送列表
                 callData.addSendedMsg(toCallederMsg);
             }
@@ -222,7 +223,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             MapContent mc=new MapContent(dataMap);
             toCallerMsg.setMsgContent(mc);
             toCallerMsg.setPCDType(0);
-            globalMem.sendMem.putDeviceMsgCTL(callData.getCallerKey(), toCallerMsg);
+            globalMem.sendMem.putDeviceMsg(callData.getCallerKey(), toCallerMsg);
             callData.addSendedMsg(toCallerMsg);//记录到已发送列表
 
             callData.setStatus_2();//修改状态，已收到“自动应答”
@@ -261,7 +262,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             MapContent mc=new MapContent(dataMap);
             toCallerMsg.setMsgContent(mc);
             toCallerMsg.setPCDType(0);
-            globalMem.sendMem.putDeviceMsgCTL(callData.getCallerKey(), toCallerMsg);
+            globalMem.sendMem.putDeviceMsg(callData.getCallerKey(), toCallerMsg);
             callData.addSendedMsg(toCallerMsg);//记录到已发送列表
             //告诉其他被叫设备
             for (PushUserUDKey _pUdkey: callData.getCallederList()) {
@@ -283,7 +284,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                     MapContent _mc=new MapContent(_dataMap);
                     toOtherCallederMsg.setMsgContent(_mc);
                     toOtherCallederMsg.setPCDType(0);
-                    globalMem.sendMem.putDeviceMsgCTL(_pUdkey, toOtherCallederMsg);
+                    globalMem.sendMem.putDeviceMsg(_pUdkey, toOtherCallederMsg);
                     callData.addSendedMsg(toOtherCallederMsg);
                 }
             }
@@ -321,7 +322,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             MapContent mc=new MapContent(dataMap);
             otherMsg.setMsgContent(mc);
             otherMsg.setPCDType(0);
-            globalMem.sendMem.putDeviceMsgCTL(_pUdkey, otherMsg);
+            globalMem.sendMem.putDeviceMsg(_pUdkey, otherMsg);
             callData.addSendedMsg(otherMsg);//记录到已发送列表
         }
         
@@ -365,11 +366,24 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         dataMap.put("CallId", callData.getCallId());
         MapContent mc=new MapContent(dataMap);
         toSpeakerMsg.setMsgContent(mc);
-        PushUserUDKey _pUdk=PushUserUDKey.buildFromMsg(m);
         toSpeakerMsg.setPCDType(0);
-        globalMem.sendMem.putDeviceMsgCTL(_pUdk, toSpeakerMsg);
-        //记录到已发送列表
+        globalMem.sendMem.putDeviceMsg(speaker, toSpeakerMsg);
         callData.addSendedMsg(toSpeakerMsg);
+
+        //告知对方，有人通话
+        PushUserUDKey _other=callData.getOtherUdk(speaker.getUserId());
+        if (_other!=null) {
+            MsgNormal toOtherMsg=MessageUtils.clone(toSpeakerMsg);
+            toOtherMsg.setReMsgId(null);
+            toOtherMsg.setMsgType(0);
+            toOtherMsg.setCommand(0x10);
+            dataMap=new HashMap<String, Object>();
+            dataMap.put("SpeakerId", speaker.getUserId());
+            MapContent _mc=new MapContent(dataMap);
+            toOtherMsg.setMsgContent(_mc);
+            globalMem.sendMem.putDeviceMsg(_other, toOtherMsg);
+            callData.addSendedMsg(toOtherMsg);
+        }
     }
 
     //处理结束对讲(PTT:2)
@@ -408,11 +422,24 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         dataMap.put("CallId", callData.getCallId());
         MapContent mc=new MapContent(dataMap);
         toSpeakerMsg.setMsgContent(mc);
-        PushUserUDKey otherUdk=callData.getOtherUdk(PushUserUDKey.buildFromMsg(m));
         toSpeakerMsg.setPCDType(0);
-        globalMem.sendMem.putDeviceMsgCTL(otherUdk, toSpeakerMsg);
-        //记录到已发送列表
+        globalMem.sendMem.putDeviceMsg(speaker, toSpeakerMsg);
         callData.addSendedMsg(toSpeakerMsg);
+
+        //告知对方，结束通话
+        PushUserUDKey _other=callData.getOtherUdk(speaker.getUserId());
+        if (_other!=null) {
+            MsgNormal toOtherMsg=MessageUtils.clone(toSpeakerMsg);
+            toOtherMsg.setReMsgId(null);
+            toOtherMsg.setMsgType(0);
+            toOtherMsg.setCommand(0x20);
+            dataMap=new HashMap<String, Object>();
+            dataMap.put("SpeakerId", speaker.getUserId());
+            MapContent _mc=new MapContent(dataMap);
+            toOtherMsg.setMsgContent(_mc);
+            globalMem.sendMem.putDeviceMsg(_other, toOtherMsg);
+            callData.addSendedMsg(toOtherMsg);
+        }
     }
 
     //=======以下3个超时处理
@@ -436,7 +463,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         MapContent mc=new MapContent(dataMap);
         toCallerMsg.setMsgContent(mc);
         toCallerMsg.setPCDType(0);
-        globalMem.sendMem.putDeviceMsgCTL(callData.getCallerKey(), toCallerMsg);
+        globalMem.sendMem.putDeviceMsg(callData.getCallerKey(), toCallerMsg);
         callData.addSendedMsg(toCallerMsg);//记录到已发送列表
     }
 
@@ -460,7 +487,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         MapContent mc=new MapContent(dataMap);
         toCallerMsg.setMsgContent(mc);
         toCallerMsg.setPCDType(0);
-        globalMem.sendMem.putDeviceMsgCTL(callData.getCallerKey(), toCallerMsg);
+        globalMem.sendMem.putDeviceMsg(callData.getCallerKey(), toCallerMsg);
         callData.addSendedMsg(toCallerMsg);//记录到已发送列表
 
         //2、构造“挂断传递”消息，并发送给“被叫者”
@@ -483,7 +510,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             MapContent _mc=new MapContent(dataMap);
             toCallederMsg.setMsgContent(_mc);
             toCallederMsg.setPCDType(0);
-            globalMem.sendMem.putDeviceMsgCTL(callData.getCallederKey(), toCallederMsg);
+            globalMem.sendMem.putDeviceMsg(callData.getCallederKey(), toCallederMsg);
             callData.addSendedMsg(toCallederMsg);//记录到已发送列表
         } else {
             if (callData.getCallederList()!=null) {
@@ -505,7 +532,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                     MapContent _mc=new MapContent(dataMap);
                     toCallederMsg.setMsgContent(_mc);
                     toCallederMsg.setPCDType(0);
-                    globalMem.sendMem.putDeviceMsgCTL(_pUdkey, toCallederMsg);
+                    globalMem.sendMem.putDeviceMsg(_pUdkey, toCallederMsg);
                     callData.addSendedMsg(toCallederMsg);//记录到已发送列表
                 }
             }
@@ -532,7 +559,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         MapContent mc=new MapContent(callerMap);
         toCallerMsg.setMsgContent(mc);
         toCallerMsg.setPCDType(0);
-        globalMem.sendMem.putDeviceMsgCTL(callData.getCallerKey(), toCallerMsg);
+        globalMem.sendMem.putDeviceMsg(callData.getCallerKey(), toCallerMsg);
         callData.addSendedMsg(toCallerMsg);//记录到已发送列表
 
         //发送给“被叫者”的消息
@@ -556,7 +583,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             MapContent _mc=new MapContent(callederMap);
             toCallederMsg.setMsgContent(_mc);
             toCallederMsg.setPCDType(0);
-            globalMem.sendMem.putDeviceMsgCTL(callData.getCallederKey(), toCallederMsg);
+            globalMem.sendMem.putDeviceMsg(callData.getCallederKey(), toCallederMsg);
             callData.addSendedMsg(toCallederMsg);
         } else {
             if (callData.getCallederList()!=null) {
@@ -578,7 +605,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                     MapContent _mc=new MapContent(callederMap);
                     toCallederMsg.setMsgContent(_mc);
                     toCallederMsg.setPCDType(0);
-                    globalMem.sendMem.putDeviceMsgCTL(_pUdkey, toCallederMsg);
+                    globalMem.sendMem.putDeviceMsg(_pUdkey, toCallederMsg);
                     callData.addSendedMsg(toCallederMsg);
                 }
             }
@@ -610,7 +637,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 MapContent mc=new MapContent(dataMap);
                 toCallerMsg.setMsgContent(mc);
                 toCallerMsg.setPCDType(0);
-                globalMem.sendMem.putDeviceMsgCTL(callData.getCallerKey(), toCallerMsg);
+                globalMem.sendMem.putDeviceMsg(callData.getCallerKey(), toCallerMsg);
                 callData.addSendedMsg(toCallerMsg);
             } else if (callData.getCallederList()!=null) {
                 //告诉其他被叫设备
@@ -633,7 +660,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                         MapContent _mc=new MapContent(_dataMap);
                         toOtherCallederMsg.setMsgContent(_mc);
                         toOtherCallederMsg.setPCDType(0);
-                        globalMem.sendMem.putDeviceMsgCTL(_pUdkey, toOtherCallederMsg);
+                        globalMem.sendMem.putDeviceMsg(_pUdkey, toOtherCallederMsg);
                         callData.addSendedMsg(toOtherCallederMsg);
                     }
                 }

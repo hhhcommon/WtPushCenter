@@ -18,9 +18,6 @@ public abstract class ConfigLoadUtils {
             pc.set_ControlTcpPort((int)fel.eval(jc.getString("pushserver.ctlTcpPort")));
         } catch(Exception e) {}
         try {
-            pc.set_DsispatchThreadCount((int)fel.eval(jc.getString("pushserver.dispatchThread")));
-        } catch(Exception e) {}
-        try {
             pc.set_CleanInterval((int)fel.eval(jc.getString("pushserver.cleanInterval")));
         } catch(Exception e) {}
         return pc;

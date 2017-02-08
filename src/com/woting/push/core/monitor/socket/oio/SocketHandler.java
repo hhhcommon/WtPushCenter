@@ -28,6 +28,7 @@ import com.woting.audioSNS.calling.mem.CallingMemory;
 import com.woting.audioSNS.intercom.mem.IntercomMemory;
 import com.woting.audioSNS.mediaflow.mem.TalkMemory;
 import com.woting.audioSNS.mediaflow.monitor.DealMediaMsg;
+import com.woting.push.config.MediaConfig;
 import com.woting.push.core.SocketHandleConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.Message;
@@ -48,11 +49,13 @@ public class SocketHandler {
     private final Object waitBind=new Object();
 
     private SocketHandleConfig conf;
+    private MediaConfig mConf;
     private Socket _socket;
     private BufferedInputStream _socketIn=null;
     private BufferedOutputStream _socketOut=null;
     protected String _deviceKey=null;//和这个Socket绑定的用户
     private PushUserUDKey _pushUserKey=null;//和这个Socket绑定的用户
+
     public PushUserUDKey getPuUDKey() {
         return _pushUserKey;
     }
@@ -71,7 +74,7 @@ public class SocketHandler {
     private _FatchMsg fatchMsg;
     private _SendMsg sendMsg;
     private Timer moniterTimer;
-    private Timer notifyTimer;
+//    private Timer notifyTimer;
 
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
     private IntercomMemory intercomMem=IntercomMemory.getInstance();
@@ -81,9 +84,10 @@ public class SocketHandler {
     public volatile Object stopLck=new Object();
     private volatile boolean isRunning=true; //是否可以运行
 
-    protected SocketHandler(SocketHandleConfig conf, Socket socket) {
+    protected SocketHandler(SocketHandleConfig conf, MediaConfig mConf, Socket socket) {
         socketDesc="Socket["+socket.getRemoteSocketAddress()+"::"+socket.hashCode()+"]";
         this.conf=conf;
+        this.mConf=mConf;
         _socket=socket;
     }
 
@@ -120,9 +124,9 @@ public class SocketHandler {
             moniterTimer=new Timer(socketDesc+"监控主线程", true);
             moniterTimer.scheduleAtFixedRate(new MonitorSocket(), 0, conf.get_MonitorDelay());
 
-            //启动通知控制线程
-            notifyTimer=new Timer(socketDesc+"监控主线程", true);
-            notifyTimer.scheduleAtFixedRate(new NotifyBeat(), 0, conf.get_MonitorDelay());
+//            //启动通知控制线程
+//            notifyTimer=new Timer(socketDesc+"监控主线程", true);
+//            notifyTimer.scheduleAtFixedRate(new NotifyBeat(), 0, conf.get_MonitorDelay());
         } catch(Exception e) {
             e.printStackTrace();
         }
@@ -333,9 +337,13 @@ public class SocketHandler {
                     PushUserUDKey _pUdk=PushUserUDKey.buildFromMsg(_ms);
                     if (_pUdk!=null) {
                         if (_ms.getBizType()!=15) {
-                            if (_pUdk.equals(_pushUserKey)) globalMem.receiveMem.putPureMsg(_ms);
-                            else {
-                                if (_ms.isCtlAffirm()||_ms.isBizAffirm()) {
+                            if (_pUdk.equals(_pushUserKey)) {
+                                if (_ms.isCtlAffirm()) { //处理回复消息
+                                    try { _sendMsgQueue.put((MessageUtils.buildAckMsg((MsgNormal)_ms)).toBytes()); } catch(Exception e) {}
+                                }
+                                globalMem.receiveMem.putTypeMsg(""+((MsgNormal)_ms).getBizType(), _ms);
+                            } else {
+                                if (_ms.isCtlAffirm()||_ms.isBizAffirm()) { //处理回复消息
                                     MsgNormal noLogMsg=MessageUtils.buildAckMsg((MsgNormal)_ms);
                                     noLogMsg.setCmdType(1);
                                     try { _sendMsgQueue.put(noLogMsg.toBytes()); } catch(Exception e) {}
@@ -392,6 +400,7 @@ public class SocketHandler {
                                     }
                                     MsgNormal ackM=MessageUtils.buildAckEntryMsg(_ms);
                                     ackM.setReturnType(1);//成功
+                                    ackM.setUserId(_pushUserKey.getUserId());
                                     ackM.setSendTime(System.currentTimeMillis());
                                     try { _sendMsgQueue.put(ackM.toBytes()); } catch(Exception e) { }
 
@@ -430,22 +439,26 @@ public class SocketHandler {
                                     globalMem.bindPushUserANDSocket(_pUdk, SocketHandler.this);//绑定信息
 
                                     //发送注册成功的消息给组对讲和电话——以便他处理组在线的功能
+                                    //对讲组
                                     _ms.setAffirm(0);//设置为不需要回复
                                     _ms.setBizType(1);//设置为组消息
                                     _ms.setCmdType(3);//组通知
-                                    _ms.setCommand(0);//进入消息
+                                    _ms.setCommand(0);
                                     _ms.setUserId(_pUdk.getUserId());
-                                    globalMem.receiveMem.putPureMsg(_ms);//对讲组
+                                    globalMem.receiveMem.putTypeMsg(""+((MsgNormal)_ms).getBizType(), _ms);
+                                    //电话
                                     MsgNormal msc=MessageUtils.clone(_ms);
                                     msc.setMsgId(_ms.getMsgId());
                                     msc.setBizType(2);
-                                    globalMem.receiveMem.putPureMsg(msc);//电话
+                                    globalMem.receiveMem.putTypeMsg(""+msc.getBizType(), msc);
                                 }
                             }
                         }
                     }
                 } else { //数据流
+                    boolean isBind=false;
                     if (_pushUserKey!=null) {
+                        isBind=true;
                         ((MsgMedia)_msg).setExtInfo(_pushUserKey);
                         //globalMem.receiveMem.putTypeMsg("media", _msg);
                         DealMediaMsg dmm=new DealMediaMsg((((MsgMedia)_msg).getMediaType()==1?"音频":"视频")
@@ -453,6 +466,20 @@ public class SocketHandler {
                             +"；talkId="+((MsgMedia)_msg).getTalkId()+"；seqNo="+((MsgMedia)_msg).getSeqNo()+"；]"
                             ,(MsgMedia)_msg, globalMem, intercomMem, callingMem, talkMem, sessionService);
                         dmm.start();
+                    }
+                    if (((MsgMedia)_msg).isCtlAffirm()&&!isBind) {
+                        MsgMedia retMm=new MsgMedia();
+                        retMm.setFromType(1);
+                        retMm.setToType(0);
+                        retMm.setMsgType(0);
+                        retMm.setAffirm(0);
+                        retMm.setBizType(((MsgMedia)_msg).getBizType());
+                        retMm.setTalkId(((MsgMedia)_msg).getTalkId());
+                        retMm.setChannelId(((MsgMedia)_msg).getChannelId());
+                        retMm.setSeqNo(((MsgMedia)_msg).getSeqNo());
+                        retMm.setSendTime(System.currentTimeMillis());
+                        retMm.setReturnType(0);//未绑定用户，不能处理这样的媒体包
+                        try { _sendMsgQueue.put(retMm.toBytes()); } catch(Exception e) { }
                     }
                 }
             }
@@ -573,6 +600,8 @@ public class SocketHandler {
                 return;
             }
             if (fos!=null) {
+                String timeStr="["+System.currentTimeMillis()+"]";
+                fos.write(timeStr.getBytes(), 0, timeStr.getBytes().length);
                 fos.write(13);
                 fos.write(10);
                 fos.flush();
@@ -648,6 +677,8 @@ public class SocketHandler {
                 if (fos!=null) {
                     try {
                         fos.write(mBytes);
+                        String timeStr="["+System.currentTimeMillis()+"]";
+                        fos.write(timeStr.getBytes(), 0, timeStr.getBytes().length);
                         fos.write(13);
                         fos.write(10);
                         fos.flush();
@@ -716,12 +747,30 @@ public class SocketHandler {
                 }
             }
             if (_pushUserKey!=null) {
-                Object _lck=globalMem.sendMem.getSendLock(_pushUserKey);
-                if (_lck!=null) {
-                    synchronized(_lck) {
-                        //获得**具体给这个设备**的消息——控制消息
-                        Message m=globalMem.sendMem.pollDeviceMsgCTL(_pushUserKey, SocketHandler.this);
-                        if (m!=null) {
+                //获得**具体给这个设备**的消息——控制消息
+                synchronized(_pushUserKey) {
+                    Message m=globalMem.sendMem.pollDeviceMsgCTL(_pushUserKey, SocketHandler.this);
+                    if (m!=null) {
+                        if (fos!=null) {//记日志
+                            try {
+                                byte[] aa=JsonUtils.objToJson(m).getBytes();
+                                fos.write(aa, 0, aa.length);
+                                fos.write(13);
+                                fos.write(10);
+                                fos.flush();
+                            } catch (IOException e) {}
+                        }
+                        try {//传消息
+                            _sendMsgQueue.put(m.toBytes());
+                            //若需要控制确认，插入已发送列表
+                            if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
+                        } catch(Exception e) {}
+                    }
+                    //获得**具体给这个设备**的消息——媒体消息
+                    m=globalMem.sendMem.pollDeviceMsgMDA(_pushUserKey, SocketHandler.this);
+                    if (m!=null) {
+                        //若超出媒体包延迟时间，就不发这个媒体包了
+                        if (System.currentTimeMillis()-((MsgMedia)m).getSendTime()>(((MsgMedia)m).getMediaType()==1?mConf.get_AudioExpiredTime():mConf.get_VedioExpiredTime())) {
                             if (fos!=null) {//记日志
                                 try {
                                     byte[] aa=JsonUtils.objToJson(m).getBytes();
@@ -731,80 +780,53 @@ public class SocketHandler {
                                     fos.flush();
                                 } catch (IOException e) {}
                             }
-                            try {//传消息
-                                _sendMsgQueue.put(m.toBytes());
-                                //若需要控制确认，插入已发送列表
-                                if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
-                            } catch(Exception e) {}
+                            //传消息
+                            try { _sendMsgQueue.put(m.toBytes()); } catch(Exception e) {}
                         }
-                        //获得**具体给这个设备**的消息——媒体消息
-                        m=globalMem.sendMem.pollDeviceMsgMDA(_pushUserKey, SocketHandler.this);
-                        if (m!=null) {
-                            if (fos!=null) {//记日志
-                                try {
-                                    byte[] aa=JsonUtils.objToJson(m).getBytes();
-                                    fos.write(aa, 0, aa.length);
-                                    fos.write(13);
-                                    fos.write(10);
-                                    fos.flush();
-                                } catch (IOException e) {}
-                            }
-                            try {//传消息
-                                _sendMsgQueue.put(m.toBytes());
-                                //若需要控制确认，插入已发送列表
-                                if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
-                            } catch(Exception e) {
-                            }
-                        }
-                        //获得**给此用户的通知消息**（与设备无关）
-                        Message nm=globalMem.sendMem.pollNotifyMsg(_pushUserKey, SocketHandler.this);
-                        if (nm!=null&&!(nm instanceof MsgMedia)) {
-                            if (fos!=null) {
-                                try {
-                                    byte[] aa=JsonUtils.objToJson(m).getBytes();
-                                    fos.write(aa, 0, aa.length);
-                                    fos.write(13);
-                                    fos.write(10);
-                                    fos.flush();
-                                } catch (IOException e) {}
-                            }
+                   }
+                    //获得**给此用户的通知消息**（与设备无关）
+                    Message nm=globalMem.sendMem.pollNotifyMsg(_pushUserKey, SocketHandler.this);
+                    if (nm!=null&&!(nm instanceof MsgMedia)) {
+                        if (fos!=null) {
                             try {
-                                _sendMsgQueue.put(nm.toBytes());
-                                //若需要控制确认，插入已发送列表
-                                if (m instanceof MsgNormal) {
-                                    if (((MsgNormal)m).isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
-                                }
-                            } catch(Exception e) {}
-                        }
-                        //获得**需要重复发送的消息**
-                        LinkedBlockingQueue<Map<String, Object>> mmq=globalMem.sendMem.getResendMsg(_pushUserKey, SocketHandler.this);
-                        while (mmq!=null&&!mmq.isEmpty()) {
-                            Map<String, Object> _m=mmq.poll();
-                            if (_m==null||_m.isEmpty()) continue;
-                            Message _msg=(Message)_m.get("message");
-                            if (_msg==null) continue;
-                            if (fos!=null) {
-                                try {
-                                    byte[] aa=JsonUtils.objToJson(m).getBytes();
-                                    fos.write(aa, 0, aa.length);
-                                    fos.write(13);
-                                    fos.write(10);
-                                    fos.flush();
-                                } catch (IOException e) {}
-                            }
-                            try {
-                                _sendMsgQueue.put(_msg.toBytes());
-                                //更新信息
-                                if (((MsgNormal)m).isCtlAffirm()) globalMem.sendMem.updateSendedNeedCtlAffirmMsg(_pushUserKey, _m);
-                            } catch(Exception e) {}
+                                byte[] aa=JsonUtils.objToJson(m).getBytes();
+                                fos.write(aa, 0, aa.length);
+                                fos.write(13);
+                                fos.write(10);
+                                fos.flush();
+                            } catch (IOException e) {}
                         }
                         try {
-                            _lck.wait();
-                        } catch(Exception e) {
-                            e.printStackTrace();
-                            try { sleep(10); } catch (InterruptedException ie) {};
-                        }
+                            _sendMsgQueue.put(nm.toBytes());
+                            //若需要控制确认，插入已发送列表
+                            if (m instanceof MsgNormal) {
+                                if (((MsgNormal)m).isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
+                            }
+                        } catch(Exception e) {}
                     }
+                    //获得**需要重复发送的消息**
+                    LinkedBlockingQueue<Map<String, Object>> mmq=globalMem.sendMem.getResendMsg(_pushUserKey, SocketHandler.this);
+                    while (mmq!=null&&!mmq.isEmpty()) {
+                        Map<String, Object> _m=mmq.poll();
+                        if (_m==null||_m.isEmpty()) continue;
+                        Message _msg=(Message)_m.get("message");
+                        if (_msg==null) continue;
+                        if (fos!=null) {
+                            try {
+                                byte[] aa=JsonUtils.objToJson(m).getBytes();
+                                fos.write(aa, 0, aa.length);
+                                fos.write(13);
+                                fos.write(10);
+                                fos.flush();
+                            } catch (IOException e) {}
+                        }
+                        try {
+                            _sendMsgQueue.put(_msg.toBytes());
+                            //更新信息
+                            if (((MsgNormal)m).isCtlAffirm()) globalMem.sendMem.updateSendedNeedCtlAffirmMsg(_pushUserKey, _m);
+                        } catch(Exception e) {}
+                    }
+                    try { _pushUserKey.wait(20); } catch (InterruptedException ie) {};
                 }
             }
         }
@@ -833,21 +855,6 @@ public class SocketHandler {
             if (fatchMsg!=null) canContinue=canContinue?(!fatchMsg.__isInterrupted&&fatchMsg.__isRunning):canContinue;
             if (sendMsg!=null) canContinue=canContinue?(!sendMsg.__isInterrupted&&sendMsg.__isRunning):canContinue;
             if (!canContinue) destroyHandler();
-        }
-    }
-
-    class NotifyBeat extends TimerTask {
-        public void run() {
-            Object _lck=globalMem.sendMem.getSendLock(_pushUserKey);
-            if (_lck!=null) {
-                synchronized(_lck) {
-                    try {
-                        _lck.notifyAll();
-                    } catch(Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
         }
     }
 }

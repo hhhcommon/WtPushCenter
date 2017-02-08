@@ -15,14 +15,14 @@ public class MsgNormal extends Message {
 
     private String msgId; //32位消息id
     private String reMsgId; //32位消息id
-    private int bizType; //0应答;1组通话;2电话通话;4消息通知;15注册消息
+    private int bizType; //0应答;1组通话;2电话通话;4消息通知;8同步消息;15注册消息
     private int cmdType; //命令类型
     private int command; //命令编号
     private int returnType; //返回值类型
 
     private int PCDType; //设备：设备类型:1手机;2设备;3网站;0服务器
     private String userId; //设备：当前登录用户
-    private String IMEI; //设备：设备串号
+    private String deviceId; //设备：设备串号
 
     private MessageContent msgContent; //消息内容    
 
@@ -89,11 +89,11 @@ public class MsgNormal extends Message {
         this.userId=userId;
     }
 
-    public String getIMEI() {
-        return IMEI;
+    public String getDeviceId() {
+        return deviceId;
     }
-    public void setIMEI(String iMEI) {
-        IMEI=iMEI;
+    public void setDeviceId(String deviceId) {
+        this.deviceId=deviceId;
     }
 
     public MessageContent getMsgContent() {
@@ -214,7 +214,7 @@ public class MsgNormal extends Message {
                 if (_sa.length!=2) throw new Exception("消息字节串异常！");
                 if (Integer.parseInt(_sa[0])==-1) throw new Exception("消息字节串异常！");
                 _offset=Integer.parseInt(_sa[0]);
-                setIMEI(_sa[1]);
+                setDeviceId(_sa[1]);
             }
             //九、实体数据
             if (bizType!=15) {
@@ -257,7 +257,7 @@ public class MsgNormal extends Message {
                     if (_sa.length!=2) throw new Exception("消息字节串异常！");
                     if (Integer.parseInt(_sa[0])==-1) throw new Exception("消息字节串异常！");
                     _offset=Integer.parseInt(_sa[0]);
-                    setIMEI(_sa[1]);
+                    setDeviceId(_sa[1]);
                 }
             }
         }
@@ -327,8 +327,8 @@ public class MsgNormal extends Message {
 
         if (!isAck()) {
             //八、用户类型
-            if (StringUtils.isNullOrEmptyOrSpace(IMEI)&&fromType==0) throw new Exception("IMEI为空");
-            if (!StringUtils.isNullOrEmptyOrSpace(IMEI)) {
+            if (StringUtils.isNullOrEmptyOrSpace(deviceId)&&fromType==0) throw new Exception("IMEI为空");
+            if (!StringUtils.isNullOrEmptyOrSpace(deviceId)) {
                 ret[_offset++]=(byte)PCDType;
                 if (StringUtils.isNullOrEmptyOrSpace(userId)) ret[_offset++]=0x00;
                 else {
@@ -338,7 +338,7 @@ public class MsgNormal extends Message {
                     }
                 }
                 try {
-                    _offset=MessageUtils.set_String(ret, _offset, 32, IMEI, null);
+                    _offset=MessageUtils.set_String(ret, _offset, 32, deviceId, null);
                 } catch (UnsupportedEncodingException e) {
                 }
             }
@@ -363,8 +363,8 @@ public class MsgNormal extends Message {
         } else {
             if (bizType==15) {
                 //八、用户类型
-                if (StringUtils.isNullOrEmptyOrSpace(IMEI)&&fromType==0) throw new Exception("IMEI为空");
-                if (!StringUtils.isNullOrEmptyOrSpace(IMEI)) {
+                if (StringUtils.isNullOrEmptyOrSpace(deviceId)&&fromType==0) throw new Exception("IMEI为空");
+                if (!StringUtils.isNullOrEmptyOrSpace(deviceId)) {
                     ret[_offset++]=(byte)PCDType;
                     if (StringUtils.isNullOrEmptyOrSpace(userId)) ret[_offset++]=0x00;
                     else {
@@ -374,7 +374,7 @@ public class MsgNormal extends Message {
                         }
                     }
                     try {
-                        _offset=MessageUtils.set_String(ret, _offset, 32, IMEI, null);
+                        _offset=MessageUtils.set_String(ret, _offset, 32, deviceId, null);
                     } catch (UnsupportedEncodingException e) {
                     }
                 }
@@ -410,9 +410,9 @@ public class MsgNormal extends Message {
         if (!msgId.equals(_m.msgId)) return false;
         if (returnType!=_m.returnType) return false;
 
-        if (IMEI!=null) {
-            if (!IMEI.equals(_m.IMEI)) return false;
-        } else if (_m.IMEI!=null) return false;
+        if (deviceId!=null) {
+            if (!deviceId.equals(_m.deviceId)) return false;
+        } else if (_m.deviceId!=null) return false;
         if (userId!=null) {
             if (!userId.equals(_m.userId)) return false;
         } else if (_m.userId!=null) return false;

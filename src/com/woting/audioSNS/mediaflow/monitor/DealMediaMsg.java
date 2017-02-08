@@ -64,7 +64,7 @@ public class DealMediaMsg extends Thread {
         if (StringUtils.isEmptyOrWhitespaceOnly(talkerId)) return;
         int seqNum=sourceMsg.getSeqNo();
         if (seqNum<0) return;
-        String groupId=sourceMsg.getObjId();
+        String groupId=sourceMsg.getChannelId();
         if (StringUtils.isEmptyOrWhitespaceOnly(groupId)) return;
         OneTalk wt=talkMem.getOneTalk(talkId);
         if (wt!=null) {
@@ -84,13 +84,13 @@ public class DealMediaMsg extends Thread {
         String talkId=sourceMsg.getTalkId();
         if (StringUtils.isEmptyOrWhitespaceOnly(talkId)) return;
         int seqNum=sourceMsg.getSeqNo();
-        String objId=sourceMsg.getObjId();
-        if (StringUtils.isEmptyOrWhitespaceOnly(objId)) return;
+        String chnlId=sourceMsg.getChannelId();
+        if (StringUtils.isEmptyOrWhitespaceOnly(chnlId)) return;
 
         int talkType=sourceMsg.getBizType();
 
-        OneMeet om=(talkType==1?intercomMem.getOneMeet(objId):null);
-        OneCall oc=(talkType==2?callingMem.getOneCall(objId):null);
+        OneMeet om=(talkType==1?intercomMem.getOneMeet(chnlId):null);
+        OneCall oc=(talkType==2?callingMem.getOneCall(chnlId):null);
 
         //组织回执消息
         MsgMedia retMm=new MsgMedia();
@@ -100,14 +100,14 @@ public class DealMediaMsg extends Thread {
         retMm.setAffirm(0);
         retMm.setBizType(sourceMsg.getBizType());
         retMm.setTalkId(talkId);
-        retMm.setObjId(objId);
+        retMm.setChannelId(chnlId);
         retMm.setSeqNo(seqNum);
 
         if (talkType==1&&om==null) {//组对讲
             if (sourceMsg.isCtlAffirm()) {
                 retMm.setReturnType(0x10);//对讲组内存数据不存在
                 try {
-                    globalMem.sendMem.putDeviceMsgMDA(pUdk, retMm);
+                    globalMem.sendMem.putDeviceMsg(pUdk, retMm);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -118,7 +118,7 @@ public class DealMediaMsg extends Thread {
             if (sourceMsg.isCtlAffirm()) {
                 retMm.setReturnType(0x10);//电话内存数据不存在
                 try {
-                    globalMem.sendMem.putDeviceMsgMDA(pUdk, retMm);
+                    globalMem.sendMem.putDeviceMsg(pUdk, retMm);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -129,7 +129,7 @@ public class DealMediaMsg extends Thread {
         if (sourceMsg.isCtlAffirm()) {
             retMm.setReturnType(0x01);
             try {
-                globalMem.sendMem.putDeviceMsgMDA(pUdk, retMm);
+                globalMem.sendMem.putDeviceMsg(pUdk, retMm);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -143,7 +143,7 @@ public class DealMediaMsg extends Thread {
         wt=talkMem.getOneTalk(talkId);
         
         if (wt==null) {
-            wt=new OneTalk(talkId, pUdk, objId, talkType);
+            wt=new OneTalk(talkId, pUdk, chnlId, talkType);
             talkMem.addOneTalk(wt);
         }
         TalkSegment ts=new TalkSegment();
@@ -191,12 +191,13 @@ public class DealMediaMsg extends Thread {
         bMsg.setAffirm(1);
         bMsg.setBizType(sourceMsg.getBizType());
         bMsg.setTalkId(talkId);
-        bMsg.setObjId(objId);
+        bMsg.setChannelId(chnlId);
         bMsg.setSeqNo(seqNum);
+        bMsg.setMediaType(1);
         bMsg.setMediaData(sourceMsg.getMediaData());
         for (String k: ts.getSendUserMap().keySet()) {
             try {
-                globalMem.sendMem.putDeviceMsgMDA(ts.getSendUserMap().get(k), bMsg);
+                globalMem.sendMem.putDeviceMsg(ts.getSendUserMap().get(k), bMsg);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

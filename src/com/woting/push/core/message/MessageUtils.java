@@ -149,7 +149,7 @@ public abstract class MessageUtils {
         ret.setBizType(15);
         ret.setCmdType(0);
 
-        ret.setIMEI(orgMsg.getIMEI());
+        ret.setDeviceId(orgMsg.getDeviceId());
         ret.setUserId(orgMsg.getUserId());
         ret.setPCDType(orgMsg.getPCDType());
 
@@ -199,7 +199,7 @@ public abstract class MessageUtils {
         retMsg.setBizType(msg.getBizType());
         retMsg.setCmdType(msg.getCmdType());
 
-        retMsg.setIMEI(msg.getIMEI());
+        retMsg.setDeviceId(msg.getDeviceId());
         retMsg.setUserId(msg.getUserId());
         retMsg.setPCDType(msg.getPCDType());
 

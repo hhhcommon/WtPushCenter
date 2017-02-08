@@ -16,6 +16,7 @@ public class MsgMedia extends Message {
 
     private int mediaType; //流类型:1音频2视频
     private int bizType; //流业务类型:1对讲组；2电话
+    private String channelId; //频道Id:在组对讲中是组Id,在电话对讲中是电话通话Id
     private String talkId; //会话Id，或一次媒体传输的信道编号
     private int seqNo; //流中包的序列号
     private int returnType; //返回消息类型
@@ -27,15 +28,6 @@ public class MsgMedia extends Message {
     }
     public void setExtInfo(Object extInfo) {
         this.extInfo=extInfo;
-    }
-
-    //以下信息在TCP原消息格式中有意义，在新的消息传输模型中需要删掉（不管是用TCP还是UDP）
-    private String objId; //在组对讲中是组Id,在电话对讲中是电话通话Id
-    public String getObjId() {
-        return objId;
-    }
-    public void setObjId(String objId) {
-        this.objId=objId;
     }
 
     /**
@@ -65,6 +57,13 @@ public class MsgMedia extends Message {
     }
     public void setBizType(int bizType) {
         this.bizType=bizType;
+    }
+
+    public String getChannelId() {
+        return channelId;
+    }
+    public void setChannelId(String channelId) {
+        this.channelId=channelId;
     }
 
     public String getTalkId() {
@@ -147,7 +146,7 @@ public class MsgMedia extends Message {
         setSeqNo(ByteConvert.bytes2int(_tempBytes));
 
         _offset+=4;
-        //objId，可能需要删除掉
+
         try {
             _tempStr=MessageUtils.parse_String(binaryMsg, _offset, 12, null);
         } catch(Exception e) {
@@ -157,8 +156,7 @@ public class MsgMedia extends Message {
         if (_sa.length!=2) throw new Exception("对象Id异常！");
         if (Integer.parseInt(_sa[0])==-1) throw new Exception("对象Id异常！");
         _offset=Integer.parseInt(_sa[0]);
-        setObjId(_sa[1]);
-        //删除结束
+        setChannelId(_sa[1]);
 
         if (isAck()) setReturnType(binaryMsg[_offset]);
         else {
@@ -199,7 +197,7 @@ public class MsgMedia extends Message {
         for (i=0; i<4; i++) ret[_offset++]=_tempBytes[i];
 
         //为objId，要删除掉
-        _tempBytes=objId.getBytes();
+        _tempBytes=channelId.getBytes();
         for (i=0; i<12; i++) ret[_offset++]=_tempBytes[i];
         //为objId，要删除掉
 
@@ -237,14 +235,12 @@ public class MsgMedia extends Message {
 
         MsgMedia _m=(MsgMedia)msg;
         if (bizType!=_m.bizType) return false;
+        if (channelId!=null) if (!channelId.equals(_m.channelId)) return false;
+        else if (_m.channelId!=null) return false;
         if (mediaType!=_m.mediaType) return false;
-        if (talkId!=null) {
-            if (!talkId.equals(_m.talkId)) return false;
-        } else if (_m.talkId!=null) return false;
+        if (talkId!=null) if (!talkId.equals(_m.talkId)) return false;
+        else if (_m.talkId!=null) return false;
         if (returnType!=_m.returnType) return false;
-        if (objId!=null) {
-            if (!objId.equals(_m.objId)) return false;
-        } else if (_m.objId!=null) return false;
         if (seqNo!=_m.seqNo) return false;
 
         if (mediaData!=null&&_m.mediaData!=null) {

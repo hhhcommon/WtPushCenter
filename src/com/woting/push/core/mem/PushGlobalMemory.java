@@ -68,7 +68,6 @@ public class PushGlobalMemory {
         groupMap=new ConcurrentHashMap<String, Group>();
         userMap=new ConcurrentHashMap<String, UserPo>();
 
-        recvPureMsgQueue=new LinkedBlockingQueue<Message>();
         //初始化分类消息队列
         recvTypeMsg=new ConcurrentHashMap<String, LinkedBlockingQueue<Message>>();
         LinkedBlockingQueue<Message> typeDeque1=new LinkedBlockingQueue<Message>();
@@ -80,7 +79,7 @@ public class PushGlobalMemory {
         LinkedBlockingQueue<Message> typeDeque8=new LinkedBlockingQueue<Message>();
         recvTypeMsg.put("8", typeDeque8);
 
-        LCKMAP_pkuANDhadmsgtobesend=new ConcurrentHashMap<PushUserUDKey, Object>();
+        //LCKMAP_pkuANDhadmsgtobesend=new ConcurrentHashMap<PushUserUDKey, Object>();
         send2DeviceMsgCTL=new ConcurrentHashMap<PushUserUDKey, LinkedBlockingQueue<Message>>();
         send2DeviceMsgMDA=new ConcurrentHashMap<PushUserUDKey, LinkedBlockingQueue<Message>>();
         sendedNeedCtlAffirmMsg=new ConcurrentHashMap<PushUserUDKey, LinkedBlockingQueue<Map<String, Object>>>();
@@ -116,10 +115,6 @@ public class PushGlobalMemory {
 
     //==========接收消息内存
     /**
-     * 总接收(纯净)队列所有收到的信息都会暂时先放入这个队列中
-     */
-    private LinkedBlockingQueue<Message> recvPureMsgQueue;
-    /**
      * 分类接收队列，不同类型的消息会由不同类去处理<br/>
      * 注意，这里不包括媒体流数据
      * <pre>
@@ -133,7 +128,7 @@ public class PushGlobalMemory {
     /**
      * 是否有消息需要发送的锁，不包括通知类消息
      */
-    private Map<PushUserUDKey, Object> LCKMAP_pkuANDhadmsgtobesend=null;
+    //private Map<PushUserUDKey, Object> LCKMAP_pkuANDhadmsgtobesend=null;
     /**
      * 发送消息队列——发送给具体的设备(控制消息)
      * <pre>
@@ -200,7 +195,7 @@ public class PushGlobalMemory {
         if (pUdk==null||sh==null) return false;
         if (force) {
             REF_deviceANDsocket.put(pUdk.getDeviceId()+"::"+pUdk.getPCDType(), sh);
-            LCKMAP_pkuANDhadmsgtobesend.put(pUdk, new Object());
+            //LCKMAP_pkuANDhadmsgtobesend.put(pUdk, new Object());
             return true;
         } else {
             SocketHandler _sh=REF_deviceANDsocket.get(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
@@ -209,7 +204,7 @@ public class PushGlobalMemory {
                 return true;
             } else {
                 REF_deviceANDsocket.put(pUdk.getDeviceId()+"::"+pUdk.getPCDType(), sh);
-                LCKMAP_pkuANDhadmsgtobesend.put(pUdk, new Object());
+                //LCKMAP_pkuANDhadmsgtobesend.put(pUdk, new Object());
                 return true;
             }
         }
@@ -228,7 +223,7 @@ public class PushGlobalMemory {
         if (_sh==null) return true;
         if (!_sh.equals(sh)) return false;
         REF_deviceANDsocket.remove(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
-        LCKMAP_pkuANDhadmsgtobesend.remove(pUdk);
+        //LCKMAP_pkuANDhadmsgtobesend.remove(pUdk);
         return true;
     }
     /**
@@ -427,19 +422,6 @@ public class PushGlobalMemory {
      * @author wanghui
      */
     public class ReceiveMemory {
-        public void putPureMsg(Message msg) throws InterruptedException {
-            if (recvPureMsgQueue!=null) recvPureMsgQueue.put(msg);
-        }
-
-        /**
-         * 从总接收队列中获得并移除第一个元素
-         * @return 从队列中获取的元素
-         * @throws InterruptedException 
-         */
-        public Message takePureMsg() throws InterruptedException {
-            return recvPureMsgQueue==null?null:recvPureMsgQueue.take();
-        }
-
         /**
          * 加入分类处理的消息队列
          * @param type 分类标志
@@ -468,50 +450,25 @@ public class PushGlobalMemory {
      * @author wanghui
      */
     public class SendMemory {
-        public Object getSendLock(PushUserUDKey pUDkey) {
-            return LCKMAP_pkuANDhadmsgtobesend.get(pUDkey);
-        }
+//        public Object getSendLock(PushUserUDKey pUDkey) {
+//            return LCKMAP_pkuANDhadmsgtobesend.get(pUDkey);
+//        }
         //到具体设备的操作
-        /**
-         * [发送消息队列-直接对应（设备+用户）](控制消息)
-         * 把消息(msg)加入所对应用户设备(pUDkey)的传送队列<br/>
-         * 若消息已经存在于传送队列中，就不加入了。
-         * @param pUDkey 用户Key
-         * @param msg 消息
-         * @return 加入成功返回true(若消息已经存在，也放回true)，否则返回false
-         * @throws InterruptedException 
-         */
-        public void putDeviceMsgCTL(PushUserUDKey pUDkey, MsgNormal msg) throws InterruptedException {
-            putDeviceMsg(pUDkey, msg, 1);
-        }
-        /**
-         * [发送消息队列-直接对应（设备+用户）](媒体消息)
-         * 把消息(msg)加入所对应用户设备(pUDkey)的传送队列<br/>
-         * 若消息已经存在于传送队列中，就不加入了。
-         * @param pUDkey 用户Key
-         * @param msg 消息
-         * @return 加入成功返回true(若消息已经存在，也放回true)，否则返回false
-         * @throws InterruptedException 
-         */
-        public void putDeviceMsgMDA(PushUserUDKey pUDkey, MsgMedia msg) throws InterruptedException {
-            putDeviceMsg(pUDkey, msg, 2);
-        }
         /*
          * [发送消息队列-直接对应（设备+用户）]
          * 把消息(msg)加入所对应用户设备(pUDkey)的传送队列<br/>
          * 若消息已经存在于传送队列中，就不加入了。
          * @param pUDkey 用户Key
          * @param msg 消息
-         * @param type 类型：1控制消息；2媒体消息
          * @return 加入成功返回true(若消息已经存在，也放回true)，否则返回false
          * @throws InterruptedException 
          */
-        public void putDeviceMsg(PushUserUDKey pUDkey, Message msg, int type) throws InterruptedException {
+        public void putDeviceMsg(PushUserUDKey pUDkey, Message msg) throws InterruptedException {
             if (send2DeviceMsgCTL==null||msg==null||pUDkey==null) return;
-            LinkedBlockingQueue<Message> _deviceQueueCTL=(type==1?send2DeviceMsgCTL.get(pUDkey):send2DeviceMsgMDA.get(pUDkey));
+            LinkedBlockingQueue<Message> _deviceQueueCTL=((msg instanceof MsgNormal)?send2DeviceMsgCTL.get(pUDkey):send2DeviceMsgMDA.get(pUDkey));
             if (_deviceQueueCTL==null) {
                 _deviceQueueCTL=new LinkedBlockingQueue<Message>();
-                if (type==1) send2DeviceMsgCTL.put(pUDkey, _deviceQueueCTL);
+                if (msg instanceof MsgNormal) send2DeviceMsgCTL.put(pUDkey, _deviceQueueCTL);
                 else send2DeviceMsgMDA.put(pUDkey, _deviceQueueCTL);
             }
             if (msg.getSendTime()==0) msg.setSendTime(System.currentTimeMillis());
@@ -525,11 +482,11 @@ public class PushGlobalMemory {
             }
             if (!_exist) _deviceQueueCTL.put(msg);
 
-            Object _lck=LCKMAP_pkuANDhadmsgtobesend.get(pUDkey);
-            if (_lck==null) return;
-            synchronized(_lck) {
-                _lck.notifyAll();
-            }
+//            Object _lck=LCKMAP_pkuANDhadmsgtobesend.get(pUDkey);
+//            if (_lck==null) return;
+//            synchronized(_lck) {
+//                _lck.notifyAll();
+//            }
         }
 
         /**
@@ -603,17 +560,17 @@ public class PushGlobalMemory {
             if (msg.getSendTime()==0) msg.setSendTime(System.currentTimeMillis());
             _userQueue.put(msg);
 
-            //唤醒所有的客户端读取线程
-            List<PushUserUDKey> al=sessionService.getActivedUserUDKs(userId);
-            if (al!=null&&!al.isEmpty()) {
-                for (PushUserUDKey _pUdk: al) {
-                    Object _lck=LCKMAP_pkuANDhadmsgtobesend.get(_pUdk);
-                    if (_lck==null) return;
-                    synchronized(_lck) {
-                        _lck.notifyAll();
-                    }
-                }
-            }
+//            //唤醒所有的客户端读取线程
+//            List<PushUserUDKey> al=sessionService.getActivedUserUDKs(userId);
+//            if (al!=null&&!al.isEmpty()) {
+//                for (PushUserUDKey _pUdk: al) {
+//                    Object _lck=LCKMAP_pkuANDhadmsgtobesend.get(_pUdk);
+//                    if (_lck==null) return;
+//                    synchronized(_lck) {
+//                        _lck.notifyAll();
+//                    }
+//                }
+//            }
         }
 
         public Message pollNotifyMsg(PushUserUDKey pUdk, SocketHandler sh) throws InterruptedException {
@@ -897,7 +854,7 @@ public class PushGlobalMemory {
                     }
                     if (m instanceof MsgMedia) {
                         MsgMedia mm=(MsgMedia)m;
-                        if (mm.getBizType()==2&&callId.equals(mm.getObjId())) {
+                        if (mm.getBizType()==2&&callId.equals(mm.getChannelId())) {
                             umq.remove(m);
                         }
                     }
@@ -940,7 +897,7 @@ public class PushGlobalMemory {
                 }
                 if (m instanceof MsgMedia) {
                     MsgMedia mm=(MsgMedia)m;
-                    if (mm.getBizType()==2&&om.getGroupId().equals(mm.getObjId())) {
+                    if (mm.getBizType()==2&&om.getGroupId().equals(mm.getChannelId())) {
                         umq.remove(m);
                     }
                 }

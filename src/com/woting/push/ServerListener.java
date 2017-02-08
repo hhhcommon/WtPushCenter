@@ -27,7 +27,6 @@ import com.woting.push.config.PushConfig;
 import com.woting.push.core.SocketHandleConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
-import com.woting.push.core.monitor.DispatchMessage;
 import com.woting.push.core.service.LoadSysCacheService;
 import com.woting.push.core.monitor.socket.nio.NioServer;
 import com.woting.push.core.monitor.socket.oio.OioServer;
@@ -79,7 +78,6 @@ public class ServerListener {
     private static int _RUN_STATUS=0;//运行状态，0未启动，1正在启动，2启动成功；3准备停止；4停止
 
     private AbstractLoopMoniter<PushConfig> tcpCtlServer=null; //tcp控制信道监控服务
-    private List<DispatchMessage> dispatchList=null; //分发线程的记录列表
     private List<DealIntercomMsg> dealIntercomList=null; //处理对讲消息线程的记录列表
     private List<DealCallingMsg> dealCallingList=null; //处理电话消息线程的记录列表
     private CleanCalling cleanCalling=null; //电话数据清理线程
@@ -220,7 +218,6 @@ public class ServerListener {
         SystemCache.setCache(new CacheEle<AffirmCtlConfig>(PushConstants.AFFCTL_CONF, "控制回复配置", acc));
 
         MediaConfig mc=ConfigLoadUtils.getMediaConfig(jc);
-        mc.getAudioExpiedTime();
         SystemCache.setCache(new CacheEle<MediaConfig>(PushConstants.MEDIA_CONF, "媒体包配置", mc));
     }
 
@@ -258,15 +255,7 @@ public class ServerListener {
         }
         tcpCtlServer.setDaemon(true);
         tcpCtlServer.start();
-        //2-启动{接收消息分发}线程
-        dispatchList=new ArrayList<DispatchMessage>();
-        for (int i=0;i<pc.get_DispatchThreadCount(); i++) {
-            DispatchMessage dm=new DispatchMessage(pc, i);
-            dm.setDaemon(true);
-            dm.start();
-            dispatchList.add(dm);
-        }
-        //3-启动{处理对讲消息}线程
+        //2-启动{处理对讲消息}线程
         IntercomConfig ic=((CacheEle<IntercomConfig>)SystemCache.getCache(PushConstants.INTERCOM_CONF)).getContent();
         dealIntercomList=new ArrayList<DealIntercomMsg>();
         for (int i=0;i<ic.get_DealThreadCount(); i++) {
@@ -275,7 +264,7 @@ public class ServerListener {
             di.start();
             dealIntercomList.add(di);
         }
-        //4-启动{处理电话消息}线程
+        //3-启动{处理电话消息}线程
         CallingConfig cc=((CacheEle<CallingConfig>)SystemCache.getCache(PushConstants.CALLING_CONF)).getContent();
         dealCallingList=new ArrayList<DealCallingMsg>();
         for (int i=0;i<cc.get_DealThreadCount(); i++) {
@@ -284,11 +273,11 @@ public class ServerListener {
             dc.start();
             dealCallingList.add(dc);
         }
-        //4.1-启动{电话清理任务}线程
+        //3.1-启动{电话清理任务}线程
         cleanCalling=new CleanCalling(cc);
         cleanCalling.setDaemon(true);
         cleanCalling.start();
-        //5-启动{通知消息处理}线程
+        //4-启动{通知消息处理}线程
         NotifyMessageConfig nmc=((CacheEle<NotifyMessageConfig>)SystemCache.getCache(PushConstants.NOTIFY_CONF)).getContent();
         dealNotifyList=new ArrayList<DealNotifyMsg>();
         for (int i=0;i<nmc.get_DealThreadCount(); i++) {
@@ -297,7 +286,7 @@ public class ServerListener {
             dn.start();
             dealNotifyList.add(dn);
         }
-        //6-启动{同步消息处理}线程
+        //5-启动{同步消息处理}线程
         SyncMessageConfig smc=((CacheEle<SyncMessageConfig>)SystemCache.getCache(PushConstants.SYNC_CONF)).getContent();
         dealSyncList=new ArrayList<DealSyncMsg>();
         for (int i=0;i<smc.get_DealThreadCount(); i++) {
@@ -330,19 +319,7 @@ public class ServerListener {
 //                try { Thread.sleep(50); } catch(Exception e) {}
 //            }
         }
-        //2-停止{接收消息分发}线程
-        if (dispatchList!=null&&!dispatchList.isEmpty()) {
-            for (DispatchMessage dm: dispatchList) dm.stopServer();
-//            while (!allClosed&&i++<10) {
-//                allClosed=true;
-//                for (DispatchMessage dm: dispatchList) {
-//                    allClosed=dm.isStoped();
-//                    if (!allClosed) break;
-//                }
-//                try { Thread.sleep(50); } catch(Exception e) {}
-//            }
-        }
-        //3-停止{处理电话消息}线程
+        //2-停止{处理电话消息}线程
         if (dealIntercomList!=null&&!dealIntercomList.isEmpty()) {
             for (DealIntercomMsg di: dealIntercomList) di.stopServer();
 //            while (!allClosed&&i++<10) {
@@ -354,7 +331,7 @@ public class ServerListener {
 //                try { Thread.sleep(50); } catch(Exception e) {}
 //            }
         }
-        //4-停止{处理电话消息}线程
+        //3-停止{处理电话消息}线程
         if (dealCallingList!=null&&!dealCallingList.isEmpty()) {
             for (DealCallingMsg dc: dealCallingList) dc.stopServer();
 //            while (!allClosed&&i++<10) {
@@ -366,7 +343,7 @@ public class ServerListener {
 //                try { Thread.sleep(50); } catch(Exception e) {}
 //            }
         }
-        //4.1-停止{电话清理任务}线程
+        //3.1-停止{电话清理任务}线程
         if (cleanCalling!=null) {
             cleanCalling.stopServer();
 //            i=0;
@@ -374,11 +351,11 @@ public class ServerListener {
 //                try { Thread.sleep(50); } catch(Exception e) {}
 //            }
         }
-        //5-停止{通知消息处理}线程
+        //4-停止{通知消息处理}线程
         if (dealNotifyList!=null&&!dealNotifyList.isEmpty()) {
             for (DealNotifyMsg dn: dealNotifyList) dn.stopServer();
         }
-        //6-停止{同步消息处理}线程
+        //5-停止{同步消息处理}线程
         if (dealSyncList!=null&&!dealSyncList.isEmpty()) {
             for (DealSyncMsg ds: dealSyncList) ds.stopServer();
         }

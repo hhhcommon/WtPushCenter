@@ -12,6 +12,7 @@ import com.spiritdata.framework.core.cache.CacheEle;
 import com.spiritdata.framework.core.cache.SystemCache;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.push.PushConstants;
+import com.woting.push.config.MediaConfig;
 import com.woting.push.config.PushConfig;
 import com.woting.push.core.SocketHandleConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
@@ -43,12 +44,13 @@ public class OioServer extends AbstractLoopMoniter<PushConfig> {
         return true;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void oneProcess() throws Exception {
         Socket client=serverSocket.accept();//获得连接
-        @SuppressWarnings("unchecked")
         SocketHandleConfig shc=((CacheEle<SocketHandleConfig>)SystemCache.getCache(PushConstants.SOCKETHANDLE_CONF)).getContent();
-        SocketHandler sh=new SocketHandler(shc, client);
+        MediaConfig mc=((CacheEle<MediaConfig>)SystemCache.getCache(PushConstants.MEDIA_CONF)).getContent();
+        SocketHandler sh=new SocketHandler(shc, mc, client);
         sh.start();
         if (!sh.isStoped()) globalMem.registSocketHandler(sh);
     }
