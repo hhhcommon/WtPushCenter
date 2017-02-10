@@ -129,17 +129,17 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         else {
             retFlag=meetData.insertEntryUser(pUdk);
             if (retFlag==4||retFlag==5) retMsg.setReturnType(0x04);//该用户不在指定组
-            else if (retFlag==2) retMsg.setReturnType(0x08);//该用户已经在指定组
+            else if (retFlag==2) retMsg.setReturnType(0x08);//该用户已进入指定组
             else retMsg.setReturnType(0x01);//正确加入组
         }
         globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
-        //判断组内是否有人说话，若有发广播消息
+        //判断组内是否有人说话，若有向进组人发送说话者消息
         if (meetData.getSpeaker()!=null) {
             MsgNormal hasSpeaker=MessageUtils.clone(retMsg);
             hasSpeaker.setReMsgId(null);
             hasSpeaker.setMsgType(0);
             hasSpeaker.setCmdType(2);
-            hasSpeaker.setCommand(0x10);
+            hasSpeaker.setCommand(0x30);
             dataMap=new HashMap<String, Object>();
             dataMap.put("GroupId", groupId);
             dataMap.put("SpeakerId", meetData.getSpeaker().getUserId());
@@ -214,7 +214,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         else {
             retFlag=meetData.deleteEntryUser(pUdk);
             if (retFlag==4||retFlag==5) retMsg.setReturnType(0x04);//该用户不在指定组
-            else if (retFlag==3) retMsg.setReturnType(0x08);//该用户不在指定组
+            else if (retFlag==3) retMsg.setReturnType(0x08);//该用户未进入指定组
             else retMsg.setReturnType(0x01);//正确离开组
         }
         globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
@@ -345,11 +345,14 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         if (!pUdk.isUser()) retMsg.setReturnType(0x00);
         else if (meetData==null) retMsg.setReturnType(0x02);
         else {
-            System.out.println("^^005^^^"+meetData.getGroupId()+"^^^^^^^^^^^^^^^^^^^^^^^ in Handler endPTT");
+//            System.out.println("^^005^^^"+meetData.getGroupId()+"^^^^^^^^^^^^^^^^^^^^^^^ in Handler endPTT");
             retFlag=meetData.releaseSpeaker(pUdk);
             if (retFlag==2) retMsg.setReturnType(0x04);//该用户不在指定组
-            else if (retFlag==3) retMsg.setReturnType(0x08);//该用户和当前对讲用户不匹配
-            else retMsg.setReturnType(0x01);//正确离开组
+            else if (retFlag==3) {
+                retMsg.setReturnType(0x08);//该用户和当前对讲用户不匹配
+                dataMap.put("SpeakerId", meetData.getSpeaker().getUserId());
+            }
+            else retMsg.setReturnType(0x01);//正确结束PTT
             //删除语音内容
             //globalMem.sendMem.cleanMsg4InterComSpeak(meetData.getGroupId(), ); //清除说话者未发出的语音信息
         }
@@ -422,7 +425,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
               &&(IntercomHandler.this.meetData.getSpeaker()!=null)
               &&(System.currentTimeMillis()-IntercomHandler.this.meetData.getLastTalkTime()>IntercomHandler.this.conf.get_ExpireSpeakerTime()))
             {
-                System.out.println("^^002^^^"+meetData.getGroupId()+"^^^^^^^^^^^^^^^^^^^^^^^"+System.currentTimeMillis()+"-"+IntercomHandler.this.meetData.getLastTalkTime()+"="+(System.currentTimeMillis()-IntercomHandler.this.meetData.getLastTalkTime())+">"+IntercomHandler.this.conf.get_ExpireSpeakerTime());
+//                System.out.println("^^002^^^"+meetData.getGroupId()+"^^^^^^^^^^^^^^^^^^^^^^^"+System.currentTimeMillis()+"-"+IntercomHandler.this.meetData.getLastTalkTime()+"="+(System.currentTimeMillis()-IntercomHandler.this.meetData.getLastTalkTime())+">"+IntercomHandler.this.conf.get_ExpireSpeakerTime());
                 IntercomHandler.this.meetData.clearSpeaker();
             }
         }

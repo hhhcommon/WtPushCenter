@@ -143,7 +143,7 @@ public class OneMeet implements Serializable {
             setStatus_1();
             if (speaker==null) return 2;//不存在对讲者
             if (!speaker.equals(pUdk)) return 3; //停止者与当前对讲人不一致
-            System.out.println("__004___"+getGroupId()+"_______________________in OneMeet releaseSpeaker");
+            //System.out.println("__004___"+getGroupId()+"_______________________in OneMeet releaseSpeaker");
             speaker=null;
             interMem.removeUserTalk(pUdk.getUserId());
             return 1;

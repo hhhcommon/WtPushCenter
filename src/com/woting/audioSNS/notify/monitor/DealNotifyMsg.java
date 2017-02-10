@@ -98,7 +98,6 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
                             g=groupService.getGroup(_ts);
                             if (g!=null) ul=g.getUserList();
                         }
-                        
                         if (ul!=null&&!ul.isEmpty()) {
                             find=false;
                             for (UserPo up: ul) {
