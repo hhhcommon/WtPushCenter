@@ -37,7 +37,7 @@ public class CallingMemory {
     /**
      * 把一个新的会话处理加入内存Map
      * @param oc 新的会话
-     * @return 成功返回1；若已经存在这个会话返回0；若这个会话不是新会话返回-1
+     * @return 成功返回1；若这个会话不是新会话返回-1
      */
     public int addOneCall(OneCall oc) {
         if (oc.getStatus()!=0) return -1;//不是新会话
@@ -96,9 +96,9 @@ public class CallingMemory {
     }
 
     /**
-     * 判断是否有人在通话
+     * 判断是否有人在其他电话通话
      * @param callorId 通话者Id
-     * @param callId 通话Id
+     * @param callId 电话通话Id
      * @return 若有人在通话，返回true
      */
     public boolean isTalk(String talkId, String callId) {

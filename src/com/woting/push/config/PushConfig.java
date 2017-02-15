@@ -7,6 +7,22 @@ import com.woting.push.core.config.Config;
  * @author wanghui
  */
 public class PushConfig implements Config {
+
+    private String _ServerType; //本服务器的类型
+    private String _ServerName; //本服务器的名称
+    public String get_ServerType() {
+        return _ServerType;
+    }
+    public void set_ServerType(String _ServerType) {
+        this._ServerType=_ServerType;
+    }
+    public String get_ServerName() {
+        return _ServerName;
+    }
+    public void set_ServerName(String _ServerName) {
+        this._ServerName=_ServerName;
+    }
+
     /**
      * 推送服务控制信号的tcp端口号
      */

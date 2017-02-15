@@ -269,4 +269,17 @@ public class MsgMedia extends Message {
     public boolean isVedio() {
         return mediaType==2;
     }
+
+    protected boolean equalsMsg(Message msg) {
+        if (msgType!=msg.msgType) return false;
+        if (affirm!=msg.affirm) return false;
+        if (fromType!=msg.fromType) return false;
+        if (toType!=msg.toType) return false;
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return (msgType+"|"+affirm+"|"+fromType+"|"+toType+"|"+mediaType+"|"+bizType+"|"+channelId+"|"+talkId+"|"+seqNo).hashCode();
+    }
 }

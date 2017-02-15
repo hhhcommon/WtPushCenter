@@ -15,6 +15,12 @@ public abstract class ConfigLoadUtils {
     public static PushConfig getPushConfig(JsonConfig jc) {
         PushConfig pc=new PushConfig();
         try {
+            pc.set_ServerType(jc.getString("serverIdentify.serverType"));
+        } catch(Exception e) {}
+        try {
+            pc.set_ServerName(jc.getString("serverIdentify.serverName"));
+        } catch(Exception e) {}
+        try {
             pc.set_ControlTcpPort((int)fel.eval(jc.getString("pushserver.ctlTcpPort")));
         } catch(Exception e) {}
         try {

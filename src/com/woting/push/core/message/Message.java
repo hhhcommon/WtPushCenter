@@ -19,7 +19,7 @@ public abstract class Message implements Comparable<Message>, Serializable {
     protected int affirm; //是否需要确认;0不需要1需要控制回复2不需要控制回复，需要业务回复3需要控制回复和业务回复
     protected long sendTime; //发送时间
 
-    //1服务器；0设备
+    //手机=1;设备=2;PC端=3;服务器=0
     protected int fromType; //从那类设备来
     protected int toType; //到那类设备去
 

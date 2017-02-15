@@ -83,6 +83,9 @@ public class OneCall implements Serializable {
             callederKeys.add(callederKey);
         }
     }
+    public void clearCallederList() {
+        callederKeys.clear();
+    }
 
     private long createTime;//本对象创建时间
     public long getCreateTime() {

@@ -1,4 +1,9 @@
 ﻿{
+  //socket客户端配置信息
+  "serverIdentify":{
+    "serverType":"PushCenter", //不能大于12个字符
+    "serverName":"MainServer"
+  },
   //以下三项为Socket处理参数
   "pushserver":{
     "ctlTcpPort":"16789",     //控制端配置
@@ -58,7 +63,7 @@
         "expiredTNum":"3"  //过期周期数目，3个周期
       }
     },
-    "audio":{//视频
+    "vedio":{//视频
       "packT":"40", //每一包时长，毫秒
       "packExpired":"1000", //包过期时间，单个包
       "expired":{ //过期配置

@@ -100,13 +100,15 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
                 //加入内存
                 int addFlag=callingMem.addOneCall(oneCall);
                 if (addFlag!=1) {//返回错误信息
+                    retMsg.setCmdType(3);
+                    retMsg.setCommand(0x30);
                     Map<String, Object> dataMap=new HashMap<String, Object>();
                     dataMap.put("CallId", callId);
                     dataMap.put("CallerId", callerId);
                     dataMap.put("CallederId", callederId);
                     MapContent mc=new MapContent(dataMap);
                     retMsg.setMsgContent(mc);
-                    retMsg.setReturnType(addFlag==0?0x81:0x82);
+                    retMsg.setReturnType(0x82);//flag=-1，不是新会话
                     globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
                 } else {
                     //启动处理进程
@@ -115,13 +117,15 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
                     callHandler.start();
                 }
             } else { //告诉呼叫已经存在了，不能发起呼叫
+                retMsg.setCmdType(3);
+                retMsg.setCommand(0x30);
                 Map<String, Object> dataMap=new HashMap<String, Object>();
                 dataMap.put("CallId", callId);
                 dataMap.put("CallerId", callerId);
                 dataMap.put("CallederId", callederId);
                 MapContent mc=new MapContent(dataMap);
                 retMsg.setMsgContent(mc);
-                retMsg.setReturnType(0x83);
+                retMsg.setReturnType(0x81);
                 globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
             }
         } else {//其他消息，放到具体的独立处理线程中处理

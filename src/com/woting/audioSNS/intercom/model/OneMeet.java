@@ -161,7 +161,6 @@ public class OneMeet implements Serializable {
      */
     public void clearSpeaker() {
         synchronized(speakerLck) {
-            System.out.println("__003___"+getGroupId()+"_______________________in OneMeet clearSpeaker");
             speaker=null;
         }
     }

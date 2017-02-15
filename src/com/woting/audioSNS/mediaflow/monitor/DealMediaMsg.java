@@ -92,48 +92,42 @@ public class DealMediaMsg extends Thread {
         OneMeet om=(talkType==1?intercomMem.getOneMeet(chnlId):null);
         OneCall oc=(talkType==2?callingMem.getOneCall(chnlId):null);
 
-        //组织回执消息
-        MsgMedia retMm=new MsgMedia();
-        retMm.setFromType(1);
-        retMm.setToType(0);
-        retMm.setMsgType(0);
-        retMm.setAffirm(0);
-        retMm.setBizType(sourceMsg.getBizType());
-        retMm.setTalkId(talkId);
-        retMm.setChannelId(chnlId);
-        retMm.setSeqNo(seqNum);
-
-        if (talkType==1&&om==null) {//组对讲
-            if (sourceMsg.isCtlAffirm()) {
-                retMm.setReturnType(0x10);//对讲组内存数据不存在
-                try {
-                    globalMem.sendMem.putDeviceMsg(pUdk, retMm);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            return;
-        } 
-        if (talkType==2&&oc==null) { //电话
-            if (sourceMsg.isCtlAffirm()) {
-                retMm.setReturnType(0x10);//电话内存数据不存在
-                try {
-                    globalMem.sendMem.putDeviceMsg(pUdk, retMm);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            return;
+        int returnType=0;
+        if ((talkType==1&&om==null)||(talkType==2&&oc==null)) {
+            returnType=2;//对讲组内存数据不存在
         }
-        //发送正常回执，这个有问题，还要考察
+        if (returnType==0) {
+            if ((talkType==1&&om.getSpeaker()==null)||(talkType==2&&oc.getSpeaker()==null)) {
+                returnType=3;//对讲人不存在
+            }
+        }
+        if (returnType==0) {
+            if ((talkType==1&&!om.getSpeaker().equals(pUdk))||(talkType==2&&!oc.getSpeaker().equals(pUdk))) {
+                returnType=4;//对讲人不匹配
+            }
+        }
+        if (returnType==0) returnType=1;
+        
+        //发送应答回执
         if (sourceMsg.isCtlAffirm()) {
-            retMm.setReturnType(0x01);
+            //组织回执消息
+            MsgMedia retMm=new MsgMedia();
+            retMm.setFromType(1);
+            retMm.setToType(0);
+            retMm.setMsgType(1);
+            retMm.setAffirm(0);
+            retMm.setBizType(sourceMsg.getBizType());
+            retMm.setTalkId(talkId);
+            retMm.setChannelId(chnlId);
+            retMm.setSeqNo(seqNum);
+            retMm.setReturnType(returnType);
             try {
                 globalMem.sendMem.putDeviceMsg(pUdk, retMm);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
+        if (returnType!=1) return;
 
         //在对讲模式下：
 //        if (om!=null&&om.getMeetType()==1&&(om.getSpeaker()==null||!om.getSpeaker().equals(pUdk))) return; //说话人不存在或不合法

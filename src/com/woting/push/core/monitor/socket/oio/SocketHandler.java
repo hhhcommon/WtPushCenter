@@ -20,6 +20,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.spiritdata.framework.core.cache.CacheEle;
+import com.spiritdata.framework.core.cache.SystemCache;
 import com.spiritdata.framework.util.DateUtils;
 import com.spiritdata.framework.util.JsonUtils;
 import com.spiritdata.framework.util.SequenceUUID;
@@ -28,7 +30,9 @@ import com.woting.audioSNS.calling.mem.CallingMemory;
 import com.woting.audioSNS.intercom.mem.IntercomMemory;
 import com.woting.audioSNS.mediaflow.mem.TalkMemory;
 import com.woting.audioSNS.mediaflow.monitor.DealMediaMsg;
+import com.woting.push.PushConstants;
 import com.woting.push.config.MediaConfig;
+import com.woting.push.config.PushConfig;
 import com.woting.push.core.SocketHandleConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.Message;
@@ -50,6 +54,7 @@ public class SocketHandler {
 
     private SocketHandleConfig conf;
     private MediaConfig mConf;
+    private PushConfig pConf;
     private Socket _socket;
     private BufferedInputStream _socketIn=null;
     private BufferedOutputStream _socketOut=null;
@@ -84,10 +89,12 @@ public class SocketHandler {
     public volatile Object stopLck=new Object();
     private volatile boolean isRunning=true; //是否可以运行
 
+    @SuppressWarnings("unchecked")
     protected SocketHandler(SocketHandleConfig conf, MediaConfig mConf, Socket socket) {
         socketDesc="Socket["+socket.getRemoteSocketAddress()+"::"+socket.hashCode()+"]";
         this.conf=conf;
         this.mConf=mConf;
+        this.pConf=((CacheEle<PushConfig>)SystemCache.getCache(PushConstants.PUSH_CONF)).getContent();
         _socket=socket;
     }
 
@@ -516,7 +523,7 @@ public class SocketHandler {
             endMsgFlag[1]=0x00;
             endMsgFlag[2]=0x00;
 
-            int msgType=-1, r=-1, i=0, isAck=-1, isRegist=0;
+            int msgType=-1, r=-1, i=0, isAck=-1, isRegist=0, isCtlAck=0, tempCount=0, fieldFlag=0, countFlag=0;
             short _dataLen=-3;
 
             boolean hasBeginMsg=false; //是否开始了一个消息
@@ -551,37 +558,107 @@ public class SocketHandler {
                     if (msgType==-1) msgType=MessageUtils.decideMsg(ba);
                     if (msgType==0) {//0=控制消息(一般消息)
                         if (isAck==-1&&i==12) {
-                            if (((ba[2]&0x80)==0x80)&&((ba[2]&0x00)==0x00)&&(((ba[i-1]&0xF0)==0x00)||((ba[i-1]&0xF0)==0xF0))) isAck=1; else isAck=0;
-                            if ((ba[i-1]&0xF0)==0xF0) isRegist=1;
-                        } else  if (isAck==1) {//是回复消息
-                            if (isRegist==1) { //是注册消息
-                                if (_dataLen<0) _dataLen=91;
-                                if (i==48&&endMsgFlag[2]==0) _dataLen=80;
-                            } else { //非注册消息
-                                if (_dataLen<0) _dataLen=45;
-                            }
-                            if (_dataLen>=0&&i==_dataLen) break;
-                        } else  if (isAck==0) {//是一般消息
-                            if (isRegist==1) {//是注册消息
-                                if (((ba[2]&0x80)==0x80)&&((ba[2]&0x00)==0x00)) {
-                                    if (_dataLen<0) _dataLen=91;
-                                    if (i==48&&endMsgFlag[2]==0) _dataLen=80;
+                            if ((ba[2]&0x80)==0x80) isAck=1; else isAck=0;
+                            if (((ba[i-1]>>4)&0x0F)==0x0F) isRegist=1;
+                            else
+                            if (((ba[i-1]>>4)&0x00)==0x00) isCtlAck=1;
+                        } else {
+                            if (isCtlAck==1) {
+                                if (fieldFlag==0&&(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==32) {
+                                    countFlag=i+1;
+                                    tempCount=0;
+                                    fieldFlag=1;
+                                } else
+                                if (i>countFlag&&fieldFlag==1&&(ba[i]==0||(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==12)) {
+                                    tempCount=0;
+                                    fieldFlag=2;
+                                } else
+                                if (fieldFlag==2&&(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==32) {
+                                    break;//通用回复消息读取完毕
+                                }
+                            } else if (isRegist==1) {
+                                countFlag=(isAck==1?i+1:i);
+                                if (i>=countFlag&&fieldFlag==0&&(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==32) {
+                                    countFlag=i+1;
+                                    tempCount=0;
+                                    fieldFlag=1;
+                                } else
+                                if (i>countFlag&&fieldFlag==1) {
+                                    if ((i-1)==countFlag&&ba[i]==0||(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==12) {
+                                        tempCount=0;
+                                        fieldFlag=2;
+                                    }
+                                }
+                                else
+                                if (fieldFlag==2&&(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==32) {
+                                    break;//注册消息完成
+                                }
+                            } else { //一般消息
+                                countFlag=(isAck==1?i+2:i+1);
+                                if (isAck==1) {
+                                    if (fieldFlag==0&&(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==32) {
+                                        tempCount=0;
+                                        fieldFlag=1;
+                                    } else
+                                    if (fieldFlag==1&&(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==32) {
+                                        countFlag=i+1;
+                                        tempCount=0;
+                                        fieldFlag=2;
+                                    }
                                 } else {
-                                    if (_dataLen<0) _dataLen=90;
-                                    if (i==47&&endMsgFlag[2]==0) _dataLen=79;
+                                    if (fieldFlag==0&&(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==32) {
+                                        countFlag=i+1;
+                                        tempCount=0;
+                                        fieldFlag=2;
+                                    }
                                 }
-                                if (_dataLen>=0&&i==_dataLen) break;
-                            } else {//非注册消息
-                                if (_dataLen==-3&&endMsgFlag[1]=='^'&&endMsgFlag[2]=='^') _dataLen++;
-                                else if (_dataLen>-3&&_dataLen<-1) _dataLen++;
-                                else if (_dataLen==-1) {
+                                if (i>countFlag&&fieldFlag==2) {
+                                    if ((i-1)==countFlag&&ba[i]==0||(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==12) {
+                                        tempCount=0;
+                                        fieldFlag=3;
+                                    }
+                                }
+                                else
+                                if (fieldFlag==3&&(++tempCount)==2) {
                                     _dataLen=(short)(((endMsgFlag[2]<<8)|endMsgFlag[1]&0xff));
-                                    if (_dataLen==0) break;
-                                } else if (_dataLen>=0) {
-                                    if (--_dataLen==0) break;
+                                    tempCount=0;
+                                    fieldFlag=4;
                                 }
+                                else
+                                if (fieldFlag==4&&(tempCount++)==_dataLen) break;
                             }
                         }
+//                        if (isAck==1) {//是回复消息
+//                            if (isRegist==1) { //是注册消息
+//                                if (_dataLen<0) _dataLen=91;
+//                                if (i==48&&endMsgFlag[2]==0) _dataLen=80;
+//                            } else { //非注册消息
+//                                if (_dataLen<0) _dataLen=45;
+//                            }
+//                            if (_dataLen>=0&&i==_dataLen) break;
+//                        } else  if (isAck==0) {//是一般消息
+//                            if (isRegist==1) {//是注册消息
+//                                if (fieldFlag==0&&(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==32) {
+//                                    tempCount=0;
+//                                    fieldFlag=1;
+//                                }
+//                                if ((ba[2]&0x80)==0x80) continue;
+//                                if (fieldFlag==1&&(endMsgFlag[2]==0||(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==12)) {
+//                                    tempCount=0;
+//                                    fieldFlag=2;
+//                                }
+//                                if (fieldFlag==2&&(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==32) break;
+//                            } else {//非注册消息
+//                                if (_dataLen==-3&&endMsgFlag[1]=='^'&&endMsgFlag[2]=='^') _dataLen++;
+//                                else if (_dataLen>-3&&_dataLen<-1) _dataLen++;
+//                                else if (_dataLen==-1) {
+//                                    _dataLen=(short)(((endMsgFlag[2]<<8)|endMsgFlag[1]&0xff));
+//                                    if (_dataLen==0) break;
+//                                } else if (_dataLen>=0) {
+//                                    if (--_dataLen==0) break;
+//                                }
+//                            }
+//                        }
                     } else if (msgType==1) {//1=媒体消息
                         if (isAck==-1) {
                             if (((ba[2]&0x80)==0x80)&&((ba[2]&0x40)==0x00)) isAck=1; else isAck=0;
@@ -615,7 +692,7 @@ public class SocketHandler {
                 rB[0]='B';
                 rB[1]='^';
                 rB[2]='^';
-                _sendMsgQueue.put(rB);
+                //_sendMsgQueue.put(rB);
             } else { //处理正常消息
                 try {
                     Message ms=null;
@@ -761,16 +838,23 @@ public class SocketHandler {
                             } catch (IOException e) {}
                         }
                         try {//传消息
-                            _sendMsgQueue.put(m.toBytes());
-                            //若需要控制确认，插入已发送列表
-                            if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
+                            if (m instanceof MsgNormal) {
+                                MsgNormal mn=(MsgNormal)m;
+                                if (mn.getFromType()==0) {
+                                    mn.setUserId(pConf.get_ServerType());
+                                    mn.setDeviceId(pConf.get_ServerName());
+                                }
+                                _sendMsgQueue.put(m.toBytes());
+                                //若需要控制确认，插入已发送列表
+                                if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
+                            }
                         } catch(Exception e) {}
                     }
                     //获得**具体给这个设备**的消息——媒体消息
                     m=globalMem.sendMem.pollDeviceMsgMDA(_pushUserKey, SocketHandler.this);
                     if (m!=null) {
-                        //若超出媒体包延迟时间，就不发这个媒体包了
-                        if (System.currentTimeMillis()-((MsgMedia)m).getSendTime()>(((MsgMedia)m).getMediaType()==1?mConf.get_AudioExpiredTime():mConf.get_VedioExpiredTime())) {
+                        if (System.currentTimeMillis()-((MsgMedia)m).getSendTime()<(((MsgMedia)m).getMediaType()==1?mConf.get_AudioExpiredTime():mConf.get_VedioExpiredTime())) {
+                            //若超出媒体包延迟时间，就不发这个媒体包了
                             if (fos!=null) {//记日志
                                 try {
                                     byte[] aa=JsonUtils.objToJson(m).getBytes();
@@ -797,10 +881,15 @@ public class SocketHandler {
                             } catch (IOException e) {}
                         }
                         try {
-                            _sendMsgQueue.put(nm.toBytes());
-                            //若需要控制确认，插入已发送列表
                             if (m instanceof MsgNormal) {
-                                if (((MsgNormal)m).isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
+                                MsgNormal mn=(MsgNormal)m;
+                                if (mn.getFromType()==0) {
+                                    mn.setUserId(pConf.get_ServerType());
+                                    mn.setDeviceId(pConf.get_ServerName());
+                                }
+                                _sendMsgQueue.put(m.toBytes());
+                                //若需要控制确认，插入已发送列表
+                                if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
                             }
                         } catch(Exception e) {}
                     }
@@ -821,9 +910,16 @@ public class SocketHandler {
                             } catch (IOException e) {}
                         }
                         try {
-                            _sendMsgQueue.put(_msg.toBytes());
-                            //更新信息
-                            if (((MsgNormal)m).isCtlAffirm()) globalMem.sendMem.updateSendedNeedCtlAffirmMsg(_pushUserKey, _m);
+                            if (m instanceof MsgNormal) {
+                                MsgNormal mn=(MsgNormal)m;
+                                if (mn.getFromType()==0) {
+                                    mn.setUserId(pConf.get_ServerType());
+                                    mn.setDeviceId(pConf.get_ServerName());
+                                }
+                                _sendMsgQueue.put(m.toBytes());
+                                //若需要控制确认，插入已发送列表
+                                if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
+                            }
                         } catch(Exception e) {}
                     }
                     try { _pushUserKey.wait(20); } catch (InterruptedException ie) {};

@@ -176,7 +176,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 toCallederMsg.setFromType(1);
                 toCallederMsg.setToType(0);
                 dataMap=new HashMap<String, Object>();
-                dataMap.put("DialType", returnType==4?"2":"1");
+                dataMap.put("DialType", returnType==1?"1":"2");
                 dataMap.put("CallId", callId);
                 dataMap.put("CallerId", callerId);
                 dataMap.put("CallederId", callederId);
@@ -236,6 +236,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         if (callData.getStatus()==1||callData.getStatus()==2) {//状态正确，如果是其他状态，这个消息抛弃
             PushUserUDKey ackUdkey=PushUserUDKey.buildFromMsg(m);
             callData.setCallederKey(ackUdkey);
+            callData.clearCallederList();
             callingMem.addUserInCall(ackUdkey.getUserId(), callData);
 
             //应答状态
@@ -359,6 +360,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 toSpeakerMsg.setReturnType(3);
                 dataMap.put("ErrMsg", "当前会话为非对讲模式，不用申请独占的通话资源");
             } else {
+                toSpeakerMsg.setReturnType(4);
                 dataMap.put("ErrMsg", ret.startsWith("-")?ret.substring(ret.indexOf("::")+2):"未知问题");
             }
 
@@ -415,6 +417,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 toSpeakerMsg.setReturnType(2);
                 dataMap.put("Speaker", ret.substring(3));
             } else {
+                toSpeakerMsg.setReturnType(4);
                 dataMap.put("ErrMsg", ret.startsWith("-")?ret.substring(ret.indexOf("::")+2):"未知问题");
             }
 
@@ -616,6 +619,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     private void  dealCallerFirstTalk(PushUserUDKey callederKey) throws InterruptedException {
         if (callData.getStatus()==1||callData.getStatus()==2) {//等同于“被叫者”手工应答
             callData.setCallederKey(callederKey);
+            callData.clearCallederList();
             callingMem.addUserInCall(callederKey.getUserId(), callData);
 
             if (callData.getCallerKey()!=null) {
@@ -639,31 +643,31 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 toCallerMsg.setPCDType(0);
                 globalMem.sendMem.putDeviceMsg(callData.getCallerKey(), toCallerMsg);
                 callData.addSendedMsg(toCallerMsg);
-            } else if (callData.getCallederList()!=null) {
-                //告诉其他被叫设备
-                for (PushUserUDKey _pUdkey: callData.getCallederList()) {
-                    if (!callederKey.equals(_pUdkey)) {
-                        MsgNormal toOtherCallederMsg=new MsgNormal();
-                        toOtherCallederMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-                        toOtherCallederMsg.setFromType(1);
-                        toOtherCallederMsg.setToType(0);
-                        toOtherCallederMsg.setMsgType(0);
-                        toOtherCallederMsg.setAffirm(0);
-                        toOtherCallederMsg.setBizType(2);
-                        toOtherCallederMsg.setCmdType(1);
-                        toOtherCallederMsg.setCommand(0x20);
-                        Map<String, Object> _dataMap=new HashMap<String, Object>();
-                        _dataMap.put("CallId", callData.getCallId());
-                        _dataMap.put("CallerId", callData.getCallerId());
-                        _dataMap.put("CallederId", callData.getCallederId());
-                        _dataMap.put("ACKType", "1");
-                        MapContent _mc=new MapContent(_dataMap);
-                        toOtherCallederMsg.setMsgContent(_mc);
-                        toOtherCallederMsg.setPCDType(0);
-                        globalMem.sendMem.putDeviceMsg(_pUdkey, toOtherCallederMsg);
-                        callData.addSendedMsg(toOtherCallederMsg);
-                    }
-                }
+//            } else if (callData.getCallederList()!=null) {
+//                //告诉其他被叫设备
+//                for (PushUserUDKey _pUdkey: callData.getCallederList()) {
+//                    if (!callederKey.equals(_pUdkey)) {
+//                        MsgNormal toOtherCallederMsg=new MsgNormal();
+//                        toOtherCallederMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
+//                        toOtherCallederMsg.setFromType(1);
+//                        toOtherCallederMsg.setToType(0);
+//                        toOtherCallederMsg.setMsgType(0);
+//                        toOtherCallederMsg.setAffirm(0);
+//                        toOtherCallederMsg.setBizType(2);
+//                        toOtherCallederMsg.setCmdType(1);
+//                        toOtherCallederMsg.setCommand(0x20);
+//                        Map<String, Object> _dataMap=new HashMap<String, Object>();
+//                        _dataMap.put("CallId", callData.getCallId());
+//                        _dataMap.put("CallerId", callData.getCallerId());
+//                        _dataMap.put("CallederId", callData.getCallederId());
+//                        _dataMap.put("ACKType", "1");
+//                        MapContent _mc=new MapContent(_dataMap);
+//                        toOtherCallederMsg.setMsgContent(_mc);
+//                        toOtherCallederMsg.setPCDType(0);
+//                        globalMem.sendMem.putDeviceMsg(_pUdkey, toOtherCallederMsg);
+//                        callData.addSendedMsg(toOtherCallederMsg);
+//                    }
+//                }
             }
             PushUserUDKey callerK=callData.getUdkByUserId(callData.getCallerId());
             callerK=(PushUserUDKey)sessionService.getActivedUserUDK(callerK.getUserId(), callerK.getPCDType());

@@ -139,7 +139,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             hasSpeaker.setReMsgId(null);
             hasSpeaker.setMsgType(0);
             hasSpeaker.setCmdType(2);
-            hasSpeaker.setCommand(0x30);
+            hasSpeaker.setCommand(0x0B);
             dataMap=new HashMap<String, Object>();
             dataMap.put("GroupId", groupId);
             dataMap.put("SpeakerId", meetData.getSpeaker().getUserId());
@@ -345,7 +345,6 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         if (!pUdk.isUser()) retMsg.setReturnType(0x00);
         else if (meetData==null) retMsg.setReturnType(0x02);
         else {
-//            System.out.println("^^005^^^"+meetData.getGroupId()+"^^^^^^^^^^^^^^^^^^^^^^^ in Handler endPTT");
             retFlag=meetData.releaseSpeaker(pUdk);
             if (retFlag==2) retMsg.setReturnType(0x04);//该用户不在指定组
             else if (retFlag==3) {
@@ -423,9 +422,9 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             //一段时间后未通话，删除通话者
             if ((IntercomHandler.this.meetData.getStatus()==2||IntercomHandler.this.meetData.getStatus()==3)
               &&(IntercomHandler.this.meetData.getSpeaker()!=null)
+              &&(IntercomHandler.this.meetData.getLastTalkTime()!=-1)
               &&(System.currentTimeMillis()-IntercomHandler.this.meetData.getLastTalkTime()>IntercomHandler.this.conf.get_ExpireSpeakerTime()))
             {
-//                System.out.println("^^002^^^"+meetData.getGroupId()+"^^^^^^^^^^^^^^^^^^^^^^^"+System.currentTimeMillis()+"-"+IntercomHandler.this.meetData.getLastTalkTime()+"="+(System.currentTimeMillis()-IntercomHandler.this.meetData.getLastTalkTime())+">"+IntercomHandler.this.conf.get_ExpireSpeakerTime());
                 IntercomHandler.this.meetData.clearSpeaker();
             }
         }

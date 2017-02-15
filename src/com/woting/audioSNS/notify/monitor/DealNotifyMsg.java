@@ -72,6 +72,11 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
                 if (mc==null||mc.getContentMap()==null||mc.getContentMap().size()==0) return;
                 Map<String, Object> m=mc.getContentMap();
 
+                //2.0-取出回复类型
+                int affirmType=1;//默认为需要控制回复
+                try {
+                    affirmType=Integer.parseInt(m.get("_AFFIRMTYPE")==null?"":m.get("_AFFIRMTYPE")+"");
+                } catch(Exception e) {}
                 //2.1-取出目的信息
                 String toGroups=(m.get("_TOGROUPS")==null?"":m.get("_TOGROUPS")+"");
                 String toUsers=(m.get("_TOUSERS")==null?"":m.get("_TOUSERS")+"");
@@ -151,7 +156,7 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
                 nm.setBizType(4);
                 nm.setMsgId(SequenceUUID.getUUIDSubSegment(4));
                 nm.setMsgType(0);
-                nm.setAffirm(1);
+                nm.setAffirm(affirmType);
                 nm.setFromType(1);
                 nm.setToType(0);
                 nm.setCmdType(sourceMsg.getCmdType());

@@ -29,7 +29,7 @@ public class OneTalk {
     public OneTalk(String talkId, PushUserUDKey talkerUdk, String objId, int talkType) {
         super();
         setBeginTime(System.currentTimeMillis());
-        _expired=((MediaConfig)SystemCache.getCache(PushConstants.MEDIA_CONF).getContent()).getVedioExpiedTime();
+        _expired=((MediaConfig)SystemCache.getCache(PushConstants.MEDIA_CONF).getContent()).getAudioExpiedTime();
         talkData=new HashMap<Integer, TalkSegment>();
         this.talkId=talkId;
         this.talkerUdk=talkerUdk;

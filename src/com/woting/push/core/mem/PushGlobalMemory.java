@@ -8,6 +8,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.spiritdata.framework.core.cache.SystemCache;
+import com.spiritdata.framework.util.JsonUtils;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.intercom.model.OneMeet;
 import com.woting.passport.UGA.model.Group;
@@ -464,7 +465,7 @@ public class PushGlobalMemory {
          * @throws InterruptedException 
          */
         public void putDeviceMsg(PushUserUDKey pUDkey, Message msg) throws InterruptedException {
-            if (send2DeviceMsgCTL==null||msg==null||pUDkey==null) return;
+            if (msg==null||pUDkey==null) return;
             LinkedBlockingQueue<Message> _deviceQueueCTL=((msg instanceof MsgNormal)?send2DeviceMsgCTL.get(pUDkey):send2DeviceMsgMDA.get(pUDkey));
             if (_deviceQueueCTL==null) {
                 _deviceQueueCTL=new LinkedBlockingQueue<Message>();
