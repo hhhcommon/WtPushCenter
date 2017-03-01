@@ -28,6 +28,9 @@
     <property name="maxOpenPreparedStatements" value="30"/>
     <property name="testOnBorrow"><value>false</value></property>
     <property name="validationQuery"><value>select 1 from dual</value></property>
+
+    <property name="testWhileIdl" value="true"></property>
+    <property name="timeBetweenEvictionRunsMillis" value="30000"><value>30000</value></property>
   </bean>
   <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
     <property name="dataSource" ref="dataSource"/>

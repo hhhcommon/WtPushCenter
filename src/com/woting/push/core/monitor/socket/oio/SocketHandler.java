@@ -346,19 +346,24 @@ public class SocketHandler {
                         if (_ms.getBizType()!=15) {
                             if (_pUdk.equals(_pushUserKey)) {
                                 if (_ms.isCtlAffirm()) { //处理回复消息
-                                    try { _sendMsgQueue.put((MessageUtils.buildAckMsg((MsgNormal)_ms)).toBytes()); } catch(Exception e) {}
+                                    MsgNormal ctlAffirmMsg=MessageUtils.buildAckMsg((MsgNormal)_ms);
+                                    ctlAffirmMsg.setUserId(pConf.get_ServerType());
+                                    ctlAffirmMsg.setDeviceId(pConf.get_ServerName());
+                                    try { _sendMsgQueue.put(ctlAffirmMsg.toBytes()); } catch(Exception e) {}
                                 }
                                 globalMem.receiveMem.putTypeMsg(""+((MsgNormal)_ms).getBizType(), _ms);
                             } else {
                                 if (_ms.isCtlAffirm()||_ms.isBizAffirm()) { //处理回复消息
                                     MsgNormal noLogMsg=MessageUtils.buildAckMsg((MsgNormal)_ms);
                                     noLogMsg.setCmdType(1);
+                                    noLogMsg.setUserId(pConf.get_ServerType());
+                                    noLogMsg.setDeviceId(pConf.get_ServerName());
                                     try { _sendMsgQueue.put(noLogMsg.toBytes()); } catch(Exception e) {}
                                 }
                             }
                         } else {//是注册消息
                             boolean bindDeviceFlag=false;
-                            if (_ms.getFromType()==1) {//从服务器来的消息，对于服务器，先到的占用。
+                            if (_ms.getFromType()==0) {//从服务器来的消息，对于服务器，先到的占用。
                                 _pushUserKey=_pUdk;
                                 synchronized(SocketHandler.this.waitBind) {
                                     SocketHandler.this.waitBind.notifyAll();
@@ -407,7 +412,8 @@ public class SocketHandler {
                                     }
                                     MsgNormal ackM=MessageUtils.buildAckEntryMsg(_ms);
                                     ackM.setReturnType(1);//成功
-                                    ackM.setUserId(_pushUserKey.getUserId());
+                                    ackM.setUserId(pConf.get_ServerType());
+                                    ackM.setDeviceId(pConf.get_ServerName());
                                     ackM.setSendTime(System.currentTimeMillis());
                                     try { _sendMsgQueue.put(ackM.toBytes()); } catch(Exception e) { }
 
@@ -523,7 +529,7 @@ public class SocketHandler {
             endMsgFlag[1]=0x00;
             endMsgFlag[2]=0x00;
 
-            int msgType=-1, r=-1, i=0, isAck=-1, isRegist=0, isCtlAck=0, tempCount=0, fieldFlag=0, countFlag=0;
+            int msgType=-1, r=-1, i=0, isAck=-1, isRegist=0, isCtlAck=0, tempFlag=0, fieldFlag=0, countFlag=0;
             short _dataLen=-3;
 
             boolean hasBeginMsg=false; //是否开始了一个消息
@@ -558,107 +564,56 @@ public class SocketHandler {
                     if (msgType==-1) msgType=MessageUtils.decideMsg(ba);
                     if (msgType==0) {//0=控制消息(一般消息)
                         if (isAck==-1&&i==12) {
+                            tempFlag=i;
                             if ((ba[2]&0x80)==0x80) isAck=1; else isAck=0;
+                            if (isAck==1) countFlag=1; else countFlag=0;
+
                             if (((ba[i-1]>>4)&0x0F)==0x0F) isRegist=1;
                             else
-                            if (((ba[i-1]>>4)&0x00)==0x00) isCtlAck=1;
-                        } else {
+                            if (((ba[i-1]>>4)|0x00)==0x00) isCtlAck=1;
+                        }
+                        if (isAck!=-1) {
                             if (isCtlAck==1) {
-                                if (fieldFlag==0&&(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==32) {
-                                    countFlag=i+1;
-                                    tempCount=0;
+                                if (fieldFlag==0&&((endMsgFlag[1]=='|'&&endMsgFlag[2]=='|')||(i-tempFlag-countFlag)==32)) {
+                                    countFlag=1;
+                                    tempFlag=i;
                                     fieldFlag=1;
                                 } else
-                                if (i>countFlag&&fieldFlag==1&&(ba[i]==0||(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==12)) {
-                                    tempCount=0;
+                                if (fieldFlag==1&&(i-tempFlag)>countFlag&&(ba[i-countFlag]==0||(endMsgFlag[1]=='|'&&endMsgFlag[2]=='|')||(i-tempFlag-countFlag)==12)) {
+                                    countFlag=0;
+                                    tempFlag=i;
                                     fieldFlag=2;
                                 } else
-                                if (fieldFlag==2&&(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==32) {
+                                if (fieldFlag==2&&((endMsgFlag[1]=='|'&&endMsgFlag[2]=='|')||(i-tempFlag-countFlag)==32)) {
                                     break;//通用回复消息读取完毕
                                 }
                             } else if (isRegist==1) {
-                                countFlag=(isAck==1?i+1:i);
-                                if (i>=countFlag&&fieldFlag==0&&(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==32) {
-                                    countFlag=i+1;
-                                    tempCount=0;
+                                if (fieldFlag==0&&(i-tempFlag)>countFlag&&((endMsgFlag[1]=='|'&&endMsgFlag[2]=='|')||(i-tempFlag-countFlag)==32)) {
+                                    countFlag=1;
+                                    tempFlag=i;
                                     fieldFlag=1;
                                 } else
-                                if (i>countFlag&&fieldFlag==1) {
-                                    if ((i-1)==countFlag&&ba[i]==0||(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==12) {
-                                        tempCount=0;
-                                        fieldFlag=2;
-                                    }
-                                }
-                                else
-                                if (fieldFlag==2&&(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==32) {
+                                if (fieldFlag==1&&(i-tempFlag)>countFlag&&((ba[i-countFlag]==0||(endMsgFlag[1]=='|'&&endMsgFlag[2]=='|')||(i-tempFlag-countFlag)==12))) {
+                                    countFlag=0;
+                                    tempFlag=i;
+                                    fieldFlag=2;
+                                } else
+                                if (fieldFlag==2&&((endMsgFlag[1]=='|'&&endMsgFlag[2]=='|')||(i-tempFlag-countFlag)==32)) {
                                     break;//注册消息完成
                                 }
                             } else { //一般消息
-                                countFlag=(isAck==1?i+2:i+1);
-                                if (isAck==1) {
-                                    if (fieldFlag==0&&(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==32) {
-                                        tempCount=0;
-                                        fieldFlag=1;
-                                    } else
-                                    if (fieldFlag==1&&(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==32) {
-                                        countFlag=i+1;
-                                        tempCount=0;
-                                        fieldFlag=2;
-                                    }
-                                } else {
-                                    if (fieldFlag==0&&(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==32) {
-                                        countFlag=i+1;
-                                        tempCount=0;
-                                        fieldFlag=2;
-                                    }
-                                }
-                                if (i>countFlag&&fieldFlag==2) {
-                                    if ((i-1)==countFlag&&ba[i]==0||(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==12) {
-                                        tempCount=0;
-                                        fieldFlag=3;
-                                    }
-                                }
-                                else
-                                if (fieldFlag==3&&(++tempCount)==2) {
+                                if (fieldFlag==0&&endMsgFlag[1]=='^'&&endMsgFlag[2]=='^') {
+                                    fieldFlag=1;
+                                    tempFlag=0;
+                                } else
+                                if (fieldFlag==1&&(++tempFlag)==2) {
                                     _dataLen=(short)(((endMsgFlag[2]<<8)|endMsgFlag[1]&0xff));
-                                    tempCount=0;
-                                    fieldFlag=4;
-                                }
-                                else
-                                if (fieldFlag==4&&(tempCount++)==_dataLen) break;
+                                    tempFlag=0;
+                                    fieldFlag=2;
+                                } else
+                                if (fieldFlag==2&&(++tempFlag)==_dataLen) break;
                             }
                         }
-//                        if (isAck==1) {//是回复消息
-//                            if (isRegist==1) { //是注册消息
-//                                if (_dataLen<0) _dataLen=91;
-//                                if (i==48&&endMsgFlag[2]==0) _dataLen=80;
-//                            } else { //非注册消息
-//                                if (_dataLen<0) _dataLen=45;
-//                            }
-//                            if (_dataLen>=0&&i==_dataLen) break;
-//                        } else  if (isAck==0) {//是一般消息
-//                            if (isRegist==1) {//是注册消息
-//                                if (fieldFlag==0&&(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==32) {
-//                                    tempCount=0;
-//                                    fieldFlag=1;
-//                                }
-//                                if ((ba[2]&0x80)==0x80) continue;
-//                                if (fieldFlag==1&&(endMsgFlag[2]==0||(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==12)) {
-//                                    tempCount=0;
-//                                    fieldFlag=2;
-//                                }
-//                                if (fieldFlag==2&&(endMsgFlag[0]=='|'&&endMsgFlag[1]=='|')||(++tempCount)==32) break;
-//                            } else {//非注册消息
-//                                if (_dataLen==-3&&endMsgFlag[1]=='^'&&endMsgFlag[2]=='^') _dataLen++;
-//                                else if (_dataLen>-3&&_dataLen<-1) _dataLen++;
-//                                else if (_dataLen==-1) {
-//                                    _dataLen=(short)(((endMsgFlag[2]<<8)|endMsgFlag[1]&0xff));
-//                                    if (_dataLen==0) break;
-//                                } else if (_dataLen>=0) {
-//                                    if (--_dataLen==0) break;
-//                                }
-//                            }
-//                        }
                     } else if (msgType==1) {//1=媒体消息
                         if (isAck==-1) {
                             if (((ba[2]&0x80)==0x80)&&((ba[2]&0x40)==0x00)) isAck=1; else isAck=0;
@@ -698,10 +653,10 @@ public class SocketHandler {
                     Message ms=null;
                     try {
                         ms=MessageUtils.buildMsgByBytes(mba);
+                        logger.debug("收到消息::"+JsonUtils.objToJson(ms));
                         _recvMsgQueue.put(ms);
                     } catch (Exception e) {
                     }
-                    logger.debug("收到消息::"+JsonUtils.objToJson(ms));
                     if (fos!=null) {
                         byte[] aa=JsonUtils.objToJson(ms).getBytes();
                         fos.write(aa, 0, aa.length);
