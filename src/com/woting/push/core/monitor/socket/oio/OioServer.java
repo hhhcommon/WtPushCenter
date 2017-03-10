@@ -56,26 +56,29 @@ public class OioServer extends AbstractLoopMoniter<PushConfig> {
     }
     @Override
     public void destroyServer() {
-        //销毁所有消息处理线程
-        List<SocketHandler> shL=globalMem.getSochekHanders();
-        if (shL!=null&&!shL.isEmpty()) {
-            for (SocketHandler sh:shL) {
-                synchronized(sh.stopLck) {
-                    sh.destroyHandler();
-                    try {
-                        sh.stopLck.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+        //销毁所有消息处理线程 
+        if (conf.get_SocketServerType()==1) {
+            List<Object> shL=globalMem.getSochekHanders();
+            if (shL!=null&&!shL.isEmpty()) {
+                for (Object sh:shL) {
+                    SocketHandler _sh=(SocketHandler)sh;
+                    synchronized(_sh.stopLck) {
+                        _sh.destroyHandler();
+                        try {
+                            _sh.stopLck.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
-            }
-            boolean allClosed=false;
-            int i=0;
-            while (i++<10&&!allClosed) {
-                allClosed=true;
-                for (SocketHandler sh:shL) {
-                    allClosed=sh.isStoped();
-                    if (!allClosed) break;
+                boolean allClosed=false;
+                int i=0;
+                while (i++<10&&!allClosed) {
+                    allClosed=true;
+                    for (Object sh:shL) {
+                        allClosed=((SocketHandler)sh).isStoped();
+                        if (!allClosed) break;
+                    }
                 }
             }
         }

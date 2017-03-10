@@ -28,6 +28,7 @@ import com.woting.push.core.SocketHandleConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
 import com.woting.push.core.service.LoadSysCacheService;
+import com.woting.push.core.monitor.socket.netty.NettyServer;
 import com.woting.push.core.monitor.socket.nio.NioServer;
 import com.woting.push.core.monitor.socket.oio.OioServer;
 import com.woting.push.ext.SpringShell;
@@ -41,7 +42,7 @@ import ch.qos.logback.core.joran.spi.JoranException;
  * @author wanghui
  */
 public class ServerListener {
-    private int socketType=0; //0=oio；1=nio
+    private int socketType=2; //0=oio；1=nio; 2=netty
     private Object runningLck=new Object();
 
     public static void main(String[] args) {
@@ -78,6 +79,7 @@ public class ServerListener {
     private static int _RUN_STATUS=0;//运行状态，0未启动，1正在启动，2启动成功；3准备停止；4停止
 
     private AbstractLoopMoniter<PushConfig> tcpCtlServer=null; //tcp控制信道监控服务
+    private NettyServer nettyServer=null; //tcp控制信道监控服务
     private List<DealIntercomMsg> dealIntercomList=null; //处理对讲消息线程的记录列表
     private List<DealCallingMsg> dealCallingList=null; //处理电话消息线程的记录列表
     private CleanCalling cleanCalling=null; //电话数据清理线程
@@ -197,6 +199,10 @@ public class ServerListener {
         logger.info("配置文件信息={}", jc.getAllConfInfo());
 
         PushConfig pc=ConfigLoadUtils.getPushConfig(jc);
+        try {
+            this.socketType=pc.get_SocketServerType();
+        } catch(Exception e) {
+        }
         SystemCache.setCache(new CacheEle<PushConfig>(PushConstants.PUSH_CONF, "系统配置", pc));
 
         SocketHandleConfig shc=ConfigLoadUtils.getSocketHandleConfig(jc);
@@ -248,13 +254,24 @@ public class ServerListener {
         logger.info("启动Push服务:二、监控服务启动=======================");
         //1-启动{TCP_控制信道}socket监控
         PushConfig pc=((CacheEle<PushConfig>)SystemCache.getCache(PushConstants.PUSH_CONF)).getContent();
+        SocketHandleConfig sc=((CacheEle<SocketHandleConfig>)SystemCache.getCache(PushConstants.SOCKETHANDLE_CONF)).getContent();
+        socketType=2;
         if (socketType==0) {
             tcpCtlServer=new OioServer(pc);
-        } else {
+            tcpCtlServer.setDaemon(true);
+            tcpCtlServer.start();
+        } else if (socketType==1) {
             tcpCtlServer=new NioServer(pc);
+            tcpCtlServer.setDaemon(true);
+            tcpCtlServer.start();
+        } else if (socketType==2) {
+            nettyServer=new NettyServer(pc, sc);
+            try {
+                nettyServer.begin();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
-        tcpCtlServer.setDaemon(true);
-        tcpCtlServer.start();
         //2-启动{处理对讲消息}线程
         IntercomConfig ic=((CacheEle<IntercomConfig>)SystemCache.getCache(PushConstants.INTERCOM_CONF)).getContent();
         dealIntercomList=new ArrayList<DealIntercomMsg>();

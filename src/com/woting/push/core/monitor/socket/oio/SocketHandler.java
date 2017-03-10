@@ -383,7 +383,7 @@ public class SocketHandler {
                                 //绑定客户端
                                 bindDeviceFlag=globalMem.bindDeviceANDsocket(_pUdk, SocketHandler.this, false);
                                 if (!bindDeviceFlag) { //与原来记录的不一致，则删除原来的，对于客户端，后到的占用。
-                                    SocketHandler _sh=globalMem.getSocketByDevice(_pUdk);
+                                    SocketHandler _sh=(SocketHandler)globalMem.getSocketByDevice(_pUdk);
                                     synchronized(_sh.stopLck) {
                                         _sh.destroyHandler();
                                         if (_sh.isRunning) {
@@ -402,6 +402,8 @@ public class SocketHandler {
                                 if (!(""+retM.get("ReturnType")).equals("1001")) {
                                     MsgNormal ackM=MessageUtils.buildAckEntryMsg(_ms);
                                     ackM.setReturnType(0);//失败
+                                    ackM.setUserId(pConf.get_ServerType());
+                                    ackM.setDeviceId(pConf.get_ServerName());
                                     ackM.setSendTime(System.currentTimeMillis());
                                     try { _sendMsgQueue.put(ackM.toBytes()); } catch(Exception e) {}
                                 } else {//登录成功
@@ -418,7 +420,7 @@ public class SocketHandler {
                                     try { _sendMsgQueue.put(ackM.toBytes()); } catch(Exception e) { }
 
                                     //判断踢出
-                                    SocketHandler _oldSh=globalMem.getSocketByUser(_pUdk); //和该用户对应的旧的Socket处理
+                                    SocketHandler _oldSh=(SocketHandler)globalMem.getSocketByUser(_pUdk); //和该用户对应的旧的Socket处理
                                     PushUserUDKey _oldUk=(_oldSh==null?null:_oldSh.getPuUDKey()); //旧Socket处理所绑定的UserKey
                                     boolean _oldNeedKickOut=sessionService.needKickOut(_oldUk);
                                     if (_oldSh!=null&&_oldUk!=null&&!_oldSh.equals(SocketHandler.this)  //1-旧Socket处理不为空；2-旧Socket处理中绑定用户Key不为空；3-新旧Socket处理不相等
@@ -433,11 +435,13 @@ public class SocketHandler {
                                         msg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
                                         msg.setMsgType(0);
                                         msg.setAffirm(0);
-                                        msg.setFromType(1);
-                                        msg.setToType(0);
+                                        msg.setFromType(0);
+                                        msg.setToType(1);
                                         msg.setBizType(0x04);
                                         msg.setCmdType(3);
                                         msg.setCommand(1);
+                                        msg.setUserId(pConf.get_ServerType());
+                                        msg.setDeviceId(pConf.get_ServerName());
                                         msg.setSendTime(System.currentTimeMillis());
                                         Map<String, Object> dataMap=new HashMap<String, Object>();
                                         dataMap.put("UserId", _pUdk.getUserId());
@@ -647,7 +651,7 @@ public class SocketHandler {
                 rB[0]='B';
                 rB[1]='^';
                 rB[2]='^';
-                //_sendMsgQueue.put(rB);
+                _sendMsgQueue.put(rB);
             } else { //处理正常消息
                 try {
                     Message ms=null;

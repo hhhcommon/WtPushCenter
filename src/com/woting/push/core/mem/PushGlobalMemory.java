@@ -7,8 +7,8 @@ import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.spiritdata.framework.core.cache.CacheEle;
 import com.spiritdata.framework.core.cache.SystemCache;
-import com.spiritdata.framework.util.JsonUtils;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.intercom.model.OneMeet;
 import com.woting.passport.UGA.model.Group;
@@ -19,14 +19,19 @@ import com.woting.passport.UGA.service.UserService;
 import com.woting.push.PushConstants;
 import com.woting.push.config.AffirmCtlConfig;
 import com.woting.push.config.MediaConfig;
+import com.woting.push.config.PushConfig;
 import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MsgMedia;
 import com.woting.push.core.message.MsgNormal;
 import com.woting.push.core.message.content.MapContent;
+import com.woting.push.core.monitor.socket.netty.NettyHandler;
+import com.woting.push.core.monitor.socket.netty.SendMsgThread;
 import com.woting.push.core.monitor.socket.oio.SocketHandler;
 import com.woting.push.core.service.SessionService;
 import com.woting.push.ext.SpringShell;
 import com.woting.push.user.PushUserUDKey;
+
+import io.netty.channel.Channel;
 
 /**
  * 处理全局内存
@@ -63,6 +68,7 @@ public class PushGlobalMemory {
         groupService=(GroupService)SpringShell.getBean("groupService");
         userService=(UserService)SpringShell.getBean("userService");
 
+        pc=(PushConfig)SystemCache.getCache(PushConstants.PUSH_CONF).getContent();
         acc=(AffirmCtlConfig)SystemCache.getCache(PushConstants.AFFCTL_CONF).getContent();
         mc=(MediaConfig)SystemCache.getCache(PushConstants.MEDIA_CONF).getContent();
 
@@ -87,11 +93,11 @@ public class PushGlobalMemory {
 
         notifyMsg=new ConcurrentHashMap<String, LinkedBlockingQueue<Message>>();
 
-        REF_deviceANDsocket=new HashMap<String, SocketHandler>();
-        REF_userdtypeANDsocket=new HashMap<String, SocketHandler>();
+        REF_deviceANDsocket=new HashMap<String, Object>();
+        REF_userdtypeANDsocket=new HashMap<String, Object>();
         REF_userdtypeANDudk=new HashMap<String, PushUserUDKey>();
-        REF_udkANDsocket=new HashMap<PushUserUDKey, SocketHandler>();
-        REF_socketANDudk=new HashMap<SocketHandler, PushUserUDKey>();
+        REF_udkANDsocket=new HashMap<PushUserUDKey, Object>();
+        REF_socketANDudk=new HashMap<Object, PushUserUDKey>();
 
         receiveMem=new ReceiveMemory();
         sendMem=new SendMemory();
@@ -101,6 +107,7 @@ public class PushGlobalMemory {
     }
 
     //==========配置信息
+    private PushConfig pc;
     private AffirmCtlConfig acc;
     private MediaConfig mc;
 
@@ -166,18 +173,18 @@ public class PushGlobalMemory {
     private ConcurrentHashMap<String, LinkedBlockingQueue<Message>> notifyMsg;
 
     //    private Object LOCK_unionKey=new Object(); //同一Key锁
-    private Map<String, SocketHandler> REF_deviceANDsocket;   //设备和Socket处理线程的对应表； Key——设备标识：DeviceId::PCDType；Value——Socket处理线程
-    private Map<String, SocketHandler> REF_userdtypeANDsocket;//用户设备和Socket处理线程的对应表； Key——设备标识：UserId::PCDType；Value——Socket处理线程
+    private Map<String, Object> REF_deviceANDsocket;   //设备和Socket处理线程的对应表； Key——设备标识：DeviceId::PCDType；Value——Socket处理线程
+    private Map<String, Object> REF_userdtypeANDsocket;//用户设备和Socket处理线程的对应表； Key——设备标识：UserId::PCDType；Value——Socket处理线程
     private Map<String, PushUserUDKey> REF_userdtypeANDudk;   //用户设备和Key的对应表； Key——设备标识：UserId::PCDType；Value——PushUserUDKey
-    private Map<PushUserUDKey, SocketHandler> REF_udkANDsocket;
-    private Map<SocketHandler, PushUserUDKey> REF_socketANDudk;
+    private Map<PushUserUDKey, Object> REF_udkANDsocket;
+    private Map<Object, PushUserUDKey> REF_socketANDudk;
 
     /**
      * 绑定用户和Socket
      * @param pUk 用户key
      * @param sh  SocketHandler处理线程
      */
-    public void registSocketHandler(SocketHandler sh) {
+    public void registSocketHandler(Object sh) {
         if (sh==null) return;
 //        synchronized(LOCK_unionKey) {
 //        }
@@ -190,16 +197,15 @@ public class PushGlobalMemory {
      * @param force 是否强制绑定
      * @return 若绑定成功返回true，否则返回false(若所给sh与系统记录的不一致，则不进行绑定，返回false，除非force==true)
      */
-    public boolean bindDeviceANDsocket(PushUserUDKey pUdk, SocketHandler sh, boolean force) {
+    public boolean bindDeviceANDsocket(PushUserUDKey pUdk, Object sh, boolean force) {
 //      synchronized(LOCK_unionKey) {
 //      }
         if (pUdk==null||sh==null) return false;
         if (force) {
             REF_deviceANDsocket.put(pUdk.getDeviceId()+"::"+pUdk.getPCDType(), sh);
-            //LCKMAP_pkuANDhadmsgtobesend.put(pUdk, new Object());
             return true;
         } else {
-            SocketHandler _sh=REF_deviceANDsocket.get(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
+            Object _sh=REF_deviceANDsocket.get(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
             if (_sh!=null) {
                 if (!sh.equals(_sh)) return false;
                 return true;
@@ -210,17 +216,18 @@ public class PushGlobalMemory {
             }
         }
     }
+
     /**
      * 解除设备和Socket的绑定，只在Socket停止时使用
      * @param pUk 用户key
      * @param sh SocketHandler处理线程
      * @param 若给定的sh和系统中记录的sh不一致，则不进行删除
      */
-    public boolean unbindDeviceANDsocket(PushUserUDKey pUdk, SocketHandler sh) {
+    public boolean unbindDeviceANDsocket(PushUserUDKey pUdk, Object sh) {
 //      synchronized(LOCK_unionKey) {
 //      }
         if (pUdk==null||sh==null) return true;
-        SocketHandler _sh=REF_deviceANDsocket.get(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
+        Object _sh=REF_deviceANDsocket.get(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
         if (_sh==null) return true;
         if (!_sh.equals(sh)) return false;
         REF_deviceANDsocket.remove(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
@@ -231,7 +238,7 @@ public class PushGlobalMemory {
      * 获得设备和Socket的绑定关系
      * @param pUk 设备Key
      */
-    public SocketHandler getSocketByDevice(PushUserUDKey pUdk) {
+    public Object getSocketByDevice(PushUserUDKey pUdk) {
 //      synchronized(LOCK_unionKey) {
 //      }
         return REF_deviceANDsocket.get(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
@@ -242,7 +249,7 @@ public class PushGlobalMemory {
      * @param pUk 用户key
      * @param sh SocketHandler处理线程
      */
-    public void bindPushUserANDSocket(PushUserUDKey pUdk, SocketHandler sh) {
+    public void bindPushUserANDSocket(PushUserUDKey pUdk, Object sh) {
 //      synchronized(LOCK_unionKey) {
 //      }
         if (pUdk==null||sh==null) return;
@@ -297,12 +304,18 @@ public class PushGlobalMemory {
      * @param pUdk 新用户Key
      * @param sh 旧用户对应的Socket处理
      */
-    public boolean kickOut(PushUserUDKey pUdk, SocketHandler oldSh) {
+    public boolean kickOut(PushUserUDKey pUdk, Object oldSh) {
 //      synchronized(LOCK_unionKey) {
 //      }
         if (pUdk==null||oldSh==null) return false;
-        if (oldSh.getPuUDKey()==null) return false;
-        PushUserUDKey oldUdk=oldSh.getPuUDKey();
+        PushUserUDKey oldUdk=null;
+        if (oldSh instanceof SocketHandler) {
+            oldUdk=((SocketHandler)oldSh).getPuUDKey();
+        }
+        if (oldSh instanceof Channel) {
+            oldUdk=((Channel)oldSh).attr(NettyHandler.CHANNEL_PUDKEY).get();
+        }
+        if (oldUdk==null) return false;
         if (!oldUdk.getUserId().equals(pUdk.getUserId())||oldUdk.getPCDType()!=pUdk.getPCDType()) return false;
 
         PushUserUDKey _oldUdk=REF_socketANDudk.get(oldSh);
@@ -315,12 +328,12 @@ public class PushGlobalMemory {
      * @param pUk 用户key，可为空
      * @param sh  SocketHandler处理线程，可为空
      */
-    public void unbindPushUserANDSocket(PushUserUDKey pUdk, SocketHandler sh) {
+    public void unbindPushUserANDSocket(PushUserUDKey pUdk, Object sh) {
 //      synchronized(LOCK_unionKey) {
 //      }
         if (pUdk==null&&sh==null) return;
         PushUserUDKey _pUdk=null;
-        SocketHandler _sh=null;
+        Object _sh=null;
 
         if (pUdk==null) {
             _pUdk=REF_socketANDudk.get(sh);
@@ -347,7 +360,7 @@ public class PushGlobalMemory {
                 if (_pUdk!=null&&_pUdk.equals(pUdk)) {
                     REF_userdtypeANDudk.remove(pUdk.getUserId()+"::"+pUdk.getPCDType());
                 }
-                SocketHandler _sh2=REF_userdtypeANDsocket.get(pUdk.getUserId()+"::"+pUdk.getPCDType());
+                Object _sh2=REF_userdtypeANDsocket.get(pUdk.getUserId()+"::"+pUdk.getPCDType());
                 if (_sh2!=null&&_sh2.equals(_sh)) {
                     REF_userdtypeANDsocket.remove(pUdk.getUserId()+"::"+pUdk.getPCDType());
                 }
@@ -367,19 +380,19 @@ public class PushGlobalMemory {
             }
         }
     }
-    public PushUserUDKey getPushUserBySocket(SocketHandler sh) {
+    public PushUserUDKey getPushUserBySocket(Object sh) {
 //      synchronized(LOCK_unionKey) {
 //      }
         if (sh==null) return null;
         return REF_socketANDudk.get(sh);
     }
-    public SocketHandler getSocketByPushUser(PushUserUDKey pUdk) {
+    public Object getSocketByPushUser(PushUserUDKey pUdk) {
 //      synchronized(LOCK_unionKey) {
 //      }
         if (pUdk==null) return null;
         return REF_udkANDsocket.get(pUdk);
     }
-    public SocketHandler getSocketByUser(PushUserUDKey pUdk) {
+    public Object getSocketByUser(PushUserUDKey pUdk) {
 //      synchronized(LOCK_unionKey) {
 //      }
         if (pUdk==null) return null;
@@ -389,9 +402,9 @@ public class PushGlobalMemory {
      * 得到注册的仍然活动的Socket处理线程
      * @return 返回活动的Socket处理线程列表
      */
-    public List<SocketHandler> getSochekHanders() {
-        List<SocketHandler> ret=new ArrayList<SocketHandler>();
-        for (SocketHandler sh:REF_socketANDudk.keySet()) {
+    public List<Object> getSochekHanders() {
+        List<Object> ret=new ArrayList<Object>();
+        for (Object sh:REF_socketANDudk.keySet()) {
             ret.add(sh);
         }
         return ret.isEmpty()?null:ret;
@@ -466,28 +479,29 @@ public class PushGlobalMemory {
          */
         public void putDeviceMsg(PushUserUDKey pUDkey, Message msg) throws InterruptedException {
             if (msg==null||pUDkey==null) return;
-            LinkedBlockingQueue<Message> _deviceQueueCTL=((msg instanceof MsgNormal)?send2DeviceMsgCTL.get(pUDkey):send2DeviceMsgMDA.get(pUDkey));
-            if (_deviceQueueCTL==null) {
-                _deviceQueueCTL=new LinkedBlockingQueue<Message>();
-                if (msg instanceof MsgNormal) send2DeviceMsgCTL.put(pUDkey, _deviceQueueCTL);
-                else send2DeviceMsgMDA.put(pUDkey, _deviceQueueCTL);
+            LinkedBlockingQueue<Message> _deviceQueue=((msg instanceof MsgNormal)?send2DeviceMsgCTL.get(pUDkey):send2DeviceMsgMDA.get(pUDkey));
+            if (_deviceQueue==null) {
+                _deviceQueue=new LinkedBlockingQueue<Message>();
+                if (msg instanceof MsgNormal) send2DeviceMsgCTL.put(pUDkey, _deviceQueue);
+                else send2DeviceMsgMDA.put(pUDkey, _deviceQueue);
             }
             if (msg.getSendTime()==0) msg.setSendTime(System.currentTimeMillis());
             //查找相同的消息是否存在
             boolean _exist=false;
-            for (Message _msg: _deviceQueueCTL) {
+            for (Message _msg: _deviceQueue) {
                 if (_msg.equals(msg)) {
                     _exist=true;
                     break;
                 }
             }
-            if (!_exist) _deviceQueueCTL.put(msg);
-
-//            Object _lck=LCKMAP_pkuANDhadmsgtobesend.get(pUDkey);
-//            if (_lck==null) return;
-//            synchronized(_lck) {
-//                _lck.notifyAll();
-//            }
+            if (!_exist) _deviceQueue.put(msg);
+            //太土，太土了，先这样：启动一个线程
+            if (pc.get_SocketServerType()==2) {
+                new SendMsgThread(pUDkey,
+                    (PushConfig)SystemCache.getCache(PushConstants.PUSH_CONF).getContent(),
+                    (MediaConfig)SystemCache.getCache(PushConstants.MEDIA_CONF).getContent()
+                ).start();
+            }
         }
 
         /**
@@ -498,7 +512,7 @@ public class PushGlobalMemory {
          * @return 加入成功返回true(若消息已经存在，也放回true)，否则返回false
          * @throws InterruptedException 
          */
-        public Message pollDeviceMsgCTL(PushUserUDKey pUdk, SocketHandler sh) throws InterruptedException {
+        public Message pollDeviceMsgCTL(PushUserUDKey pUdk, Object sh) throws InterruptedException {
             if (pUdk==null||sh==null) return null;
             Message m=null;
             if (sh.equals(REF_udkANDsocket.get(pUdk))||pUdk.equals(REF_socketANDudk.get(sh))) {
@@ -515,7 +529,7 @@ public class PushGlobalMemory {
          * @return 加入成功返回true(若消息已经存在，也放回true)，否则返回false
          * @throws InterruptedException 
          */
-        public Message pollDeviceMsgMDA(PushUserUDKey pUdk, SocketHandler sh) throws InterruptedException {
+        public Message pollDeviceMsgMDA(PushUserUDKey pUdk, Object sh) throws InterruptedException {
             if (pUdk==null||sh==null) return null;
             Message m=null;
             if (sh.equals(REF_udkANDsocket.get(pUdk))||pUdk.equals(REF_socketANDudk.get(sh))) {
@@ -560,7 +574,17 @@ public class PushGlobalMemory {
             }
             if (msg.getSendTime()==0) msg.setSendTime(System.currentTimeMillis());
             _userQueue.put(msg);
-
+            //找到所有的用户Channel然后处理
+            //太土，太土了，先这样：启动一个线程
+            List<PushUserUDKey> usersKey=(List<PushUserUDKey>)sessionService.getActivedUserUDKs(userId);
+            if (usersKey!=null&&!usersKey.isEmpty()) {
+                for (PushUserUDKey udk: usersKey) {
+                    new SendMsgThread(udk,
+                        (PushConfig)SystemCache.getCache(PushConstants.PUSH_CONF).getContent(),
+                        (MediaConfig)SystemCache.getCache(PushConstants.MEDIA_CONF).getContent()
+                    ).start();
+                }
+            }
 //            //唤醒所有的客户端读取线程
 //            List<PushUserUDKey> al=sessionService.getActivedUserUDKs(userId);
 //            if (al!=null&&!al.isEmpty()) {
@@ -574,7 +598,7 @@ public class PushGlobalMemory {
 //            }
         }
 
-        public Message pollNotifyMsg(PushUserUDKey pUdk, SocketHandler sh) throws InterruptedException {
+        public Message pollNotifyMsg(PushUserUDKey pUdk, Object sh) throws InterruptedException {
             if (pUdk==null||sh==null) return null;
 
             Message m=null;
@@ -711,7 +735,7 @@ public class PushGlobalMemory {
          * @param sh
          * @return
          */
-        public LinkedBlockingQueue<Map<String, Object>> getResendMsg(PushUserUDKey pUdk, SocketHandler sh) {
+        public LinkedBlockingQueue<Map<String, Object>> getResendMsg(PushUserUDKey pUdk, Object sh) {
             if (pUdk==null||sh==null) return null;
 
             LinkedBlockingQueue<Map<String, Object>> mq=new LinkedBlockingQueue<Map<String, Object>>();

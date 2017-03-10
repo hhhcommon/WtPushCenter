@@ -1,6 +1,7 @@
 package com.woting.push.core.message;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 
 import com.spiritdata.framework.util.SequenceUUID;
 
@@ -9,13 +10,34 @@ import com.spiritdata.framework.util.SequenceUUID;
  * @author wanghui
  */
 public abstract class MessageUtils {
+    public static final byte[] BEAT_CLIENT={'b', '^', '^'};//客户端发向服务器的心跳消息
+    public static final byte[] BEAT_SERVER={'B', '^', '^'};//服务器发向客户端的心跳消息
+    /**
+     * 判断心跳消息类型
+     * @param ba 消息的字节形式
+     * @return 0不是心跳消息，1客户端心跳，2服务端心跳
+     */
+    public static int decideBeat(byte[] ba) {
+        if (ba==null||ba.length!=3) return 0;//不是心跳消息
+        if (Arrays.equals(ba,BEAT_SERVER)) return 1;
+        if (Arrays.equals(ba,BEAT_CLIENT)) return 2;
+        return 0;
+    }
     /**
      * 判定消息的类型
      * @return 消息类型，目前只有0=控制消息(一般消息);1=媒体消息
      */
     public static int decideMsg(byte[] binaryMsg) {
-        if (binaryMsg[0]=='|'&&binaryMsg[1]=='^') return 0;
-        if (binaryMsg[0]=='^'&&binaryMsg[1]=='|') return 1;
+        if (binaryMsg[0]==Message.BEGIN_CTL[0]&&binaryMsg[1]==Message.BEGIN_CTL[1]) return 0;
+        if (binaryMsg[0]==Message.BEGIN_MDA[0]&&binaryMsg[1]==Message.BEGIN_MDA[1]) return 1;
+        return 0;
+    }
+    /**
+     * 判定消息是否正常结束
+     * @return 消息类型，目前只有0=不正常;1=正常
+     */
+    public static int endOK(byte[] binaryMsg) {
+        if (binaryMsg[binaryMsg.length-1]==Message.END_MSG[0]&&binaryMsg[binaryMsg.length-2]==Message.END_MSG[0]) return 1;
         return 0;
     }
     /**

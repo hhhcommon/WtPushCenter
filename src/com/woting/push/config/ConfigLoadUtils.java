@@ -15,6 +15,9 @@ public abstract class ConfigLoadUtils {
     public static PushConfig getPushConfig(JsonConfig jc) {
         PushConfig pc=new PushConfig();
         try {
+            pc.set_SocketServerType(jc.getInt("pushserver.socketType"));
+        } catch(Exception e) {}
+        try {
             pc.set_ServerType(jc.getString("serverIdentify.serverType"));
         } catch(Exception e) {}
         try {

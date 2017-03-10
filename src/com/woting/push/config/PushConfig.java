@@ -7,7 +7,13 @@ import com.woting.push.core.config.Config;
  * @author wanghui
  */
 public class PushConfig implements Config {
-
+    private int _SocketServerType; //本服务器的类型
+    public int get_SocketServerType() {
+        return _SocketServerType;
+    }
+    public void set_SocketServerType(int _SocketServerType) {
+        this._SocketServerType = _SocketServerType;
+    }
     private String _ServerType; //本服务器的类型
     private String _ServerName; //本服务器的名称
     public String get_ServerType() {

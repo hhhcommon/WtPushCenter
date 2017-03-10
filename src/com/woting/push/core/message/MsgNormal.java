@@ -104,7 +104,8 @@ public class MsgNormal extends Message {
 
     @Override
     public void fromBytes(byte[] binaryMsg) throws Exception {
-        if (MessageUtils.decideMsg(binaryMsg)!=0) throw new Exception("消息类型错误！");
+        if (MessageUtils.decideMsg(binaryMsg)!=0) throw new Exception("非信令包格式错误！");
+        if (MessageUtils.endOK(binaryMsg)!=1) throw new Exception("消息未正常结束！");
 
         int _offset=2;//一、头
         String _tempStr=null;
@@ -215,8 +216,8 @@ public class MsgNormal extends Message {
         setDeviceId(_sa[1]);
         //九、实体数据
         if (bizType!=15&&bizType!=0) {
-            if (!(binaryMsg[_offset]==END_HEAD[0]&&binaryMsg[_offset+1]==END_HEAD[1])) throw new Exception("消息字节串异常！");
-            _offset+=4;
+//            if (!(binaryMsg[_offset]==END_HEAD[0]&&binaryMsg[_offset+1]==END_HEAD[1])) throw new Exception("消息字节串异常！");
+            _offset+=2;
             short _dataLen=(short)(((binaryMsg[_offset-1]<<8)|binaryMsg[_offset-2]&0xff));
             if (_dataLen>0) {
                 byte[] binaryCnt=Arrays.copyOfRange(binaryMsg, _offset, _offset+_dataLen);
@@ -309,8 +310,8 @@ public class MsgNormal extends Message {
         }
         //九、实体数据
         if (bizType!=15&&bizType!=0) {
-            ret[_offset++]=END_HEAD[1];
-            ret[_offset++]=END_HEAD[0];
+//            ret[_offset++]=END_HEAD[1];
+//            ret[_offset++]=END_HEAD[0];
             if (msgContent!=null) {
                 _tempBytes=msgContent.toBytes();
                 short len=(short)(_tempBytes==null?0:_tempBytes.length);
@@ -326,6 +327,8 @@ public class MsgNormal extends Message {
             }
         }
 
+        ret[_offset++]=Message.END_MSG[0];
+        ret[_offset++]=Message.END_MSG[1];
         byte[] _ret=Arrays.copyOfRange(ret, 0, _offset);
         return _ret;
     }

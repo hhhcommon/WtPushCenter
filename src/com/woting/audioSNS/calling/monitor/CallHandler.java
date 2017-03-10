@@ -17,7 +17,7 @@ import com.woting.push.core.message.MsgNormal;
 import com.woting.push.core.message.ProcessedMsg;
 import com.woting.push.core.message.content.MapContent;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
-import com.woting.push.core.monitor.socket.oio.SocketHandler;
+//import com.woting.push.core.monitor.socket.oio.SocketHandler;
 import com.woting.push.core.service.SessionService;
 import com.woting.audioSNS.calling.CallingConfig;
 import com.woting.audioSNS.calling.mem.CallingMemory;
@@ -136,12 +136,13 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         toCallerMsg.setMsgContent(mc);
 
         int returnType=0;
-        SocketHandler _sh;
+        Object _sh;
         if (callerId.equals(callederId)) returnType=6;
         //判断呼叫者是否存在
         if (returnType==0) {
             _sh=globalMem.getSocketByPushUser(callData.getCallerKey());
-            if (_sh==null||!_sh.socketOk()) returnType=2;
+            //if (_sh==null||!_sh.socketOk()) returnType=2;
+            if (_sh==null) returnType=2;
         }
         //判断被叫者是否存在
         if (returnType==0) {
@@ -149,7 +150,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             if (calleredKeys!=null&&!calleredKeys.isEmpty()) {
                 for (PushUserUDKey udk: calleredKeys) {
                     _sh=globalMem.getSocketByPushUser(udk);
-                    if (_sh!=null&&_sh.socketOk()) callData.addCallederList(udk);
+                    if (_sh!=null) callData.addCallederList(udk);
                 }
             }
             if (callData.getCallederList()==null||callData.getCallederList().isEmpty()) returnType=3;

@@ -61,7 +61,7 @@ public class SessionService {
 
         RedisUserDeviceKey rUdk=new RedisUserDeviceKey(udk);
         RedisOperService roService=new RedisOperService(redisConn, 4);
-        ExpirableBlockKey rLock=RedisBlockLock.lock(rUdk.getKey_Lock(), roService, new BlockLockConfig(5, 2, 0, 50));
+        //ExpirableBlockKey rLock=RedisBlockLock.lock(rUdk.getKey_Lock(), roService, new BlockLockConfig(5, 2, 0, 50));
         try {
             //从Redis中获得对应额UserId
             String _value=roService.get(rUdk.getKey_DeviceType_UserId());
@@ -101,7 +101,11 @@ public class SessionService {
                 }
                 map.put("Message", "用户已登录");
             } else {//处理未登录
-                MobileUsedPo mup=muService.getUsedInfo(udk.getDeviceId(), udk.getPCDType());
+                MobileUsedPo mup=null;
+                try {
+                    mup=muService.getUsedInfo(udk.getDeviceId(), udk.getPCDType());
+                } catch(Exception e) {
+                }
                 boolean noLog=false;
                 noLog=(mup==null||mup.getStatus()!=1||mup.getUserId()==null);
                 if (noLog) {//无法登录
@@ -173,7 +177,7 @@ public class SessionService {
                 }
             }
         } finally {
-            rLock.unlock();
+            //rLock.unlock();
             if (roService!=null) roService.close();
             roService=null;
         }
