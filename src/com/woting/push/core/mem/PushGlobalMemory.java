@@ -24,7 +24,7 @@ import com.woting.push.core.message.MsgMedia;
 import com.woting.push.core.message.MsgNormal;
 import com.woting.push.core.message.content.MapContent;
 import com.woting.push.core.monitor.socket.netty.NettyHandler;
-import com.woting.push.core.monitor.socket.netty.SendMsgThread;
+import com.woting.push.core.monitor.socket.netty.event.SendMsgEvent;
 import com.woting.push.core.monitor.socket.oio.SocketHandler;
 import com.woting.push.core.service.SessionService;
 import com.woting.push.ext.SpringShell;
@@ -197,8 +197,6 @@ public class PushGlobalMemory {
      * @return 若绑定成功返回true，否则返回false(若所给sh与系统记录的不一致，则不进行绑定，返回false，除非force==true)
      */
     public boolean bindDeviceANDsocket(PushUserUDKey pUdk, Object sh, boolean force) {
-//      synchronized(LOCK_unionKey) {
-//      }
         if (pUdk==null||sh==null) return false;
         if (force) {
             REF_deviceANDsocket.put(pUdk.getDeviceId()+"::"+pUdk.getPCDType(), sh);
@@ -206,7 +204,12 @@ public class PushGlobalMemory {
         } else {
             Object _sh=REF_deviceANDsocket.get(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
             if (_sh!=null) {
-                if (!sh.equals(_sh)) return false;
+                if (sh instanceof SocketHandler) {
+                    if (!sh.equals(_sh)) return false;
+                } else
+                if (sh instanceof ChannelHandlerContext) {
+                    if (!((ChannelHandlerContext)sh).channel().equals(((ChannelHandlerContext)sh).channel())) return false;
+                }
                 return true;
             } else {
                 REF_deviceANDsocket.put(pUdk.getDeviceId()+"::"+pUdk.getPCDType(), sh);
@@ -228,7 +231,12 @@ public class PushGlobalMemory {
         if (pUdk==null||sh==null) return true;
         Object _sh=REF_deviceANDsocket.get(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
         if (_sh==null) return true;
-        if (!_sh.equals(sh)) return false;
+        if (sh instanceof SocketHandler) {
+            if (!sh.equals(_sh)) return false;
+        } else
+        if (sh instanceof ChannelHandlerContext) {
+            if (!((ChannelHandlerContext)sh).channel().equals(((ChannelHandlerContext)sh).channel())) return false;
+        }
         REF_deviceANDsocket.remove(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
         //LCKMAP_pkuANDhadmsgtobesend.remove(pUdk);
         return true;
@@ -238,8 +246,6 @@ public class PushGlobalMemory {
      * @param pUk 设备Key
      */
     public Object getSocketByDevice(PushUserUDKey pUdk) {
-//      synchronized(LOCK_unionKey) {
-//      }
         return REF_deviceANDsocket.get(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
     }
 
@@ -386,8 +392,6 @@ public class PushGlobalMemory {
         return REF_socketANDudk.get(sh);
     }
     public Object getSocketByPushUser(PushUserUDKey pUdk) {
-//      synchronized(LOCK_unionKey) {
-//      }
         if (pUdk==null) return null;
         return REF_udkANDsocket.get(pUdk);
     }
@@ -463,9 +467,6 @@ public class PushGlobalMemory {
      * @author wanghui
      */
     public class SendMemory {
-//        public Object getSendLock(PushUserUDKey pUDkey) {
-//            return LCKMAP_pkuANDhadmsgtobesend.get(pUDkey);
-//        }
         //到具体设备的操作
         /*
          * [发送消息队列-直接对应（设备+用户）]
@@ -494,12 +495,18 @@ public class PushGlobalMemory {
                 }
             }
             if (!_exist) _deviceQueue.put(msg);
-            //太土，太土了，先这样：启动一个线程
+
             if (pc.get_SocketServerType()==2) {
-                new SendMsgThread(pUDkey,
-                    (PushConfig)SystemCache.getCache(PushConstants.PUSH_CONF).getContent(),
-                    (MediaConfig)SystemCache.getCache(PushConstants.MEDIA_CONF).getContent()
-                ).start();
+                ChannelHandlerContext ctx=(ChannelHandlerContext)getSocketByPushUser(pUDkey);
+                if (ctx!=null) {
+                    if (msg instanceof MsgNormal) ctx.fireUserEventTriggered(SendMsgEvent.CONTROLMSG_TOBESEND_EVENT);
+                    else
+                    if (msg instanceof MsgMedia) ctx.fireUserEventTriggered(SendMsgEvent.MEDISMSG_TOBESEND_EVENT);
+                }
+//                new SendMsgThread(pUDkey,
+//                    (PushConfig)SystemCache.getCache(PushConstants.PUSH_CONF).getContent(),
+//                    (MediaConfig)SystemCache.getCache(PushConstants.MEDIA_CONF).getContent()
+//                ).start();
             }
         }
 
@@ -514,12 +521,13 @@ public class PushGlobalMemory {
         public Message pollDeviceMsgCTL(PushUserUDKey pUdk, Object sh) throws InterruptedException {
             if (pUdk==null||sh==null) return null;
             Message m=null;
-            if (sh.equals(REF_udkANDsocket.get(pUdk))||pUdk.equals(REF_socketANDudk.get(sh))) {
+            if (matchUserSocket(pUdk, sh)) {
                 LinkedBlockingQueue<Message> mQueue=send2DeviceMsgCTL.get(pUdk);
                 if (mQueue!=null) m=mQueue.poll();
             }
             return m;
         }
+
         /**
          * [发送消息队列-直接对应（设备+用户）](媒体消息)
          * 获得设备用户的发送消息——媒体消息<br/>
@@ -531,7 +539,7 @@ public class PushGlobalMemory {
         public Message pollDeviceMsgMDA(PushUserUDKey pUdk, Object sh) throws InterruptedException {
             if (pUdk==null||sh==null) return null;
             Message m=null;
-            if (sh.equals(REF_udkANDsocket.get(pUdk))||pUdk.equals(REF_socketANDudk.get(sh))) {
+            if (matchUserSocket(pUdk, sh)) {
                 LinkedBlockingQueue<Message> mQueue=send2DeviceMsgMDA.get(pUdk);
                 if (mQueue!=null) m=mQueue.poll();
                 //检查是否过期
@@ -571,30 +579,33 @@ public class PushGlobalMemory {
             }
             if (msg.getSendTime()==0) msg.setSendTime(System.currentTimeMillis());
             _userQueue.put(msg);
-            //找到所有的用户Channel然后处理
-            //太土，太土了，先这样：启动一个线程
+
             List<PushUserUDKey> usersKey=(List<PushUserUDKey>)sessionService.getActivedUserUDKs(userId);
             if (usersKey!=null&&!usersKey.isEmpty()) {
                 for (PushUserUDKey udk: usersKey) {
-                    new SendMsgThread(udk,
-                        (PushConfig)SystemCache.getCache(PushConstants.PUSH_CONF).getContent(),
-                        (MediaConfig)SystemCache.getCache(PushConstants.MEDIA_CONF).getContent()
-                    ).start();
+                    ChannelHandlerContext ctx=(ChannelHandlerContext)getSocketByPushUser(udk);
+                    if (ctx!=null) {
+                        if (msg instanceof MsgNormal) ctx.fireUserEventTriggered(SendMsgEvent.NOTIFYMSG_TOBESEND_EVENT);
+                    }
+//                    new SendMsgThread(udk,
+//                        (PushConfig)SystemCache.getCache(PushConstants.PUSH_CONF).getContent(),
+//                        (MediaConfig)SystemCache.getCache(PushConstants.MEDIA_CONF).getContent()
+//                    ).start();
                 }
             }
         }
 
+        /**
+         * 得到通知消息，并从队列头中删除
+         * @param pUdk 用户标识
+         * @param sh Socket处理对象
+         * @return 通知消息
+         * @throws InterruptedException
+         */
         public Message pollNotifyMsg(PushUserUDKey pUdk, Object sh) throws InterruptedException {
             if (pUdk==null||sh==null) return null;
-
             Message m=null;
-            //从发送队列取一条消息
-//            boolean canRead=true;
-//            synchronized(LOCK_usersocketMap) {
-//                canRead=sh.equals(REF_udkANDsocket.get(pUdk))||pUdk.equals(REF_socketANDudk.get(sh));
-//            }
-//            if (canRead) {
-            if (sh.equals(REF_udkANDsocket.get(pUdk))||pUdk.equals(REF_socketANDudk.get(sh))) {
+            if (matchUserSocket(pUdk, sh)) {
                 LinkedBlockingQueue<Message> mQueue=notifyMsg.get(pUdk.getUserId());
                 if (mQueue!=null) m=mQueue.poll();
             }
@@ -731,7 +742,7 @@ public class PushGlobalMemory {
 //                canRead=sh.equals(REF_udkANDsocket.get(pUdk))||pUdk.equals(REF_socketANDudk.get(sh));
 //            }
 //            if (canRead) {
-            if (sh.equals(REF_udkANDsocket.get(pUdk))||pUdk.equals(REF_socketANDudk.get(sh))) {
+            if (matchUserSocket(pUdk, sh)) {
                 LinkedBlockingQueue<Map<String, Object>> _mq=sendedNeedCtlAffirmMsg.get(pUdk);
                 int tmpI=0;
                 long tmpL=0l;
@@ -896,23 +907,38 @@ public class PushGlobalMemory {
                 }
             }
         }
-    }
-    private void cleanOneUserMsgQueue4Intercom(LinkedBlockingQueue<Message> umq, OneMeet om) {
-        if (umq!=null&&!umq.isEmpty()) {
-            for (Message m: umq) {
-                if (m instanceof MsgNormal) {
-                    MsgNormal mn=(MsgNormal)m;
-                    if (om.getGroupId().equals(((MapContent)mn.getMsgContent()).get("GroupId")+"")) {
-                        umq.remove(m);
+
+        private void cleanOneUserMsgQueue4Intercom(LinkedBlockingQueue<Message> umq, OneMeet om) {
+            if (umq!=null&&!umq.isEmpty()) {
+                for (Message m: umq) {
+                    if (m instanceof MsgNormal) {
+                        MsgNormal mn=(MsgNormal)m;
+                        if (om.getGroupId().equals(((MapContent)mn.getMsgContent()).get("GroupId")+"")) {
+                            umq.remove(m);
+                        }
                     }
-                }
-                if (m instanceof MsgMedia) {
-                    MsgMedia mm=(MsgMedia)m;
-                    if (mm.getBizType()==2&&om.getGroupId().equals(mm.getChannelId())) {
-                        umq.remove(m);
+                    if (m instanceof MsgMedia) {
+                        MsgMedia mm=(MsgMedia)m;
+                        if (mm.getBizType()==2&&om.getGroupId().equals(mm.getChannelId())) {
+                            umq.remove(m);
+                        }
                     }
                 }
             }
+        }
+
+        private boolean matchUserSocket(PushUserUDKey pUdk, Object sh) {
+            if (sh instanceof SocketHandler) {
+                return sh.equals(REF_udkANDsocket.get(pUdk))||pUdk.equals(REF_socketANDudk.get(sh));
+            } else
+            if (sh instanceof ChannelHandlerContext) {
+                ChannelHandlerContext ctx=(ChannelHandlerContext)sh;
+                if (!(ctx.channel().attr(NettyHandler.CHANNEL_PUDKEY).get()).equals(pUdk)) return false;
+                ChannelHandlerContext _ctx=(ChannelHandlerContext)REF_udkANDsocket.get(pUdk);
+                if (_ctx==null||!ctx.channel().equals(_ctx.channel())) return false;
+                return true;
+            }
+            return false;
         }
     }
 
