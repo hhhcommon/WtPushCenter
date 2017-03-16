@@ -12,7 +12,7 @@ import com.spiritdata.framework.util.StringUtils;
 public class MsgMedia extends Message {
     private static final long serialVersionUID=-3827446721333425724L;
 
-    private final static int COMPACT_LEN=36;//若删除ObjId，则这个值为24
+    private final static int COMPACT_LEN=38;//若删除ObjId，则这个值为24
 
     private int mediaType; //流类型:1音频2视频
     private int bizType; //流业务类型:1对讲组；2电话

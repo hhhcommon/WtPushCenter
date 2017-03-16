@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import com.spiritdata.framework.core.cache.CacheEle;
 import com.spiritdata.framework.core.cache.SystemCache;
 import com.spiritdata.framework.util.DateUtils;
+import com.spiritdata.framework.util.JsonUtils;
 import com.spiritdata.framework.util.SequenceUUID;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.calling.mem.CallingMemory;
@@ -21,6 +22,7 @@ import com.woting.push.config.MediaConfig;
 import com.woting.push.config.PushConfig;
 import com.woting.push.core.SocketHandleConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
+import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MessageUtils;
 import com.woting.push.core.message.MsgMedia;
 import com.woting.push.core.message.MsgNormal;
@@ -29,7 +31,6 @@ import com.woting.push.core.service.SessionService;
 import com.woting.push.ext.SpringShell;
 import com.woting.push.user.PushUserUDKey;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleState;
@@ -58,29 +59,35 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        lastVisitTime=System.currentTimeMillis();
         if (msg instanceof byte[]) {
             byte[] _data=(byte[])msg;
-            if (MessageUtils.decideBeat(_data)==2)ctx.writeAndFlush(MessageUtils.BEAT_SERVER);//回写心跳
+            if (MessageUtils.decideBeat(_data)==2) {
+                lastVisitTime=System.currentTimeMillis();
+                ctx.writeAndFlush(MessageUtils.BEAT_SERVER);//回写心跳
+                //logger.debug("{}[{}]_收到心跳:{}", ctx.toString(), lastVisitTime, new String(_data));
+            } else { 
+                logger.info("{}[{}]_收到错误数据:{}", ctx.toString(), lastVisitTime, new String((byte[])msg));
+            }
         } else {
-            ctx.writeAndFlush(msg);
-            if (msg instanceof MsgMedia) dealMDAMsg(ctx, (MsgMedia)msg);
-            else
-            if (msg instanceof MsgNormal) {
-                MsgNormal mn=(MsgNormal)msg;
-                PushUserUDKey _pUdk=PushUserUDKey.buildFromMsg(mn);
-                if (_pUdk!=null) {
-                    if (mn.getBizType()==15) {//注册消息
-                        if (!mn.isAck()) {
-                            dealRegisterCTLMsg(ctx, _pUdk, mn);
-                            new SendMsgThread(
-                                ctx.channel().attr(CHANNEL_PUDKEY).get(),
-                                (PushConfig)SystemCache.getCache(PushConstants.PUSH_CONF).getContent(),
-                                (MediaConfig)SystemCache.getCache(PushConstants.MEDIA_CONF).getContent()
-                            ).start();
-                        }
-                    } else {
-                        dealNormalCTLMsg(ctx, _pUdk, mn);//处理一般消息
+            if (msg instanceof Message) {
+                lastVisitTime=System.currentTimeMillis();
+                logger.info("{}[{}]_收到消息:{}", ctx.toString(), lastVisitTime, JsonUtils.objToJson(msg));
+                if (msg instanceof MsgMedia) dealMDAMsg(ctx, (MsgMedia)msg);
+                else
+                if (msg instanceof MsgNormal) {
+                    MsgNormal mn=(MsgNormal)msg;
+                    PushUserUDKey _pUdk=PushUserUDKey.buildFromMsg(mn);
+                    if (_pUdk!=null) {
+                        if (mn.getBizType()==15) {//注册消息
+                            if (!mn.isAck()) {
+                                dealRegisterCTLMsg(ctx, _pUdk, mn);
+                                new SendMsgThread(
+                                    ctx.channel().attr(CHANNEL_PUDKEY).get(),
+                                    (PushConfig)SystemCache.getCache(PushConstants.PUSH_CONF).getContent(),
+                                    (MediaConfig)SystemCache.getCache(PushConstants.MEDIA_CONF).getContent()
+                                ).start();
+                            }
+                        } else dealNormalCTLMsg(ctx, _pUdk, mn);//处理一般消息
                     }
                 }
             }
@@ -102,13 +109,14 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
-        unBindAndClose(ctx);
+        logger.info("频道注销::"+ctx.toString());
+        unBind(ctx);
     }
 
     @Override  
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         logger.info(cause.getMessage());
-        unBindAndClose(ctx);
+        ctx.close();
     }
 
     @Override
@@ -137,10 +145,10 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
     /*
      * 取消绑定并关闭
      */
-    private void unBindAndClose(ChannelHandlerContext ctx) {
+    private void unBind(ChannelHandlerContext ctx) {
         //退出系统前，先把绑定关系清除掉。
         PushUserUDKey thisPushUdk=(ctx.channel().attr(CHANNEL_PUDKEY)==null?null:(ctx.channel().attr(CHANNEL_PUDKEY).get())==null?null:ctx.channel().attr(CHANNEL_PUDKEY).get());
-        globalMem.unbindPushUserANDSocket(thisPushUdk, ctx.channel());
+        globalMem.unbindPushUserANDSocket(thisPushUdk, ctx);
 
         String dkey=ctx.channel().attr(CHANNEL_DEVKEY)==null?null:(ctx.channel().attr(CHANNEL_DEVKEY).get()==null?null:ctx.channel().attr(CHANNEL_DEVKEY).get());
         if (!StringUtils.isNullOrEmptyOrSpace(dkey)) {
@@ -148,9 +156,8 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
             String[] sp=dkey.split("::");
             _tpUdk.setDeviceId(sp[0]);
             _tpUdk.setPCDType(Integer.parseInt(sp[1]));
-            globalMem.unbindDeviceANDsocket(_tpUdk, ctx.channel());
+            globalMem.unbindDeviceANDsocket(_tpUdk, ctx);
         }
-        ctx.close();
     }
 
     /*
@@ -214,15 +221,14 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
      * 处理注册消息
      */
     private void dealRegisterCTLMsg(ChannelHandlerContext ctx, PushUserUDKey pUdk, MsgNormal mn) throws InterruptedException {
-        boolean bindDeviceFlag=false;
         Attribute<PushUserUDKey> c_PUDK=ctx.channel().attr(CHANNEL_PUDKEY);
         Attribute<String> c_DevK=ctx.channel().attr(CHANNEL_DEVKEY);
 
-        bindDeviceFlag=globalMem.bindDeviceANDsocket(pUdk, ctx.channel(), false);
+        boolean bindDeviceFlag=globalMem.bindDeviceANDsocket(pUdk, ctx, false);
         if (mn.getFromType()==0) {//-------------------------------------------//一.1-从服务器来的消息，对于服务器，先到的占用。
             if (bindDeviceFlag) {//处理注册
                 //全局处理
-                globalMem.bindPushUserANDSocket(pUdk, ctx.channel());
+                globalMem.bindPushUserANDSocket(pUdk, ctx);
                 //本Channel处理
                 c_PUDK.set(pUdk);
                 c_DevK.set(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
@@ -239,9 +245,9 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
             }
         } else {//-------------------------------------------------------------//一.2-从设备端来的消息，对于服务器，先到的占用。
             if (!bindDeviceFlag) { //与原来记录的不一致，则删除原来的，对于客户端，后到的占用。
-                Channel ch=(Channel)globalMem.getSocketByDevice(pUdk);
-                ch.close();
-                bindDeviceFlag=globalMem.bindDeviceANDsocket(pUdk, ctx.channel(), true);
+                ChannelHandlerContext _ctx=(ChannelHandlerContext)globalMem.getSocketByDevice(pUdk);
+                _ctx.close();
+                bindDeviceFlag=globalMem.bindDeviceANDsocket(pUdk, ctx, true);
             }
             Map<String, Object> retM=sessionService.dealUDkeyEntry(pUdk, "socket/entry");
             if (!(""+retM.get("ReturnType")).equals("1001")) {
@@ -263,16 +269,14 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
                 ctx.writeAndFlush(ackM);
 
                 //判断踢出
-                Channel _oldSh=(Channel)globalMem.getSocketByUser(pUdk); //和该用户对应的旧的Socket处理
-                PushUserUDKey _oldUk=(_oldSh==null?null:(_oldSh.attr(CHANNEL_PUDKEY)).get()); //旧Socket处理所绑定的UserKey
-                boolean _oldNeedKickOut=sessionService.needKickOut(_oldUk);
-                if (_oldSh!=null&&_oldUk!=null&&!_oldSh.equals(ctx.channel())  //1-旧Socket处理不为空；2-旧Socket处理中绑定用户Key不为空；3-新旧Socket处理不相等
+                ChannelHandlerContext _oldSh=(ChannelHandlerContext)globalMem.getSocketByUser(pUdk); //和该用户对应的旧的Socket处理
+                PushUserUDKey _oldUk=(_oldSh==null?null:(_oldSh.channel().attr(CHANNEL_PUDKEY)).get()); //旧Socket处理所绑定的UserKey
+                if (_oldSh!=null&&_oldUk!=null&&!_oldSh.equals(ctx)  //1-旧Socket处理不为空；2-旧Socket处理中绑定用户Key不为空；3-新旧Socket处理不相等
                   &&_oldUk.getPCDType()==pUdk.getPCDType() //新旧Socket对应设备类型相同
                   &&_oldUk.getUserId().equals(pUdk.getUserId()) //新旧Socket对应用户相同
                   &&!_oldUk.getDeviceId().equals(pUdk.getDeviceId())
-                  &&_oldNeedKickOut //旧账号在登录状态
-                )
-                {//踢出
+                  &&sessionService.needKickOut(_oldUk) //旧账号在登录状态
+                ) {//踢出
                     globalMem.kickOut(pUdk, _oldSh);
                     MsgNormal kickOutMsg=new MsgNormal();
                     kickOutMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
@@ -294,7 +298,7 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
                     kickOutMsg.setMsgContent(mc);
                     _oldSh.writeAndFlush(kickOutMsg);
                 }
-                globalMem.bindPushUserANDSocket(pUdk, ctx.channel());//绑定信息
+                globalMem.bindPushUserANDSocket(pUdk, ctx);//绑定信息
 
                 //发送注册成功的消息给组对讲和电话——以便他处理组在线的功能
                 //对讲组

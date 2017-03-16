@@ -157,15 +157,13 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
                 nm.setMsgId(SequenceUUID.getUUIDSubSegment(4));
                 nm.setMsgType(0);
                 nm.setAffirm(affirmType);
-                nm.setFromType(1);
-                nm.setToType(0);
+                nm.setFromType(0);
+                nm.setToType(1);
                 nm.setCmdType(sourceMsg.getCmdType());
                 nm.setCommand(sourceMsg.getCommand());
 
                 //4-发送消息
-                for (String userId: userIdL) {
-                    globalMem.sendMem.putNotifyMsg(userId, nm);
-                }
+                for (String userId: userIdL) globalMem.sendMem.putNotifyMsg(userId, nm);
             } catch(Exception e) {
                 logger.debug(StringUtils.getAllMessage(e));
             }

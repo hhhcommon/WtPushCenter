@@ -25,12 +25,12 @@ public abstract class MessageUtils {
     }
     /**
      * 判定消息的类型
-     * @return 消息类型，目前只有0=控制消息(一般消息);1=媒体消息
+     * @return 消息类型，目前只有0=控制消息(一般消息);1=媒体消息;-1未知类型
      */
     public static int decideMsg(byte[] binaryMsg) {
         if (binaryMsg[0]==Message.BEGIN_CTL[0]&&binaryMsg[1]==Message.BEGIN_CTL[1]) return 0;
         if (binaryMsg[0]==Message.BEGIN_MDA[0]&&binaryMsg[1]==Message.BEGIN_MDA[1]) return 1;
-        return 0;
+        return -1;
     }
     /**
      * 判定消息是否正常结束

@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.spiritdata.framework.core.cache.CacheEle;
 import com.spiritdata.framework.core.cache.SystemCache;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.intercom.model.OneMeet;
@@ -31,7 +30,7 @@ import com.woting.push.core.service.SessionService;
 import com.woting.push.ext.SpringShell;
 import com.woting.push.user.PushUserUDKey;
 
-import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 
 /**
  * 处理全局内存
@@ -312,15 +311,15 @@ public class PushGlobalMemory {
         if (oldSh instanceof SocketHandler) {
             oldUdk=((SocketHandler)oldSh).getPuUDKey();
         }
-        if (oldSh instanceof Channel) {
-            oldUdk=((Channel)oldSh).attr(NettyHandler.CHANNEL_PUDKEY).get();
+        if (oldSh instanceof ChannelHandlerContext) {
+            oldUdk=((ChannelHandlerContext)oldSh).channel().attr(NettyHandler.CHANNEL_PUDKEY).get();
         }
         if (oldUdk==null) return false;
         if (!oldUdk.getUserId().equals(pUdk.getUserId())||oldUdk.getPCDType()!=pUdk.getPCDType()) return false;
 
         PushUserUDKey _oldUdk=REF_socketANDudk.get(oldSh);
         REF_udkANDsocket.remove(oldUdk);
-        if (!_oldUdk.equals(oldUdk)) REF_socketANDudk.put(oldSh, null);
+        if (_oldUdk.equals(oldUdk)) REF_socketANDudk.put(oldSh, null);
         return true;
     }
     /**
@@ -563,8 +562,6 @@ public class PushGlobalMemory {
                 _userQueue=new LinkedBlockingQueue<Message>();
                 notifyMsg.put(userId, _userQueue);
             }
-//            synchronized(_userQueue) {
-//            }
             List<Message> removeMsg=new ArrayList<Message>();
             for (Message m: _userQueue) {
                 if (m.equals(msg)) removeMsg.add(m);
@@ -585,17 +582,6 @@ public class PushGlobalMemory {
                     ).start();
                 }
             }
-//            //唤醒所有的客户端读取线程
-//            List<PushUserUDKey> al=sessionService.getActivedUserUDKs(userId);
-//            if (al!=null&&!al.isEmpty()) {
-//                for (PushUserUDKey _pUdk: al) {
-//                    Object _lck=LCKMAP_pkuANDhadmsgtobesend.get(_pUdk);
-//                    if (_lck==null) return;
-//                    synchronized(_lck) {
-//                        _lck.notifyAll();
-//                    }
-//                }
-//            }
         }
 
         public Message pollNotifyMsg(PushUserUDKey pUdk, Object sh) throws InterruptedException {

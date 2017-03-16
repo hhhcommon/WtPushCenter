@@ -53,8 +53,8 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
         if (sourceMsg.getCmdType()==3&&sourceMsg.getCommand()==0) {
             List<Map<String, Object>> clm=callingMem.getActiveCallingList(pUdk.getUserId());
             if (clm!=null&&!clm.isEmpty()) {
-                retMsg.setFromType(1);
-                retMsg.setToType(0);
+                retMsg.setFromType(0);
+                retMsg.setToType(1);
                 retMsg.setCmdType(3);
                 retMsg.setCommand(0);
                 Map<String, Object> dataMap=new HashMap<String, Object>();

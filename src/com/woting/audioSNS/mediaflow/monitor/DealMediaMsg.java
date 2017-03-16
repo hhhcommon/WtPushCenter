@@ -112,8 +112,8 @@ public class DealMediaMsg extends Thread {
         if (sourceMsg.isCtlAffirm()) {
             //组织回执消息
             MsgMedia retMm=new MsgMedia();
-            retMm.setFromType(1);
-            retMm.setToType(0);
+            retMm.setFromType(0);
+            retMm.setToType(1);
             retMm.setMsgType(1);
             retMm.setAffirm(0);
             retMm.setBizType(sourceMsg.getBizType());
@@ -179,8 +179,8 @@ public class DealMediaMsg extends Thread {
 
         //发送广播消息，简单处理，只把这部分消息发给目的地，是声音数据文件
         MsgMedia bMsg=new MsgMedia();
-        bMsg.setFromType(1);
-        bMsg.setToType(0);
+        bMsg.setFromType(0);
+        bMsg.setToType(1);
         bMsg.setMsgType(0);
         bMsg.setAffirm(1);
         bMsg.setBizType(sourceMsg.getBizType());

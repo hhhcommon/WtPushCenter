@@ -121,8 +121,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         MsgNormal toCallerMsg=new MsgNormal();
         toCallerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
         toCallerMsg.setReMsgId(m.getMsgId());
-        toCallerMsg.setFromType(m.getToType());
-        toCallerMsg.setToType(m.getFromType());
+        toCallerMsg.setToType(1);
         toCallerMsg.setMsgType(1);
         toCallerMsg.setBizType(0x02);
         toCallerMsg.setCmdType(1);
@@ -135,29 +134,27 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         MapContent mc=new MapContent(dataMap);
         toCallerMsg.setMsgContent(mc);
 
-        int returnType=0;
+        int returnType=1;
         Object _sh;
         if (callerId.equals(callederId)) returnType=6;
         //判断呼叫者是否存在
-        if (returnType==0) {
+        if (returnType==1) {
             _sh=globalMem.getSocketByPushUser(callData.getCallerKey());
-            //if (_sh==null||!_sh.socketOk()) returnType=2;
             if (_sh==null) returnType=2;
         }
         //判断被叫者是否存在
-        if (returnType==0) {
+        if (returnType==1) {
             List<PushUserUDKey> calleredKeys=(List<PushUserUDKey>)sessionService.getActivedUserUDKs(callederId);
             if (calleredKeys!=null&&!calleredKeys.isEmpty()) {
                 for (PushUserUDKey udk: calleredKeys) {
                     _sh=globalMem.getSocketByPushUser(udk);
-                    if (_sh!=null) callData.addCallederList(udk);
+                    if (_sh!=null) callData.addCallederList(udk); 
                 }
             }
             if (callData.getCallederList()==null||callData.getCallederList().isEmpty()) returnType=3;
         }
         //判断是否占线，不判断被叫者是否在对讲组中进行对讲，若在对讲也认为在线，并且不忙，是否接听，让被叫者处理
-        if (returnType==0&&callingMem.isTalk(callederId, callId)) returnType=4;
-        if (returnType==0) returnType=1;
+        if (returnType==1&&callingMem.isTalk(callederId, callId)) returnType=4;
         toCallerMsg.setReturnType(returnType);
         globalMem.sendMem.putDeviceMsg(callData.getCallerKey(), toCallerMsg);
         //记录到已发送列表
@@ -165,39 +162,41 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         callingMem.addUserInCall(callerId, callData);
 
         //给被叫者发送信息
+        MsgNormal toCallederMsg=new MsgNormal();
+        toCallederMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
+        toCallederMsg.setMsgType(0);
+        toCallederMsg.setAffirm(1);
+        toCallederMsg.setBizType(2);
+        toCallederMsg.setCmdType(1);
+        toCallederMsg.setCommand(0x10);
+        toCallederMsg.setToType(1);
+        dataMap=new HashMap<String, Object>();
+        dataMap.put("CallId", callId);
+        dataMap.put("CallerId", callerId);
+        dataMap.put("CallederId", callederId);
+        MapContent _mc=new MapContent(dataMap);
+        toCallederMsg.setMsgContent(_mc);
+        //加入“呼叫者”的用户信息给被叫者
+        Map<String, Object> callerInfo=new HashMap<String, Object>();
+        UserPo u=globalMem.uANDgMem.getUserById(callerId);
+        callerInfo.put("UserName", u.getLoginName());
+        callerInfo.put("UserNum", u.getUserNum());
+        callerInfo.put("Portrait", u.getPortraitMini());
+        callerInfo.put("Mail", u.getMailAddress());
+        callerInfo.put("Descn", u.getDescn());
+        dataMap.put("CallerInfo", callerInfo);
+        toCallederMsg.setPCDType(0);
         if (returnType==1) {
             for (PushUserUDKey _pUdk: callData.getCallederList()) {
-                MsgNormal toCallederMsg=new MsgNormal();
-                toCallederMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-                toCallederMsg.setMsgType(0);
-                toCallederMsg.setAffirm(1);
-                toCallederMsg.setBizType(2);
-                toCallederMsg.setCmdType(1);
-                toCallederMsg.setCommand(0x10);
-                toCallederMsg.setFromType(1);
-                toCallederMsg.setToType(0);
-                dataMap=new HashMap<String, Object>();
-                dataMap.put("DialType", returnType==1?"1":"2");
-                dataMap.put("CallId", callId);
-                dataMap.put("CallerId", callerId);
-                dataMap.put("CallederId", callederId);
-                MapContent _mc=new MapContent(dataMap);
-                toCallederMsg.setMsgContent(_mc);
-                //加入“呼叫者”的用户信息给被叫者
-                Map<String, Object> callerInfo=new HashMap<String, Object>();
-                UserPo u=globalMem.uANDgMem.getUserById(callerId);
-                callerInfo.put("UserName", u.getLoginName());
-                callerInfo.put("UserNum", u.getUserNum());
-                callerInfo.put("Portrait", u.getPortraitMini());
-                callerInfo.put("Mail", u.getMailAddress());
-                callerInfo.put("Descn", u.getDescn());
-                dataMap.put("CallerInfo", callerInfo);
-                toCallederMsg.setPCDType(0);
+                dataMap.put("DialType", "1");
                 globalMem.sendMem.putDeviceMsg(_pUdk, toCallederMsg);
-                //记录到已发送列表
-                callData.addSendedMsg(toCallederMsg);
             }
+        } else {
+            dataMap.put("DialType", "2");
+            globalMem.sendMem.putNotifyMsg(callederId, toCallederMsg);
         }
+        //记录到已发送列表
+        callData.addSendedMsg(toCallederMsg);
 
         if (returnType!=1) shutdown(); //若呼叫不成功，要删除数据及这个过程
         else callData.setStatus_1();   //若呼叫成功，修改状态
@@ -209,8 +208,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             //发送给呼叫者的消息
             MsgNormal toCallerMsg=new MsgNormal();
             toCallerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-            toCallerMsg.setFromType(1);
-            toCallerMsg.setToType(0);
+            toCallerMsg.setToType(1);
             toCallerMsg.setMsgType(0);
             toCallerMsg.setAffirm(1);
             toCallerMsg.setBizType(2);
@@ -249,8 +247,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             //构造“应答传递ACK”消息，并发送给“呼叫者”
             MsgNormal toCallerMsg=new MsgNormal();
             toCallerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-            toCallerMsg.setFromType(1);
-            toCallerMsg.setToType(0);
+            toCallerMsg.setToType(1);
             toCallerMsg.setMsgType(0);
             toCallerMsg.setAffirm(1);
             toCallerMsg.setBizType(2);
@@ -271,8 +268,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 if (!ackUdkey.equals(_pUdkey)) {
                     MsgNormal toOtherCallederMsg=new MsgNormal();
                     toOtherCallederMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-                    toOtherCallederMsg.setFromType(1);
-                    toOtherCallederMsg.setToType(0);
+                    toOtherCallederMsg.setToType(1);
                     toOtherCallederMsg.setMsgType(0);
                     toOtherCallederMsg.setAffirm(1);
                     toOtherCallederMsg.setBizType(2);
@@ -309,8 +305,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             MsgNormal otherMsg=new MsgNormal();
             otherMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
             otherMsg.setReMsgId(m.getMsgId());
-            otherMsg.setFromType(1);
-            otherMsg.setToType(0);
+            otherMsg.setToType(1);
             otherMsg.setMsgType(1);
             otherMsg.setAffirm(0);
             otherMsg.setBizType(2);
@@ -336,8 +331,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     private void beginPTT(MsgNormal m) throws InterruptedException {
         MsgNormal toSpeakerMsg=new MsgNormal();
         toSpeakerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-        toSpeakerMsg.setFromType(1);
-        toSpeakerMsg.setToType(0);
+        toSpeakerMsg.setToType(1);
         toSpeakerMsg.setReMsgId(m.getMsgId());
         toSpeakerMsg.setMsgType(1);
         toSpeakerMsg.setAffirm(1);
@@ -353,6 +347,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         } else {
             String ret=callData.setSpeaker(speaker);
             if (ret.equals("1")) {
+                callData.setLastTalkTime(speaker.getUserId());
                 toSpeakerMsg.setReturnType(1);
             } else if (ret.startsWith("2::")) {
                 toSpeakerMsg.setReturnType(2);
@@ -393,8 +388,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
     private void endPTT(MsgNormal m) throws InterruptedException {
         MsgNormal toSpeakerMsg=new MsgNormal();
         toSpeakerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-        toSpeakerMsg.setFromType(1);
-        toSpeakerMsg.setToType(0);
+        toSpeakerMsg.setToType(1);
         toSpeakerMsg.setReMsgId(m.getMsgId());
         toSpeakerMsg.setMsgType(1);
         toSpeakerMsg.setAffirm(1);
@@ -452,8 +446,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         //发送给“呼叫者”的消息
         MsgNormal toCallerMsg=new MsgNormal();
         toCallerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-        toCallerMsg.setFromType(1);
-        toCallerMsg.setToType(0);
+        toCallerMsg.setToType(1);
         toCallerMsg.setMsgType(0);
         toCallerMsg.setAffirm(1);
         toCallerMsg.setBizType(2);
@@ -476,8 +469,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         //1、构造“应答传递ACK”消息，并发送给“呼叫者”
         MsgNormal toCallerMsg=new MsgNormal();
         toCallerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-        toCallerMsg.setFromType(1);
-        toCallerMsg.setToType(0);
+        toCallerMsg.setToType(1);
         toCallerMsg.setMsgType(0);
         toCallerMsg.setAffirm(1);
         toCallerMsg.setBizType(2);
@@ -499,8 +491,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         if (callData.getCallederKey()!=null) {
             MsgNormal toCallederMsg=new MsgNormal();
             toCallederMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-            toCallederMsg.setFromType(1);
-            toCallederMsg.setToType(0);
+            toCallederMsg.setToType(1);
             toCallederMsg.setMsgType(0);
             toCallederMsg.setAffirm(1);
             toCallederMsg.setBizType(2);
@@ -521,8 +512,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 for (PushUserUDKey _pUdkey: callData.getCallederList()) {
                     MsgNormal toCallederMsg=new MsgNormal();
                     toCallederMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-                    toCallederMsg.setFromType(1);
-                    toCallederMsg.setToType(0);
+                    toCallederMsg.setToType(1);
                     toCallederMsg.setMsgType(0);
                     toCallederMsg.setAffirm(1);
                     toCallederMsg.setBizType(2);
@@ -548,8 +538,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         //发送给“呼叫者”的消息
         MsgNormal toCallerMsg=new MsgNormal();
         toCallerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-        toCallerMsg.setFromType(1);
-        toCallerMsg.setToType(0);
+        toCallerMsg.setToType(1);
         toCallerMsg.setMsgType(0);
         toCallerMsg.setAffirm(1);
         toCallerMsg.setBizType(2);
@@ -572,8 +561,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         if (callData.getCallederKey()!=null) {
             MsgNormal toCallederMsg=new MsgNormal();
             toCallederMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-            toCallederMsg.setFromType(1);
-            toCallederMsg.setToType(0);
+            toCallederMsg.setToType(1);
             toCallederMsg.setMsgType(0);
             toCallederMsg.setAffirm(1);
             toCallederMsg.setBizType(2);
@@ -594,8 +582,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 for (PushUserUDKey _pUdkey: callData.getCallederList()) {
                     MsgNormal toCallederMsg=new MsgNormal();
                     toCallederMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-                    toCallederMsg.setFromType(1);
-                    toCallederMsg.setToType(0);
+                    toCallederMsg.setToType(1);
                     toCallederMsg.setMsgType(0);
                     toCallederMsg.setAffirm(1);
                     toCallederMsg.setBizType(2);
@@ -627,8 +614,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 //构造“应答传递ACK”消息，并发送给“呼叫者”
                 MsgNormal toCallerMsg=new MsgNormal();
                 toCallerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-                toCallerMsg.setFromType(1);
-                toCallerMsg.setToType(0);
+                toCallerMsg.setToType(1);
                 toCallerMsg.setMsgType(0);
                 toCallerMsg.setAffirm(0);
                 toCallerMsg.setBizType(2);

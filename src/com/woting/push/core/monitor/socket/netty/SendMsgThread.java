@@ -8,7 +8,7 @@ import com.woting.push.core.message.MsgMedia;
 import com.woting.push.core.message.MsgNormal;
 import com.woting.push.user.PushUserUDKey;
 
-import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 
 /**
  * 发送我的消息给客户端
@@ -29,8 +29,8 @@ public class SendMsgThread extends Thread {
     @Override
     public void run() {
         //找到具体的Channel
-        Channel c=(Channel)globalMem.getSocketByPushUser(pUdk);
-        if (c==null) return;
+        ChannelHandlerContext ctx=(ChannelHandlerContext)globalMem.getSocketByPushUser(pUdk);
+        if (ctx==null) return;
 
         int ctlCount=0, mdaCount=0;
         boolean existMsg=true;
@@ -39,7 +39,7 @@ public class SendMsgThread extends Thread {
             Message m=null;
             do {//媒体消息
                 try {
-                    m=globalMem.sendMem.pollDeviceMsgMDA(pUdk, c);
+                    m=globalMem.sendMem.pollDeviceMsgMDA(pUdk, ctx);
                 } catch (InterruptedException e1) {
                     e1.printStackTrace();
                 }
@@ -49,7 +49,7 @@ public class SendMsgThread extends Thread {
                         if (m instanceof MsgMedia) {
                             MsgMedia mm=(MsgMedia)m;
                             if (System.currentTimeMillis()-mm.getSendTime()<(mm.getMediaType()==1?mConf.get_AudioExpiredTime():mConf.get_VedioExpiredTime())) {
-                                c.writeAndFlush(m);
+                                ctx.writeAndFlush(m);
                             }
                         }
                     } catch(Exception e) {}
@@ -59,7 +59,7 @@ public class SendMsgThread extends Thread {
             do {//控制消息-到设备
                 m=null;
                 try {
-                    m=globalMem.sendMem.pollDeviceMsgCTL(pUdk, c);
+                    m=globalMem.sendMem.pollDeviceMsgCTL(pUdk, ctx);
                 } catch (InterruptedException e1) {
                     e1.printStackTrace();
                 }
@@ -72,7 +72,7 @@ public class SendMsgThread extends Thread {
                                 mn.setUserId(pConf.get_ServerType());
                                 mn.setDeviceId(pConf.get_ServerName());
                             }
-                            c.writeAndFlush(m);
+                            ctx.writeAndFlush(m);
                             //若需要控制确认，插入已发送列表
                             if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, m);
                         }
@@ -83,7 +83,7 @@ public class SendMsgThread extends Thread {
             do {//通知消息（控制消息-到用户）
                 m=null;
                 try {
-                    m=globalMem.sendMem.pollNotifyMsg(pUdk, c);
+                    m=globalMem.sendMem.pollNotifyMsg(pUdk, ctx);
                 } catch (InterruptedException e1) {
                     e1.printStackTrace();
                 }
@@ -95,7 +95,7 @@ public class SendMsgThread extends Thread {
                             mn.setUserId(pConf.get_ServerType());
                             mn.setDeviceId(pConf.get_ServerName());
                         }
-                        c.writeAndFlush(m);
+                        ctx.writeAndFlush(m);
                         //若需要控制确认，插入已发送列表
                         if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, m);
                     } catch(Exception e) {}

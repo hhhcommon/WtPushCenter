@@ -252,26 +252,6 @@ public class ServerListener {
     @SuppressWarnings("unchecked")
     private void startServers() {
         logger.info("启动Push服务:二、监控服务启动=======================");
-        //1-启动{TCP_控制信道}socket监控
-        PushConfig pc=((CacheEle<PushConfig>)SystemCache.getCache(PushConstants.PUSH_CONF)).getContent();
-        SocketHandleConfig sc=((CacheEle<SocketHandleConfig>)SystemCache.getCache(PushConstants.SOCKETHANDLE_CONF)).getContent();
-        socketType=2;
-        if (socketType==0) {
-            tcpCtlServer=new OioServer(pc);
-            tcpCtlServer.setDaemon(true);
-            tcpCtlServer.start();
-        } else if (socketType==1) {
-            tcpCtlServer=new NioServer(pc);
-            tcpCtlServer.setDaemon(true);
-            tcpCtlServer.start();
-        } else if (socketType==2) {
-            nettyServer=new NettyServer(pc, sc);
-            try {
-                nettyServer.begin();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
         //2-启动{处理对讲消息}线程
         IntercomConfig ic=((CacheEle<IntercomConfig>)SystemCache.getCache(PushConstants.INTERCOM_CONF)).getContent();
         dealIntercomList=new ArrayList<DealIntercomMsg>();
@@ -311,6 +291,26 @@ public class ServerListener {
             ds.setDaemon(true);
             ds.start();
             dealSyncList.add(ds);
+        }
+        //1-启动{TCP_控制信道}socket监控
+        PushConfig pc=((CacheEle<PushConfig>)SystemCache.getCache(PushConstants.PUSH_CONF)).getContent();
+        SocketHandleConfig sc=((CacheEle<SocketHandleConfig>)SystemCache.getCache(PushConstants.SOCKETHANDLE_CONF)).getContent();
+        socketType=pc.get_SocketServerType();
+        if (socketType==0) {
+            tcpCtlServer=new OioServer(pc);
+            tcpCtlServer.setDaemon(true);
+            tcpCtlServer.start();
+        } else if (socketType==1) {
+            tcpCtlServer=new NioServer(pc);
+            tcpCtlServer.setDaemon(true);
+            tcpCtlServer.start();
+        } else if (socketType==2) {
+            nettyServer=new NettyServer(pc, sc);
+            try {
+                nettyServer.begin();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
         _RUN_STATUS=2;//==================启动成功
     }

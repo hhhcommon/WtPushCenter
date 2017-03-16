@@ -117,6 +117,8 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         if (groupId.length()==0) return 2;
 
         MsgNormal retMsg=MessageUtils.buildRetMsg(m);
+        retMsg.setFromType(0);
+        retMsg.setToType(1);
         retMsg.setCommand(9);
         Map<String, Object> dataMap=new HashMap<String, Object>();
         dataMap.put("GroupId", groupId);
@@ -202,6 +204,8 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         if (groupId.length()==0) return 2;
 
         MsgNormal retMsg=MessageUtils.buildRetMsg(m);
+        retMsg.setFromType(0);
+        retMsg.setToType(1);
         retMsg.setCommand(0x0A);
         Map<String, Object> dataMap=new HashMap<String, Object>();
         dataMap.put("GroupId", groupId);
@@ -274,6 +278,8 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         if (groupId.length()==0) return 2;
 
         MsgNormal retMsg=MessageUtils.buildRetMsg(m);
+        retMsg.setFromType(0);
+        retMsg.setToType(1);
         retMsg.setCommand(9);
         Map<String, Object> dataMap=new HashMap<String, Object>();
         dataMap.put("GroupId", groupId);
@@ -300,6 +306,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         globalMem.sendMem.putDeviceMsg(pUdk, retMsg);
 
         if (retFlag==1&&meetData.getEntryGroupUserMap()!=null&&meetData.getEntryGroupUserMap().size()>1) {
+            meetData.setLastTalkTime(pUdk.getUserId());
             MsgNormal bMsg=MessageUtils.clone(retMsg);
             bMsg.setReMsgId(null);
             bMsg.setMsgType(0);
@@ -335,6 +342,8 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         if (groupId.length()==0) return 2;
 
         MsgNormal retMsg=MessageUtils.buildRetMsg(m);
+        retMsg.setFromType(0);
+        retMsg.setToType(1);
         retMsg.setCommand(0x0A);
         Map<String, Object> dataMap=new HashMap<String, Object>();
         dataMap.put("GroupId", groupId);

@@ -316,8 +316,7 @@ public class OneMeet implements Serializable {
         this.group=g;
 
         status=0;//仅创建，还未处理
-        lastTalkTime=System.currentTimeMillis();
-        lastUsedTime=lastTalkTime;
+        lastUsedTime=System.currentTimeMillis();
 
         preMsgQueue=new LinkedBlockingQueue<MsgNormal>();
         processedMsgList=new ArrayList<ProcessedMsg>();
