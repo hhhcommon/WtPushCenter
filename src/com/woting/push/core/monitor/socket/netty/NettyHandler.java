@@ -27,6 +27,11 @@ import com.woting.push.core.message.MessageUtils;
 import com.woting.push.core.message.MsgMedia;
 import com.woting.push.core.message.MsgNormal;
 import com.woting.push.core.message.content.MapContent;
+import com.woting.push.core.monitor.socket.netty.event.SendMsgEvent;
+import com.woting.push.core.monitor.socket.netty.sendthread.SendAllMsg;
+import com.woting.push.core.monitor.socket.netty.sendthread.SendControlMsg;
+import com.woting.push.core.monitor.socket.netty.sendthread.SendMediaMsg;
+import com.woting.push.core.monitor.socket.netty.sendthread.SendNotifyMsg;
 import com.woting.push.core.service.SessionService;
 import com.woting.push.ext.SpringShell;
 import com.woting.push.user.PushUserUDKey;
@@ -64,7 +69,7 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
             if (MessageUtils.decideBeat(_data)==2) {
                 lastVisitTime=System.currentTimeMillis();
                 ctx.writeAndFlush(MessageUtils.BEAT_SERVER);//回写心跳
-                //logger.debug("{}[{}]_收到心跳:{}", ctx.toString(), lastVisitTime, new String(_data));
+                logger.debug("{}[{}]_收到心跳:{}", ctx.toString(), lastVisitTime, new String(_data));
             } else { 
                 logger.info("{}[{}]_收到错误数据:{}", ctx.toString(), lastVisitTime, new String((byte[])msg));
             }
@@ -81,10 +86,10 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
                         if (mn.getBizType()==15) {//注册消息
                             if (!mn.isAck()) {
                                 dealRegisterCTLMsg(ctx, _pUdk, mn);
-                                new SendMsgThread(
-                                    ctx.channel().attr(CHANNEL_PUDKEY).get(),
+                                new SendAllMsg(
                                     (PushConfig)SystemCache.getCache(PushConstants.PUSH_CONF).getContent(),
-                                    (MediaConfig)SystemCache.getCache(PushConstants.MEDIA_CONF).getContent()
+                                    (MediaConfig)SystemCache.getCache(PushConstants.MEDIA_CONF).getContent(),
+                                    ctx
                                 ).start();
                             }
                         } else dealNormalCTLMsg(ctx, _pUdk, mn);//处理一般消息

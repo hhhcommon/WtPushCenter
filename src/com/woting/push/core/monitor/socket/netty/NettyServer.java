@@ -35,14 +35,16 @@ public class NettyServer {
             b.childHandler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 public void initChannel(SocketChannel ch) throws Exception {
-                    //写过程
-                    ch.pipeline().addLast("encodeMsg", new MsgEncoder());
-                    //加入空闲事件，为长连接做准备
+                    //加入空闲事件，为长连接做准备(In and Out)
                     ch.pipeline().addLast("idleEve", new IdleStateHandler(sc.get_MonitorDelay(), 0, 0, TimeUnit.MILLISECONDS));
-                    //读过程
+                    //写过程(Out)
+                    ch.pipeline().addLast("encodeMsg", new MsgEncoder());
+                    //读过程(In)
                     ch.pipeline().addLast("delimiterPack", new DelimiterBasedFrameDecoder(1024, false, Unpooled.copiedBuffer("^^".getBytes())));
                     ch.pipeline().addLast("decodePack", new MsgDecoder());
                     ch.pipeline().addLast("bizHandler", new NettyHandler());
+                    //处理发送消息事件(In and Out)
+                    ch.pipeline().addLast("sendEve", new SendEventHandler());
                 }
             });
             b.option(ChannelOption.SO_BACKLOG, 128);
