@@ -294,7 +294,6 @@ public class ServerListener {
         }
         //1-启动{TCP_控制信道}socket监控
         PushConfig pc=((CacheEle<PushConfig>)SystemCache.getCache(PushConstants.PUSH_CONF)).getContent();
-        SocketHandleConfig sc=((CacheEle<SocketHandleConfig>)SystemCache.getCache(PushConstants.SOCKETHANDLE_CONF)).getContent();
         socketType=pc.get_SocketServerType();
         if (socketType==0) {
             tcpCtlServer=new OioServer(pc);
@@ -305,7 +304,9 @@ public class ServerListener {
             tcpCtlServer.setDaemon(true);
             tcpCtlServer.start();
         } else if (socketType==2) {
-            nettyServer=new NettyServer(pc, sc);
+            SocketHandleConfig sc=((CacheEle<SocketHandleConfig>)SystemCache.getCache(PushConstants.SOCKETHANDLE_CONF)).getContent();
+            AffirmCtlConfig acc=((CacheEle<AffirmCtlConfig>)SystemCache.getCache(PushConstants.AFFCTL_CONF)).getContent();
+            nettyServer=new NettyServer(pc, sc, acc);
             try {
                 nettyServer.begin();
             } catch (Exception e) {

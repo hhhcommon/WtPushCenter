@@ -854,33 +854,33 @@ public class SocketHandler {
                         } catch(Exception e) {}
                     }
                     //获得**需要重复发送的消息**
-                    LinkedBlockingQueue<Map<String, Object>> mmq=globalMem.sendMem.getResendMsg(_pushUserKey, SocketHandler.this);
-                    while (mmq!=null&&!mmq.isEmpty()) {
-                        Map<String, Object> _m=mmq.poll();
-                        if (_m==null||_m.isEmpty()) continue;
-                        Message _msg=(Message)_m.get("message");
-                        if (_msg==null) continue;
-                        if (fos!=null) {
-                            try {
-                                byte[] aa=JsonUtils.objToJson(m).getBytes();
-                                fos.write(aa, 0, aa.length);
-                                fos.write(13);
-                                fos.write(10);
-                                fos.flush();
-                            } catch (IOException e) {}
-                        }
-                        try {
-                            if (m instanceof MsgNormal) {
-                                MsgNormal mn=(MsgNormal)m;
-                                if (mn.getFromType()==0) {
-                                    mn.setUserId(pConf.get_ServerType());
-                                    mn.setDeviceId(pConf.get_ServerName());
-                                }
-                                _sendMsgQueue.put(m.toBytes());
-                                //若需要控制确认，插入已发送列表
-                                if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
+                    for (int i=0; i<2; i++) {
+                        LinkedBlockingQueue<Map<String, Object>> mmq=globalMem.sendMem.getSendedNeedCtlAffirmMsg(_pushUserKey, SocketHandler.this, i);
+                        while (mmq!=null&&!mmq.isEmpty()) {
+                            Map<String, Object> _m=mmq.poll();
+                            if (_m==null||_m.isEmpty()) continue;
+                            Message _msg=(Message)_m.get("message");
+                            if (_msg==null) continue;
+                            if (fos!=null) {
+                                try {
+                                    byte[] aa=JsonUtils.objToJson(m).getBytes();
+                                    fos.write(aa, 0, aa.length);
+                                    fos.write(13);
+                                    fos.write(10);
+                                    fos.flush();
+                                } catch (IOException e) {}
                             }
-                        } catch(Exception e) {}
+                            try {
+                                if (m instanceof MsgNormal) {
+                                    MsgNormal mn=(MsgNormal)m;
+                                    if (mn.getFromType()==0) {
+                                        mn.setUserId(pConf.get_ServerType());
+                                        mn.setDeviceId(pConf.get_ServerName());
+                                    }
+                                    _sendMsgQueue.put(m.toBytes());
+                                }
+                            } catch(Exception e) {}
+                        }
                     }
                     try { _pushUserKey.wait(20); } catch (InterruptedException ie) {};
                 }

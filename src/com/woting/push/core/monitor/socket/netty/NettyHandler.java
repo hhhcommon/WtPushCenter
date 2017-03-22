@@ -27,11 +27,8 @@ import com.woting.push.core.message.MessageUtils;
 import com.woting.push.core.message.MsgMedia;
 import com.woting.push.core.message.MsgNormal;
 import com.woting.push.core.message.content.MapContent;
-import com.woting.push.core.monitor.socket.netty.event.SendMsgEvent;
+import com.woting.push.core.monitor.socket.netty.sendthread.ResendNeedCtrAffirmMsg;
 import com.woting.push.core.monitor.socket.netty.sendthread.SendAllMsg;
-import com.woting.push.core.monitor.socket.netty.sendthread.SendControlMsg;
-import com.woting.push.core.monitor.socket.netty.sendthread.SendMediaMsg;
-import com.woting.push.core.monitor.socket.netty.sendthread.SendNotifyMsg;
 import com.woting.push.core.service.SessionService;
 import com.woting.push.ext.SpringShell;
 import com.woting.push.user.PushUserUDKey;
@@ -127,8 +124,11 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt instanceof IdleStateEvent) {
-            if (((IdleStateEvent)evt).state()==IdleState.READER_IDLE) {
+            if (((IdleStateEvent)evt).state()==IdleState.READER_IDLE) {//处理心跳
                 dealHealth(ctx);
+            }
+            if (((IdleStateEvent)evt).state()==IdleState.WRITER_IDLE) {//处理音频重发数据
+                new ResendNeedCtrAffirmMsg(ctx, 1).start();
             }
         }
     }

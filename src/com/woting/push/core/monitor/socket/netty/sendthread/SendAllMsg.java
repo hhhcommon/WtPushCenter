@@ -1,5 +1,8 @@
 package com.woting.push.core.monitor.socket.netty.sendthread;
 
+import java.util.Map;
+import java.util.concurrent.LinkedBlockingQueue;
+
 import com.woting.push.config.MediaConfig;
 import com.woting.push.config.PushConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
@@ -111,13 +114,16 @@ public class SendAllMsg extends Thread {
             existMsg=((ctlCount+mdaCount)>0);
         }
         //获得**需要重复发送的消息**
-//        LinkedBlockingQueue<Map<String, Object>> mmq=globalMem.sendMem.getResendMsg(pUdk, c);
-//        while (mmq!=null&&!mmq.isEmpty()) {
-//            Map<String, Object> _m=mmq.poll();
-//            if (_m==null||_m.isEmpty()) continue;
-//            Message _msg=(Message)_m.get("message");
-//            if (_msg==null) continue;
-//            c.writeAndFlush(_msg);
-//        }
+        for (int i=0; i<2; i++) {
+            LinkedBlockingQueue<Map<String, Object>> mmq=globalMem.sendMem.getSendedNeedCtlAffirmMsg(pUdk, ctx, i);
+            while (mmq!=null&&!mmq.isEmpty()) {
+                Map<String, Object> _m=mmq.poll();
+                if (_m==null||_m.isEmpty()) continue;
+                Message _msg=(Message)_m.get("message");
+                if (_msg==null) continue;
+                ctx.writeAndFlush(_msg);
+                globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, _msg);
+            }
+        }
     }
 }
