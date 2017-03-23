@@ -1,4 +1,4 @@
-package com.woting.push.config;
+package com.woting.audioSNS.ctrlremsg;
 
 import com.woting.push.core.config.Config;
 
@@ -7,6 +7,10 @@ import com.woting.push.core.config.Config;
  * @author wanghui
  */
 public class AffirmCtlConfig implements Config {
+    /**
+     * 处理通用控制回复消息线程的个数，从原生队列中获取通用控制消息，并进行处理的线程的个数
+     */
+    private int _DealThreadCount=4;
     /**
      * 一般消息:上次发送后，间隔多长时间发送下一次
      */
@@ -48,6 +52,10 @@ public class AffirmCtlConfig implements Config {
     public void set_N_Type(int _N_Type) {
         this._N_Type = _N_Type;
     }
+    /**
+     * 清理线程时间间隔
+     */
+    private int _CleanInternal=60*1000;
 
     /**
      * 媒体消息:上次发送后，间隔多长时间发送下一次
@@ -66,6 +74,12 @@ public class AffirmCtlConfig implements Config {
      */
     private int _M_Type=0;
 
+    public int get_DealThreadCount() {
+        return _DealThreadCount;
+    }
+    public void set_DealThreadCount(int _DealThreadCount) {
+        this._DealThreadCount=_DealThreadCount;
+    }
     public int get_M_InternalResend() {
         return _M_InternalResend;
     }
@@ -89,5 +103,11 @@ public class AffirmCtlConfig implements Config {
     }
     public void set_M_Type(int _M_Type) {
         this._M_Type = _M_Type;
+    }
+    public int get_CleanInternal() {
+        return _CleanInternal;
+    }
+    public void set_CleanInternal(int _CleanInternal) {
+        this._CleanInternal = _CleanInternal;
     }
 }

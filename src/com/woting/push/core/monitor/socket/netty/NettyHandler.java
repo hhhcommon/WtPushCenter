@@ -128,7 +128,7 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
                 dealHealth(ctx);
             }
             if (((IdleStateEvent)evt).state()==IdleState.WRITER_IDLE) {//处理音频重发数据
-                new ResendNeedCtrAffirmMsg(ctx, 1).start();
+                new ResendNeedCtrAffirmMsg(ctx).start();
             }
         }
     }

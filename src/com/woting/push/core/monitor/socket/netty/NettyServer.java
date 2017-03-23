@@ -2,7 +2,7 @@ package com.woting.push.core.monitor.socket.netty;
 
 import java.util.concurrent.TimeUnit;
 
-import com.woting.push.config.AffirmCtlConfig;
+import com.woting.audioSNS.ctrlremsg.AffirmCtlConfig;
 import com.woting.push.config.PushConfig;
 import com.woting.push.core.SocketHandleConfig;
 
@@ -38,8 +38,8 @@ public class NettyServer {
             b.childHandler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 public void initChannel(SocketChannel ch) throws Exception {
-                    //加入空闲事件，为长连接做准备(In and Out) 并且处理写空闲时，传送语音控制回复
-                    ch.pipeline().addLast("idleEve", new IdleStateHandler(sc.get_MonitorDelay(), acc.get_M_InternalResend(), 0, TimeUnit.MILLISECONDS));
+                    //加入空闲事件，为长连接做准备(In and Out) 并且处理写空闲时，传送控制回复
+                    ch.pipeline().addLast("idleEve", new IdleStateHandler(sc.get_MonitorDelay(), acc.get_N_InternalResend(), 0, TimeUnit.MILLISECONDS));
                     //写过程(Out)
                     ch.pipeline().addLast("encodeMsg", new MsgEncoder());
                     //读过程(In)
@@ -48,9 +48,6 @@ public class NettyServer {
                     ch.pipeline().addLast("bizHandler", new NettyHandler());
                     //处理发送消息事件(In and Out)
                     ch.pipeline().addLast("sendEve", new SendEventHandler());
-                    //加入空闲事件，传送一般消息控制回复
-                    ch.pipeline().addLast("idleEveForResendCtrAffirm_MsgNormal", new IdleStateHandler(0, acc.get_N_InternalResend(), 0, TimeUnit.MILLISECONDS));
-                    ch.pipeline().addLast("ResendCtrAffirm_MsgNormal", new ResendCtrAffirmMsgNormalHandler());
                 }
             });
             b.option(ChannelOption.SO_BACKLOG, 128);

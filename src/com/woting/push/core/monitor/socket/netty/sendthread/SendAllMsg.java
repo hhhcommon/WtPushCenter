@@ -114,16 +114,14 @@ public class SendAllMsg extends Thread {
             existMsg=((ctlCount+mdaCount)>0);
         }
         //获得**需要重复发送的消息**
-        for (int i=0; i<2; i++) {
-            LinkedBlockingQueue<Map<String, Object>> mmq=globalMem.sendMem.getSendedNeedCtlAffirmMsg(pUdk, ctx, i);
-            while (mmq!=null&&!mmq.isEmpty()) {
-                Map<String, Object> _m=mmq.poll();
-                if (_m==null||_m.isEmpty()) continue;
-                Message _msg=(Message)_m.get("message");
-                if (_msg==null) continue;
-                ctx.writeAndFlush(_msg);
-                globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, _msg);
-            }
+        LinkedBlockingQueue<Map<String, Object>> mmq=globalMem.sendMem.getSendedNeedCtlAffirmMsg(pUdk, ctx);
+        while (mmq!=null&&!mmq.isEmpty()) {
+            Map<String, Object> _m=mmq.poll();
+            if (_m==null||_m.isEmpty()) continue;
+            Message _msg=(Message)_m.get("message");
+            if (_msg==null) continue;
+            ctx.writeAndFlush(_msg);
+            globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, _msg);
         }
     }
 }

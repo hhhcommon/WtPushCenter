@@ -14,13 +14,14 @@ import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.calling.CallingConfig;
 import com.woting.audioSNS.calling.monitor.CleanCalling;
 import com.woting.audioSNS.calling.monitor.DealCallingMsg;
+import com.woting.audioSNS.ctrlremsg.AffirmCtlConfig;
+import com.woting.audioSNS.ctrlremsg.monitor.DealCtrReMsg;
 import com.woting.audioSNS.intercom.IntercomConfig;
 import com.woting.audioSNS.intercom.monitor.DealIntercomMsg;
 import com.woting.audioSNS.notify.NotifyMessageConfig;
 import com.woting.audioSNS.notify.monitor.DealNotifyMsg;
 import com.woting.audioSNS.sync.SyncMessageConfig;
 import com.woting.audioSNS.sync.monitor.DealSyncMsg;
-import com.woting.push.config.AffirmCtlConfig;
 import com.woting.push.config.ConfigLoadUtils;
 import com.woting.push.config.MediaConfig;
 import com.woting.push.config.PushConfig;
@@ -85,6 +86,7 @@ public class ServerListener {
     private CleanCalling cleanCalling=null; //电话数据清理线程
     private List<DealNotifyMsg> dealNotifyList=null; //处理通知消息线程的记录列表
     private List<DealSyncMsg> dealSyncList=null; //处理同步消息线程的记录列表
+    private List<DealCtrReMsg> dealCtrReMsgList=null; //处理控制回复线程的记录列表
 
     /**
      * 获得运行状态
@@ -292,6 +294,17 @@ public class ServerListener {
             ds.start();
             dealSyncList.add(ds);
         }
+        //6-启动{控制回复处理}线程
+        AffirmCtlConfig acc=((CacheEle<AffirmCtlConfig>)SystemCache.getCache(PushConstants.AFFCTL_CONF)).getContent();
+        dealCtrReMsgList=new ArrayList<DealCtrReMsg>();
+        for (int i=0;i<acc.get_DealThreadCount(); i++) {
+            DealCtrReMsg dcs=new DealCtrReMsg(acc, i);
+            dcs.setDaemon(true);
+            dcs.start();
+            dealCtrReMsgList.add(dcs);
+        }
+        //6.1-启动{控制回复清理}线程
+        
         //1-启动{TCP_控制信道}socket监控
         PushConfig pc=((CacheEle<PushConfig>)SystemCache.getCache(PushConstants.PUSH_CONF)).getContent();
         socketType=pc.get_SocketServerType();
@@ -305,7 +318,6 @@ public class ServerListener {
             tcpCtlServer.start();
         } else if (socketType==2) {
             SocketHandleConfig sc=((CacheEle<SocketHandleConfig>)SystemCache.getCache(PushConstants.SOCKETHANDLE_CONF)).getContent();
-            AffirmCtlConfig acc=((CacheEle<AffirmCtlConfig>)SystemCache.getCache(PushConstants.AFFCTL_CONF)).getContent();
             nettyServer=new NettyServer(pc, sc, acc);
             try {
                 nettyServer.begin();
@@ -376,6 +388,10 @@ public class ServerListener {
         //5-停止{同步消息处理}线程
         if (dealSyncList!=null&&!dealSyncList.isEmpty()) {
             for (DealSyncMsg ds: dealSyncList) ds.stopServer();
+        }
+        //6-停止{控制回复处理}线程
+        if (dealCtrReMsgList!=null&&!dealCtrReMsgList.isEmpty()) {
+            for (DealCtrReMsg dcs: dealCtrReMsgList) dcs.stopServer();
         }
         _RUN_STATUS=4;//==================成功停止
     }

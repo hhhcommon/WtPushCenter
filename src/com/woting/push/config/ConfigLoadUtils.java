@@ -4,6 +4,7 @@ import com.greenpineyu.fel.FelEngine;
 import com.greenpineyu.fel.FelEngineImpl;
 import com.spiritdata.framework.jsonconf.JsonConfig;
 import com.woting.audioSNS.calling.CallingConfig;
+import com.woting.audioSNS.ctrlremsg.AffirmCtlConfig;
 import com.woting.audioSNS.notify.NotifyMessageConfig;
 import com.woting.audioSNS.sync.SyncMessageConfig;
 import com.woting.push.core.SocketHandleConfig;
@@ -117,6 +118,9 @@ public abstract class ConfigLoadUtils {
     public static AffirmCtlConfig getAffirmCtlConfig(JsonConfig jc) {
         AffirmCtlConfig acc=new AffirmCtlConfig();
         try {
+            acc.set_DealThreadCount((int)fel.eval(jc.getString("controlAffirm.dealThread")));
+        } catch(Exception e) {}
+        try {
             acc.set_N_Type((int)fel.eval(jc.getString("controlAffirm.normalMsg.type")));
         } catch(Exception e) {}
         try {
@@ -139,6 +143,9 @@ public abstract class ConfigLoadUtils {
         } catch(Exception e) {}
         try {
             acc.set_M_InternalResend((int)fel.eval(jc.getString("controlAffirm.mediaMsg.internalResend")));
+        } catch(Exception e) {}
+        try {
+            acc.set_CleanInternal((int)fel.eval(jc.getString("controlAffirm.cleanInternal")));
         } catch(Exception e) {}
         return acc;
     }
