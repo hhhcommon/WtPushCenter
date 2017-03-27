@@ -158,7 +158,7 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
         String dkey=ctx.channel().attr(CHANNEL_DEVKEY)==null?null:(ctx.channel().attr(CHANNEL_DEVKEY).get()==null?null:ctx.channel().attr(CHANNEL_DEVKEY).get());
         if (!StringUtils.isNullOrEmptyOrSpace(dkey)) {
             PushUserUDKey _tpUdk=new PushUserUDKey();
-            String[] sp=dkey.split("::");
+            String[] sp=dkey.split("=");
             _tpUdk.setDeviceId(sp[0]);
             _tpUdk.setPCDType(Integer.parseInt(sp[1]));
             globalMem.unbindDeviceANDsocket(_tpUdk, ctx);
@@ -236,7 +236,7 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
                 globalMem.bindPushUserANDSocket(pUdk, ctx);
                 //本Channel处理
                 c_PUDK.set(pUdk);
-                c_DevK.set(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
+                c_DevK.set(pUdk.getDeviceId()+"="+pUdk.getPCDType());
             } else {//与之前的注册不一致，关闭掉这个Socket
                 MsgNormal ackM=MessageUtils.buildAckEntryMsg(mn);
                 ackM.setReturnType(0);//失败
@@ -265,7 +265,7 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
             } else {//登录成功
                 pUdk.setUserId(""+retM.get("UserId"));
                 c_PUDK.set(pUdk);
-                c_DevK.set(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
+                c_DevK.set(pUdk.getDeviceId()+"="+pUdk.getPCDType());
                 MsgNormal ackM=MessageUtils.buildAckEntryMsg(mn);
                 ackM.setReturnType(1);//成功
                 ackM.setUserId(pConf.get_ServerType());

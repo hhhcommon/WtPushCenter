@@ -69,7 +69,7 @@ public class SessionService {
             boolean hadLogon=(_userId==null?false:(_userId.equals(rUdk.getUserId())&&roService.get(rUdk.getKey_UserLoginStatus())!=null));
 
             if (hadLogon) {//已经登录
-                roService.set(rUdk.getKey_UserLoginStatus(), System.currentTimeMillis()+"::"+operDesc);
+                roService.set(rUdk.getKey_UserLoginStatus(), System.currentTimeMillis()+"="+operDesc);
                 roService.pExpire(rUdk.getKey_UserLoginStatus(), 30*60*1000);//30分钟后过期
                 try {
                     if (!roService.pExpire(rUdk.getKey_UserLoginDeviceType(), 30*60*1000)) {//保持一致性
@@ -157,7 +157,7 @@ public class SessionService {
                         }
                         rUdk.setUserId(mup.getUserId());
                         udk.setUserId(mup.getUserId());
-                        roService.set(rUdk.getKey_UserLoginStatus(), (System.currentTimeMillis()+"::register"));
+                        roService.set(rUdk.getKey_UserLoginStatus(), (System.currentTimeMillis()+"=register"));
                         roService.pExpire(rUdk.getKey_UserLoginStatus(), 30*60*1000);//30分钟后过期
                         roService.set(rUdk.getKey_UserLoginDeviceType(), rUdk.getDeviceId());
                         roService.pExpire(rUdk.getKey_UserLoginDeviceType(), 30*60*1000);//30分钟后过期

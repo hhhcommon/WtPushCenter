@@ -29,7 +29,7 @@ public class CleanCalling extends AbstractLoopMoniter<CallingConfig> {
             Map<String, OneCall> delM=callingMem.getDelMap();
             if (delM!=null&&!delM.isEmpty()) {
                 for (String k: delM.keySet()) {
-                    String[] ks=k.split("::");
+                    String[] ks=k.split("=");
                     if (ks.length!=2) continue;
                     long delTime=Long.parseLong(ks[1]);
                     if (cur-delTime>conf.get_CleanDataExpire()) {//清除数据

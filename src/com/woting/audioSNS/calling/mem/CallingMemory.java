@@ -80,7 +80,7 @@ public class CallingMemory {
                 OneCall oc=callMap.get(callId);
                 if (oc!=null) oc.setStatus_9();
                 callMap.remove(callId);
-                delMap.put(callId+"::"+System.currentTimeMillis(), oc);
+                delMap.put(callId+"="+System.currentTimeMillis(), oc);
             }
         } finally {
             lock.writeLock().unlock();

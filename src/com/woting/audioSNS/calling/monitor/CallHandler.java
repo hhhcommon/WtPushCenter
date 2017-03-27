@@ -349,7 +349,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             if (ret.equals("1")) {
                 callData.setLastTalkTime(speaker.getUserId());
                 toSpeakerMsg.setReturnType(1);
-            } else if (ret.startsWith("2::")) {
+            } else if (ret.startsWith("2=")) {
                 toSpeakerMsg.setReturnType(2);
                 dataMap.put("Speaker", ret.substring(3));
             } else if (ret.equals("0")) {
@@ -357,7 +357,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 dataMap.put("ErrMsg", "当前会话为非对讲模式，不用申请独占的通话资源");
             } else {
                 toSpeakerMsg.setReturnType(4);
-                dataMap.put("ErrMsg", ret.startsWith("-")?ret.substring(ret.indexOf("::")+2):"未知问题");
+                dataMap.put("ErrMsg", ret.startsWith("-")?ret.substring(ret.indexOf("=")+2):"未知问题");
             }
 
         }
@@ -408,12 +408,12 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             } else if (ret.equals("0")) {
                 toSpeakerMsg.setReturnType(3);
                 dataMap.put("ErrMsg", "当前会话为非对讲模式，不用申请独占的通话资源");
-            } else if (ret.startsWith("2::")) {
+            } else if (ret.startsWith("2=")) {
                 toSpeakerMsg.setReturnType(2);
                 dataMap.put("Speaker", ret.substring(3));
             } else {
                 toSpeakerMsg.setReturnType(4);
-                dataMap.put("ErrMsg", ret.startsWith("-")?ret.substring(ret.indexOf("::")+2):"未知问题");
+                dataMap.put("ErrMsg", ret.startsWith("-")?ret.substring(ret.indexOf("=")+2):"未知问题");
             }
 
         }

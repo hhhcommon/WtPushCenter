@@ -90,7 +90,7 @@ public class SocketHandler {
 
     @SuppressWarnings("unchecked")
     protected SocketHandler(SocketHandleConfig conf, MediaConfig mConf, Socket socket) {
-        socketDesc="Socket["+socket.getRemoteSocketAddress()+"::"+socket.hashCode()+"]";
+        socketDesc="Socket["+socket.getRemoteSocketAddress()+"="+socket.hashCode()+"]";
         this.conf=conf;
         this.mConf=mConf;
         this.pConf=((CacheEle<PushConfig>)SystemCache.getCache(PushConstants.PUSH_CONF)).getContent();
@@ -228,7 +228,7 @@ public class SocketHandler {
                 globalMem.unbindPushUserANDSocket(_pushUserKey, this);
                 if (!StringUtils.isNullOrEmptyOrSpace(_deviceKey)) {
                     PushUserUDKey _tpUdk=new PushUserUDKey();
-                    String[] sp=_deviceKey.split("::");
+                    String[] sp=_deviceKey.split("=");
                     _tpUdk.setDeviceId(sp[0]);
                     _tpUdk.setPCDType(Integer.parseInt(sp[1]));
                     globalMem.unbindDeviceANDsocket(_tpUdk, this);
@@ -370,7 +370,7 @@ public class SocketHandler {
                                 bindDeviceFlag=globalMem.bindDeviceANDsocket(_pUdk, SocketHandler.this, false);
                                 if (bindDeviceFlag) {
                                     globalMem.bindPushUserANDSocket(_pUdk, SocketHandler.this);//处理注册
-                                    _deviceKey=_pUdk.getDeviceId()+"::"+_pUdk.getPCDType();
+                                    _deviceKey=_pUdk.getDeviceId()+"="+_pUdk.getPCDType();
                                 } else {//与之前的注册不一致，关闭掉这个Socket
                                     MsgNormal ackM=MessageUtils.buildAckEntryMsg(_ms);
                                     ackM.setReturnType(0);//失败
@@ -395,7 +395,7 @@ public class SocketHandler {
                                     }
                                     globalMem.bindDeviceANDsocket(_pUdk, SocketHandler.this, true);
                                 }
-                                _deviceKey=_pUdk.getDeviceId()+"::"+_pUdk.getPCDType();
+                                _deviceKey=_pUdk.getDeviceId()+"="+_pUdk.getPCDType();
                                 
                                 Map<String, Object> retM=sessionService.dealUDkeyEntry(_pUdk, "socket/entry");
                                 if (!(""+retM.get("ReturnType")).equals("1001")) {

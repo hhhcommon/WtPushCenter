@@ -52,9 +52,9 @@ public abstract class MessageUtils {
      *            0000000000111111111122222222
      *            0123456789012345678901234567
      * byte[] ba="asdfwefasdfasdfasfdw||fasdaf";
-     * parse_String(ba, 3, 7, null)=10::fwefasd
-     * parse_String(ba, 15, 10, null)=22::asfdw
-     * parse_String(ba, 24, 10, null)=-1::sdaf
+     * parse_String(ba, 3, 7, null)=10=fwefasd
+     * parse_String(ba, 15, 10, null)=22=asfdw
+     * parse_String(ba, 24, 10, null)=-1=sdaf
      * </pre></blockquote>
      * @param binaryMsg 字节数据
      * @param offset 开始偏移量
@@ -82,7 +82,7 @@ public abstract class MessageUtils {
             }
         }
         String s=(encode==null?new String(binaryMsg, offset, i):new String(binaryMsg, offset, i, encode));
-        return (nextOffset==-1?nextOffset:(nextOffset+offset))+"::"+s;
+        return (nextOffset==-1?nextOffset:(nextOffset+offset))+"="+s;
     }
 
     /**

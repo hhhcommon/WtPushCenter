@@ -169,9 +169,9 @@ public class PushGlobalMemory {
     private ConcurrentHashMap<String, LinkedBlockingQueue<Message>> notifyMsg;
 
     //    private Object LOCK_unionKey=new Object(); //同一Key锁
-    private Map<String, Object> REF_deviceANDsocket;   //设备和Socket处理线程的对应表； Key——设备标识：DeviceId::PCDType；Value——Socket处理线程
-    private Map<String, Object> REF_userdtypeANDsocket;//用户设备和Socket处理线程的对应表； Key——设备标识：UserId::PCDType；Value——Socket处理线程
-    private Map<String, PushUserUDKey> REF_userdtypeANDudk;   //用户设备和Key的对应表； Key——设备标识：UserId::PCDType；Value——PushUserUDKey
+    private Map<String, Object> REF_deviceANDsocket;   //设备和Socket处理线程的对应表； Key——设备标识：DeviceId=PCDType；Value——Socket处理线程
+    private Map<String, Object> REF_userdtypeANDsocket;//用户设备和Socket处理线程的对应表； Key——设备标识：UserId=PCDType；Value——Socket处理线程
+    private Map<String, PushUserUDKey> REF_userdtypeANDudk;   //用户设备和Key的对应表； Key——设备标识：UserId=PCDType；Value——PushUserUDKey
     private Map<PushUserUDKey, Object> REF_udkANDsocket;
     private Map<Object, PushUserUDKey> REF_socketANDudk;
 
@@ -196,10 +196,10 @@ public class PushGlobalMemory {
     public boolean bindDeviceANDsocket(PushUserUDKey pUdk, Object sh, boolean force) {
         if (pUdk==null||sh==null) return false;
         if (force) {
-            REF_deviceANDsocket.put(pUdk.getDeviceId()+"::"+pUdk.getPCDType(), sh);
+            REF_deviceANDsocket.put(pUdk.getDeviceId()+"="+pUdk.getPCDType(), sh);
             return true;
         } else {
-            Object _sh=REF_deviceANDsocket.get(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
+            Object _sh=REF_deviceANDsocket.get(pUdk.getDeviceId()+"="+pUdk.getPCDType());
             if (_sh!=null) {
                 if (sh instanceof SocketHandler) {
                     if (!sh.equals(_sh)) return false;
@@ -209,7 +209,7 @@ public class PushGlobalMemory {
                 }
                 return true;
             } else {
-                REF_deviceANDsocket.put(pUdk.getDeviceId()+"::"+pUdk.getPCDType(), sh);
+                REF_deviceANDsocket.put(pUdk.getDeviceId()+"="+pUdk.getPCDType(), sh);
                 //LCKMAP_pkuANDhadmsgtobesend.put(pUdk, new Object());
                 return true;
             }
@@ -226,7 +226,7 @@ public class PushGlobalMemory {
 //      synchronized(LOCK_unionKey) {
 //      }
         if (pUdk==null||sh==null) return true;
-        Object _sh=REF_deviceANDsocket.get(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
+        Object _sh=REF_deviceANDsocket.get(pUdk.getDeviceId()+"="+pUdk.getPCDType());
         if (_sh==null) return true;
         if (sh instanceof SocketHandler) {
             if (!sh.equals(_sh)) return false;
@@ -234,7 +234,7 @@ public class PushGlobalMemory {
         if (sh instanceof ChannelHandlerContext) {
             if (!((ChannelHandlerContext)sh).channel().equals(((ChannelHandlerContext)sh).channel())) return false;
         }
-        REF_deviceANDsocket.remove(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
+        REF_deviceANDsocket.remove(pUdk.getDeviceId()+"="+pUdk.getPCDType());
         //LCKMAP_pkuANDhadmsgtobesend.remove(pUdk);
         return true;
     }
@@ -243,7 +243,7 @@ public class PushGlobalMemory {
      * @param pUk 设备Key
      */
     public Object getSocketByDevice(PushUserUDKey pUdk) {
-        return REF_deviceANDsocket.get(pUdk.getDeviceId()+"::"+pUdk.getPCDType());
+        return REF_deviceANDsocket.get(pUdk.getDeviceId()+"="+pUdk.getPCDType());
     }
 
     /**
@@ -276,7 +276,7 @@ public class PushGlobalMemory {
 //        }
 //
 //        //剔除相同用户同一设备登录
-//        PushUserUDKey _pUdk=REF_userdtypeANDudk.get(pUdk.getUserId()+"::"+pUdk.getPCDType());
+//        PushUserUDKey _pUdk=REF_userdtypeANDudk.get(pUdk.getUserId()+"="+pUdk.getPCDType());
 //        if (_pUdk!=null&&!_pUdk.equals(pUdk)) {
 //            oldSh=REF_udkANDsocket.get(_pUdk);
 //            if (oldSh!=null) {
@@ -297,8 +297,8 @@ public class PushGlobalMemory {
         REF_udkANDsocket.put(pUdk, sh);
         REF_socketANDudk.put(sh, pUdk);
         if (!StringUtils.isNullOrEmptyOrSpace(pUdk.getUserId())) {
-            REF_userdtypeANDudk.put(pUdk.getUserId()+"::"+pUdk.getPCDType(), pUdk);
-            REF_userdtypeANDsocket.put(pUdk.getUserId()+"::"+pUdk.getPCDType(), sh);
+            REF_userdtypeANDudk.put(pUdk.getUserId()+"="+pUdk.getPCDType(), pUdk);
+            REF_userdtypeANDsocket.put(pUdk.getUserId()+"="+pUdk.getPCDType(), sh);
         }
     }
     /**
@@ -342,13 +342,13 @@ public class PushGlobalMemory {
             if (_pUdk!=null) {
                 REF_udkANDsocket.remove(_pUdk);
                 if (!StringUtils.isNullOrEmptyOrSpace(_pUdk.getUserId())) {
-                    PushUserUDKey _pUdk2=REF_userdtypeANDudk.get(_pUdk.getUserId()+"::"+_pUdk.getPCDType());
+                    PushUserUDKey _pUdk2=REF_userdtypeANDudk.get(_pUdk.getUserId()+"="+_pUdk.getPCDType());
                     if (_pUdk2!=null&&_pUdk2.equals(_pUdk)) {
-                        REF_userdtypeANDudk.remove(_pUdk.getUserId()+"::"+_pUdk.getPCDType());
+                        REF_userdtypeANDudk.remove(_pUdk.getUserId()+"="+_pUdk.getPCDType());
                     }
-                    _sh=REF_userdtypeANDsocket.get(_pUdk.getUserId()+"::"+_pUdk.getPCDType());
+                    _sh=REF_userdtypeANDsocket.get(_pUdk.getUserId()+"="+_pUdk.getPCDType());
                     if (_sh!=null&&_sh.equals(sh)) {
-                        REF_userdtypeANDsocket.remove(_pUdk.getUserId()+"::"+_pUdk.getPCDType());
+                        REF_userdtypeANDsocket.remove(_pUdk.getUserId()+"="+_pUdk.getPCDType());
                     }
                 }
             }
@@ -358,26 +358,26 @@ public class PushGlobalMemory {
             _sh=REF_udkANDsocket.get(pUdk);
             if (_sh!=null) REF_socketANDudk.remove(_sh);
             if (!StringUtils.isNullOrEmptyOrSpace(pUdk.getUserId())) {
-                _pUdk=REF_userdtypeANDudk.get(pUdk.getUserId()+"::"+pUdk.getPCDType());
+                _pUdk=REF_userdtypeANDudk.get(pUdk.getUserId()+"="+pUdk.getPCDType());
                 if (_pUdk!=null&&_pUdk.equals(pUdk)) {
-                    REF_userdtypeANDudk.remove(pUdk.getUserId()+"::"+pUdk.getPCDType());
+                    REF_userdtypeANDudk.remove(pUdk.getUserId()+"="+pUdk.getPCDType());
                 }
-                Object _sh2=REF_userdtypeANDsocket.get(pUdk.getUserId()+"::"+pUdk.getPCDType());
+                Object _sh2=REF_userdtypeANDsocket.get(pUdk.getUserId()+"="+pUdk.getPCDType());
                 if (_sh2!=null&&_sh2.equals(_sh)) {
-                    REF_userdtypeANDsocket.remove(pUdk.getUserId()+"::"+pUdk.getPCDType());
+                    REF_userdtypeANDsocket.remove(pUdk.getUserId()+"="+pUdk.getPCDType());
                 }
             }
         } else {
             REF_udkANDsocket.remove(pUdk);
             REF_socketANDudk.remove(sh);
             if (!StringUtils.isNullOrEmptyOrSpace(pUdk.getUserId())) {
-                _pUdk=REF_userdtypeANDudk.get(pUdk.getUserId()+"::"+pUdk.getPCDType());
+                _pUdk=REF_userdtypeANDudk.get(pUdk.getUserId()+"="+pUdk.getPCDType());
                 if (_pUdk!=null&&_pUdk.equals(pUdk)) {
-                    REF_userdtypeANDudk.remove(pUdk.getUserId()+"::"+pUdk.getPCDType());
+                    REF_userdtypeANDudk.remove(pUdk.getUserId()+"="+pUdk.getPCDType());
                 }
-                _sh=REF_userdtypeANDsocket.get(pUdk.getUserId()+"::"+pUdk.getPCDType());
+                _sh=REF_userdtypeANDsocket.get(pUdk.getUserId()+"="+pUdk.getPCDType());
                 if (_sh!=null&&_sh.equals(sh)) {
-                    REF_userdtypeANDsocket.remove(pUdk.getUserId()+"::"+pUdk.getPCDType());
+                    REF_userdtypeANDsocket.remove(pUdk.getUserId()+"="+pUdk.getPCDType());
                 }
             }
         }
@@ -396,7 +396,7 @@ public class PushGlobalMemory {
 //      synchronized(LOCK_unionKey) {
 //      }
         if (pUdk==null) return null;
-        return REF_userdtypeANDsocket.get(pUdk.getUserId()+"::"+pUdk.getPCDType());
+        return REF_userdtypeANDsocket.get(pUdk.getUserId()+"="+pUdk.getPCDType());
     }
     /**
      * 得到注册的仍然活动的Socket处理线程
@@ -556,7 +556,6 @@ public class PushGlobalMemory {
          * 若消息已经存在于传送队列中，就不加入了。
          * @param pUDkey 用户Key
          * @param msg 消息
-         * @param type 类型：1控制消息；2媒体消息
          * @return 加入成功返回true(若消息已经存在，也放回true)，否则返回false
          * @throws InterruptedException 
          */
@@ -569,7 +568,7 @@ public class PushGlobalMemory {
             }
             List<Message> removeMsg=new ArrayList<Message>();
             for (Message m: _userQueue) {
-                if (m.equals(msg)) removeMsg.add(m);
+                if (msg.equals(m)) removeMsg.add(m);
             }
             for (Message m: removeMsg) {
                 _userQueue.remove(m);
@@ -584,10 +583,6 @@ public class PushGlobalMemory {
                     if (ctx!=null) {
                         if (msg instanceof MsgNormal) ctx.fireUserEventTriggered(SendMsgEvent.NOTIFYMSG_TOBESEND_EVENT);
                     }
-//                    new SendMsgThread(udk,
-//                        (PushConfig)SystemCache.getCache(PushConstants.PUSH_CONF).getContent(),
-//                        (MediaConfig)SystemCache.getCache(PushConstants.MEDIA_CONF).getContent()
-//                    ).start();
                 }
             }
         }
@@ -810,6 +805,79 @@ public class PushGlobalMemory {
             }
         }
 
+        /**
+         * 清除控制消息队列
+         */
+        public void cleanCtrAffirmMsg() {
+            List<PushUserUDKey> tobeMove=new ArrayList<PushUserUDKey>();
+
+            int mType=acc.get_N_Type();
+            int expireLimit=acc.get_N_ExpireLimit();
+            int expireTime=acc.get_N_ExpireTime();
+            int tmpI=0;
+            long tmpL=0l;
+
+            for (PushUserUDKey pUdk: sendedNeedCtlAffirmMsg.keySet()) {
+                LinkedBlockingQueue<Map<String, Object>> q=sendedNeedCtlAffirmMsg.get(pUdk);
+                Map<String, Object> sendedMap=q.poll();
+                int i=q.size();
+                sendedMap=q.poll();
+                while (sendedMap!=null&&(i--)>0) {
+                    boolean canDel=false;
+                    if (mType==1) {
+                        try {
+                            tmpI=(Integer)sendedMap.get("sendSum");
+                        } catch(Exception e) {
+                            tmpI=0;
+                        }
+                        //由于超过过期发送次数，不发了
+                        if (tmpI>expireLimit) {
+                            sendedMap.put("flag", 2);
+                            canDel=true;
+                        }
+                    } else if (mType==2) {
+                        try {
+                            tmpL=(Long)sendedMap.get("firstSendTime");
+                        } catch(Exception e) {
+                            tmpL=0;
+                        }
+                        //由于超过过期时间，不发了
+                        if (System.currentTimeMillis()-tmpL>expireTime) {
+                            sendedMap.put("flag", 3);
+                            canDel=true;
+                        }
+                    } else if (mType==3) {
+                        try {
+                            tmpI=(Integer)sendedMap.get("sendSum");
+                        } catch(Exception e) {
+                            tmpI=1;
+                        }
+                        try {
+                            tmpL=(Long)sendedMap.get("firstSendTime");
+                        } catch(Exception e) {
+                            tmpL=0;
+                        }
+                        //由于超过过期发送次数，不发了
+                        if (tmpI>expireLimit) {
+                            sendedMap.put("flag", 2);
+                            canDel=true;
+                        } else
+                        //由于超过过期时间，不发了
+                        if (System.currentTimeMillis()-tmpL>expireTime) {
+                            sendedMap.put("flag", 3);
+                            canDel=true;
+                        }
+                    }
+                    if (canDel) q.offer(sendedMap);
+                }
+                if (q.size()==0) tobeMove.add(pUdk);
+            }
+            if (tobeMove.size()>0) {
+                for (PushUserUDKey pUdk: tobeMove) {
+                    if (sendedNeedCtlAffirmMsg.get(pUdk).size()==0) sendedNeedCtlAffirmMsg.remove(pUdk);
+                }
+            }
+        }
 
         /**
          * 删除指定用户的点对点对讲发送信息

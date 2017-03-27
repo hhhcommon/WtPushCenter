@@ -1,6 +1,7 @@
 package com.woting.audioSNS.ctrlremsg.monitor;
 
 import com.woting.audioSNS.ctrlremsg.AffirmCtlConfig;
+import com.woting.audioSNS.notify.mem.NotifyMemory;
 import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MsgNormal;
@@ -8,6 +9,7 @@ import com.woting.push.core.monitor.AbstractLoopMoniter;
 
 public class DealCtrReMsg extends AbstractLoopMoniter<AffirmCtlConfig> {
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
+    private NotifyMemory notifyMem=NotifyMemory.getInstance();
 
     public DealCtrReMsg(AffirmCtlConfig conf, int index) {
         super(conf);
@@ -19,8 +21,9 @@ public class DealCtrReMsg extends AbstractLoopMoniter<AffirmCtlConfig> {
     public void oneProcess() throws Exception {
         Message m=globalMem.receiveMem.takeTypeMsg("0");
         if (m==null||!(m instanceof MsgNormal)) return;
-        //找到需要删除的已处理消息
+        //删除需要的已处理消息
         globalMem.sendMem.delCtrAffirmMsg((MsgNormal)m, conf);
+        notifyMem.matchCtrAffirmReMsg((MsgNormal)m);
     }
 
     @Override

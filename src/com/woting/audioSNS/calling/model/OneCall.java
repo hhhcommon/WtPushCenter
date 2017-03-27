@@ -289,7 +289,7 @@ public class OneCall implements Serializable {
                 if (this.speaker==null) {
                     this.speaker=speaker;
                     ret="1";
-                } else ret="2::"+this.speaker.getUserId();
+                } else ret="2="+this.speaker.getUserId();
             }
         }
         return ret;
@@ -321,13 +321,13 @@ public class OneCall implements Serializable {
         if (callType!=1) return "0";
         String ret=null;
         if (this.status!=3) {
-            ret="-"+this.status+"::目前状态为["+OneCall.convertStatus(this.status)+"],不能结束对讲通话";
+            ret="-"+this.status+"=目前状态为["+OneCall.convertStatus(this.status)+"],不能结束对讲通话";
         } else {
             synchronized (speakerlock) {
                 if (this.speaker.equals(speaker)) {
                     this.speaker=null;
                     ret="1";
-                } else ret="2::"+this.speaker.getUserId();
+                } else ret="2="+this.speaker.getUserId();
             }
         }
         return ret;

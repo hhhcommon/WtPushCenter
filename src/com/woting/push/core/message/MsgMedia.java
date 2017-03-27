@@ -137,7 +137,7 @@ public class MsgMedia extends Message {
         } catch(Exception e) {
             throw new Exception("消息会话Id异常！", e);
         }
-        String[] _sa=_tempStr.split("::");
+        String[] _sa=_tempStr.split("=");
         if (_sa.length!=2) throw new Exception("消息会话Id异常！");
         if (Integer.parseInt(_sa[0])==-1) throw new Exception("消息会话Id异常！");
         _offset=Integer.parseInt(_sa[0]);
@@ -153,7 +153,7 @@ public class MsgMedia extends Message {
         } catch(Exception e) {
             throw new Exception("对象Id异常！", e);
         }
-        _sa=_tempStr.split("::");
+        _sa=_tempStr.split("=");
         if (_sa.length!=2) throw new Exception("对象Id异常！");
         if (Integer.parseInt(_sa[0])==-1) throw new Exception("对象Id异常！");
         _offset=Integer.parseInt(_sa[0]);

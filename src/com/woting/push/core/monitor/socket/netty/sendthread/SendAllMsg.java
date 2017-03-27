@@ -3,6 +3,7 @@ package com.woting.push.core.monitor.socket.netty.sendthread;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.woting.audioSNS.notify.mem.NotifyMemory;
 import com.woting.push.config.MediaConfig;
 import com.woting.push.config.PushConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
@@ -21,6 +22,7 @@ import io.netty.channel.ChannelHandlerContext;
  */
 public class SendAllMsg extends Thread {
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
+    private NotifyMemory notifyMem=NotifyMemory.getInstance();
 
     private PushConfig pConf;           //推送配置
     private MediaConfig mConf;          //媒体消息配置
@@ -107,6 +109,7 @@ public class SendAllMsg extends Thread {
                         ctx.writeAndFlush(m);
                         //若需要控制确认，插入已发送列表
                         if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, m);
+                        notifyMem.putNotifyMsgHadSended(pUdk, mn);
                     } catch(Exception e) {}
                 }
             } while (m!=null);
@@ -123,5 +126,7 @@ public class SendAllMsg extends Thread {
             ctx.writeAndFlush(_msg);
             globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, _msg);
         }
+        //发送已发送过的通知消息
+        notifyMem.getNeedSendNotifyMsg(pUdk);
     }
 }

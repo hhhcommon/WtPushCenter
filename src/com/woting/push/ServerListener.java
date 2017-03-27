@@ -3,6 +3,7 @@ package com.woting.push;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +16,7 @@ import com.woting.audioSNS.calling.CallingConfig;
 import com.woting.audioSNS.calling.monitor.CleanCalling;
 import com.woting.audioSNS.calling.monitor.DealCallingMsg;
 import com.woting.audioSNS.ctrlremsg.AffirmCtlConfig;
+import com.woting.audioSNS.ctrlremsg.monitor.CleanCtrAffirmMsg;
 import com.woting.audioSNS.ctrlremsg.monitor.DealCtrReMsg;
 import com.woting.audioSNS.intercom.IntercomConfig;
 import com.woting.audioSNS.intercom.monitor.DealIntercomMsg;
@@ -87,6 +89,7 @@ public class ServerListener {
     private List<DealNotifyMsg> dealNotifyList=null; //处理通知消息线程的记录列表
     private List<DealSyncMsg> dealSyncList=null; //处理同步消息线程的记录列表
     private List<DealCtrReMsg> dealCtrReMsgList=null; //处理控制回复线程的记录列表
+    private Timer cleanCtrAffirmMsg=null; //控制回复清理线程
 
     /**
      * 获得运行状态
@@ -304,7 +307,9 @@ public class ServerListener {
             dealCtrReMsgList.add(dcs);
         }
         //6.1-启动{控制回复清理}线程
-        
+        cleanCtrAffirmMsg=new Timer("控制回复清理线程", true);
+        cleanCtrAffirmMsg.scheduleAtFixedRate(new CleanCtrAffirmMsg(), 0, acc.get_N_InternalResend());
+
         //1-启动{TCP_控制信道}socket监控
         PushConfig pc=((CacheEle<PushConfig>)SystemCache.getCache(PushConstants.PUSH_CONF)).getContent();
         socketType=pc.get_SocketServerType();
@@ -393,6 +398,8 @@ public class ServerListener {
         if (dealCtrReMsgList!=null&&!dealCtrReMsgList.isEmpty()) {
             for (DealCtrReMsg dcs: dealCtrReMsgList) dcs.stopServer();
         }
+        //6.1-停止{控制回复清理}线程
+        cleanCtrAffirmMsg.cancel();
         _RUN_STATUS=4;//==================成功停止
     }
 }

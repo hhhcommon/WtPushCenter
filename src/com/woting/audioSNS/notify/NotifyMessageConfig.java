@@ -18,4 +18,19 @@ public class NotifyMessageConfig implements Config {
     public void set_DealThreadCount(int _DealThreadCount) {
         this._DealThreadCount=_DealThreadCount;
     }
+
+    /**
+     * 发送间隔时间
+     */
+    private int _Delay=10*60*1000;
+    public int get_Delay() {
+        return _Delay;
+    }
+    public void set_Delay(int _Delay) {
+        this._Delay = _Delay;
+    }
+//    "dealThread":"1",
+//    "delay":"10*60*1000", //上次发送后，5分钟
+//    "expireLimit":"10", //发送的最大次数
+//    "expireTime":"5*24*60*60*1000", //过期时间，多长时间后未收到回执，这个消息被抛弃掉,-1是永远不过期
 }

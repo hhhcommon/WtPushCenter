@@ -1,5 +1,6 @@
 package com.woting.push.core.monitor.socket.netty.sendthread;
 
+import com.woting.audioSNS.notify.mem.NotifyMemory;
 import com.woting.push.config.PushConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.Message;
@@ -17,6 +18,7 @@ import io.netty.channel.ChannelHandlerContext;
  */
 public class SendNotifyMsg extends Thread {
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
+    private NotifyMemory notifyMem=NotifyMemory.getInstance();
 
     private PushConfig pConf;           //推送配置
     private PushUserUDKey pUdk;         //用户标识
@@ -52,6 +54,7 @@ public class SendNotifyMsg extends Thread {
                     ctx.writeAndFlush(m);
                     //若需要控制确认，插入已发送列表
                     if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, m);
+                    notifyMem.putNotifyMsgHadSended(pUdk, mn);
                 } catch(Exception e) {}
             }
         } while (m!=null);
