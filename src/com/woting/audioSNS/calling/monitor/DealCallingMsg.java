@@ -95,7 +95,7 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
             String callederId=((MapContent)sourceMsg.getMsgContent()).get("CallederId")+"";
             if (oneCall==null) {
                 //创建内存对象
-                oneCall=new OneCall(1, callId, callerId, callederId);
+                oneCall=new OneCall(1, callId);
                 oneCall.putPreMsg(sourceMsg);//设置第一个消息
                 //加入内存
                 int addFlag=callingMem.addOneCall(oneCall);

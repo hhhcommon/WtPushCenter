@@ -63,6 +63,16 @@ public class OneCall implements Serializable {
     public int getCallederPcdType() {
         return callederKey==null?null:callederKey.getPCDType();
     }
+    private String _callederId;
+    public String get_CallederId() {
+        return _callederId;
+    }
+    public void set_CallederId(String _callederId) {
+        this._callederId=_callederId;
+    }
+    public String getUnprincipleCallederId() {
+        return callederKey==null?_callederId:callederKey.getUserId();
+    }
 
     private List<PushUserUDKey> callederKeys; //被叫者不同设备的列表
     public List<PushUserUDKey> getCallederList() {
@@ -166,16 +176,12 @@ public class OneCall implements Serializable {
      * @param expireAck 未应答怕判断过期时间
      * @param expireTime 通话过期时间
      */
-    public OneCall(int callType, String callId, String callerId, String callederId) {
+    public OneCall(int callType, String callId) {
         super();
         this.speaker=null;
         this.callType=callType;
         if (this.callType==0) this.callType=1;//设置为对讲模式
         this.callId=callId;
-        PushUserUDKey callerKey=new PushUserUDKey();
-        callerKey.setUserId(callerId);
-        PushUserUDKey callederKey=new PushUserUDKey();
-        callederKey.setUserId(callederId);
         this.createTime=System.currentTimeMillis();
         this.beginDialTime=-1;//不在使用的情况
         this.lastUsedTime=System.currentTimeMillis();

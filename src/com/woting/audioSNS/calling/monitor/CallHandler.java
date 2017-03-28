@@ -115,6 +115,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         String callId =((MapContent)m.getMsgContent()).get("CallId")+"";
         String callerId=PushUserUDKey.buildFromMsg(m).getUserId();
         String callederId=((MapContent)m.getMsgContent()).get("CallederId")+"";
+        callData.set_CallederId(callederId);
 
         //返回给呼叫者的消息
         Map<String, Object> dataMap=null;
@@ -191,7 +192,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 dataMap.put("DialType", "1");
                 globalMem.sendMem.putDeviceMsg(_pUdk, toCallederMsg);
             }
-        } else {
+        } else {//以通知的形式发给被叫者
             dataMap.put("DialType", "2");
             globalMem.sendMem.putNotifyMsg(callederId, toCallederMsg);
         }
@@ -217,7 +218,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             Map<String, Object> dataMap=new HashMap<String, Object>();
             dataMap.put("CallId", callData.getCallId());
             dataMap.put("CallerId", callData.getCallerId());
-            dataMap.put("CallederId", callData.getCallederId());
+            dataMap.put("CallederId", callData.getUnprincipleCallederId());
             dataMap.put("OnLineType", "1");
             MapContent mc=new MapContent(dataMap);
             toCallerMsg.setMsgContent(mc);
@@ -256,7 +257,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             Map<String, Object> dataMap=new HashMap<String, Object>();
             dataMap.put("CallId", callData.getCallId());
             dataMap.put("CallerId", callData.getCallerId());
-            dataMap.put("CallederId", callData.getCallederId());
+            dataMap.put("CallederId", callData.getUnprincipleCallederId());
             dataMap.put("ACKType", ackType);
             MapContent mc=new MapContent(dataMap);
             toCallerMsg.setMsgContent(mc);
@@ -314,7 +315,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             Map<String, Object> dataMap=new HashMap<String, Object>();
             dataMap.put("CallId", callData.getCallId());
             dataMap.put("CallerId", callData.getCallerId());
-            dataMap.put("CallederId", callData.getCallederId());
+            dataMap.put("CallederId", callData.getUnprincipleCallederId());
             dataMap.put("HangupType", "1");
             MapContent mc=new MapContent(dataMap);
             otherMsg.setMsgContent(mc);
@@ -455,7 +456,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         Map<String, Object> dataMap=new HashMap<String, Object>();
         dataMap.put("CallId", callData.getCallId());
         dataMap.put("CallerId", callData.getCallerId());
-        dataMap.put("CallederId", callData.getCallederId());
+        dataMap.put("CallederId", callData.getUnprincipleCallederId());
         dataMap.put("OnLineType", "2");
         MapContent mc=new MapContent(dataMap);
         toCallerMsg.setMsgContent(mc);
@@ -478,7 +479,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         Map<String, Object> dataMap=new HashMap<String, Object>();
         dataMap.put("CallId", callData.getCallId());
         dataMap.put("CallerId", callData.getCallerId());
-        dataMap.put("CallederId", callData.getCallederId());
+        dataMap.put("CallederId", callData.getUnprincipleCallederId());
         dataMap.put("ACKType", "32");
         MapContent mc=new MapContent(dataMap);
         toCallerMsg.setMsgContent(mc);
@@ -547,7 +548,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         Map<String, Object> callerMap=new HashMap<String, Object>();
         callerMap.put("CallId", callData.getCallId());
         callerMap.put("CallerId", callData.getCallerId());
-        callerMap.put("CallederId", callData.getCallederId());
+        callerMap.put("CallederId", callData.getUnprincipleCallederId());
         callerMap.put("HangupType", "3");
         MapContent mc=new MapContent(callerMap);
         toCallerMsg.setMsgContent(mc);
@@ -623,7 +624,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 Map<String, Object> dataMap=new HashMap<String, Object>();
                 dataMap.put("CallId", callData.getCallId());
                 dataMap.put("CallerId", callData.getCallerId());
-                dataMap.put("CallederId", callData.getCallederId());
+                dataMap.put("CallederId", callData.getUnprincipleCallederId());
                 dataMap.put("ACKType", "1");//可以通话
                 MapContent mc=new MapContent(dataMap);
                 toCallerMsg.setMsgContent(mc);

@@ -69,12 +69,14 @@ public class NotifyMemory {
     public List<MsgNormal> getNeedSendNotifyMsg(PushUserUDKey pUdk) {
         String userId=pUdk.getUserId();
         ArrayList<OneNotifyMsg> msgList=userNotifyMap.get(userId);
+        List<MsgNormal> retList=new ArrayList<MsgNormal>();
         if (msgList==null) return null;
         for (int i=msgList.size()-1; i>=0; i--) {
             OneNotifyMsg oneNm=msgList.get(i);
+            
             MsgNormal mn=oneNm.getNeedSendMsg(pUdk);
         }
-        return null;
+        return retList.isEmpty()?null:retList;
     }
 
     public void matchCtrAffirmReMsg(MsgNormal m) {

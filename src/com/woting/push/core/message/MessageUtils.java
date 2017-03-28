@@ -102,13 +102,10 @@ public abstract class MessageUtils {
         if (offset>=_bLen) return -1;
         byte[] _encodeByte=(encode==null?contStr.getBytes():contStr.getBytes(encode));
         int i=0, limit=Math.min(_encodeByte.length, Math.min(limitLen, _bLen-offset));
-        for (;i<limit; i++) {
-            binaryMsg[i+offset]=_encodeByte[i];
-        }
+        for (;i<limit; i++) binaryMsg[i+offset]=_encodeByte[i];
         if (limit==_bLen-offset) return -1;
-        if (i==limitLen) {
-            return offset+limitLen;
-        } else if (i==limitLen-1) {
+        if (i==limitLen) return offset+limitLen;
+        else if (i==limitLen-1) {
             binaryMsg[i+offset-1]=Message.END_FIELD[1];
             binaryMsg[i+offset]=Message.END_FIELD[0];
             return offset+limitLen;

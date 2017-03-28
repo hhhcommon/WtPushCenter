@@ -97,11 +97,11 @@ public class CallingMemory {
 
     /**
      * 判断是否有人在其他电话通话
-     * @param callorId 通话者Id
+     * @param talkerId 通话者Id
      * @param callId 电话通话Id
      * @return 若有人在通话，返回true
      */
-    public boolean isTalk(String talkId, String callId) {
+    public boolean isTalk(String talkerId, String callId) {
         OneCall oc=null;
         lock.readLock().lock();
         try {
@@ -109,7 +109,7 @@ public class CallingMemory {
                 oc=callMap.get(k);
                 if (oc.getStatus()==9||oc.getCallId().equals(callId)) continue;
                 if (oc.getCallType()==2) {
-                    if (oc.getCallerId().equals(talkId)||oc.getCallederId().equals(talkId)) return true;
+                    if (oc.getCallerId().equals(talkerId)||oc.getCallederId().equals(talkerId)) return true;
                 }
             }
         } finally {

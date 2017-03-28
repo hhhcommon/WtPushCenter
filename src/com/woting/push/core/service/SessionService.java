@@ -10,9 +10,9 @@ import javax.annotation.Resource;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.stereotype.Service;
 
-import com.spiritdata.framework.core.lock.BlockLockConfig;
-import com.spiritdata.framework.core.lock.ExpirableBlockKey;
-import com.spiritdata.framework.ext.redis.lock.RedisBlockLock;
+//import com.spiritdata.framework.core.lock.BlockLockConfig;
+//import com.spiritdata.framework.core.lock.ExpirableBlockKey;
+//import com.spiritdata.framework.ext.redis.lock.RedisBlockLock;
 import com.spiritdata.framework.ext.spring.redis.RedisOperService;
 import com.spiritdata.framework.util.JsonUtils;
 import com.spiritdata.framework.util.StringUtils;
