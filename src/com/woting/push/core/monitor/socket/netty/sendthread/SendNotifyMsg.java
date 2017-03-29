@@ -54,7 +54,7 @@ public class SendNotifyMsg extends Thread {
                     ctx.writeAndFlush(m);
                     //若需要控制确认，插入已发送列表
                     if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, m);
-                    notifyMem.putNotifyMsgHadSended(pUdk, mn);
+                    notifyMem.setNotifyMsgHadSended(pUdk, mn);
                 } catch(Exception e) {}
             }
         } while (m!=null);

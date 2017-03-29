@@ -10,9 +10,8 @@ import org.slf4j.LoggerFactory;
 
 import com.spiritdata.framework.util.SequenceUUID;
 import com.spiritdata.framework.util.StringUtils;
-import com.woting.audioSNS.intercom.mem.IntercomMemory;
-import com.woting.audioSNS.intercom.model.OneMeet;
 import com.woting.audioSNS.notify.NotifyMessageConfig;
+import com.woting.audioSNS.notify.mem.NotifyMemory;
 import com.woting.passport.UGA.model.Group;
 import com.woting.passport.UGA.persis.pojo.UserPo;
 import com.woting.passport.UGA.service.GroupService;
@@ -22,11 +21,12 @@ import com.woting.push.core.message.MsgNormal;
 import com.woting.push.core.message.content.MapContent;
 import com.woting.push.core.monitor.AbstractLoopMoniter;
 import com.woting.push.ext.SpringShell;
+import com.woting.push.user.PushUserUDKey;
 
 public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
     private Logger logger=LoggerFactory.getLogger(DealNotifyMsg.class);
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
-    private IntercomMemory intercomMem=IntercomMemory.getInstance();
+    private NotifyMemory notifyMem=NotifyMemory.getInstance();
     private GroupService groupService;
 
     public DealNotifyMsg(NotifyMessageConfig nmc, int index) {
@@ -47,10 +47,15 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
         if (m==null||!(m instanceof MsgNormal)) return;
 
         MsgNormal mn=(MsgNormal)m;
+        String tempStr=null;
         if (!mn.isAck()) {//非应答消息
-            String tempStr="处理通知消息["+toTypeName(mn)+"]";
+            tempStr="处理通知消息["+toTypeName(mn)+"]";
             logger.debug(tempStr);
             (new DealNotifyProcess("{"+tempStr+"}处理线程", mn)).start();
+        } else {
+            tempStr="处理通知回执消息["+ackName(mn)+"]";
+            logger.debug(tempStr);
+            (new DealAckNotifyProcess("{"+tempStr+"}处理线程", mn)).start();
         }
     }
 
@@ -91,18 +96,9 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
                     _tempSplit=toGroups.split(",");
                     for (String _ts: _tempSplit) {
                         //从内存取用户
-                        List<UserPo> ul=null;
-                        Group g=null;
-                        OneMeet om=intercomMem.getOneMeet(_ts);
-                        if (om!=null) {
-                            g=om.getGroup();
-                            if (g!=null) ul=g.getUserList();
-                        }
-                        //从数据库取用户
-                        if (ul==null) {
-                            g=groupService.getGroup(_ts);
-                            if (g!=null) ul=g.getUserList();
-                        }
+                        Group g=globalMem.uANDgMem.getGroupById(_ts);
+                        if (g==null) continue;
+                        List<UserPo> ul=g.getUserList();
                         if (ul!=null&&!ul.isEmpty()) {
                             find=false;
                             for (UserPo up: ul) {
@@ -169,7 +165,32 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
             }
         }
     }
+
+    class DealAckNotifyProcess extends Thread {
+        private MsgNormal sourceMsg;//源消息
+        protected DealAckNotifyProcess(String name, MsgNormal sourceMsg) {
+            super.setName(name);
+            this.sourceMsg=sourceMsg;
+        }
+        public void run() {
+            try {
+                List<PushUserUDKey> sendAckPUDkeyList=notifyMem.setBizReUdkANDGetNeedSendAckPudkList(sourceMsg);
+                if (sendAckPUDkeyList!=null) {
+                    for (PushUserUDKey pUdk: sendAckPUDkeyList) {
+                        globalMem.sendMem.putDeviceMsg(pUdk, sourceMsg);
+                    }
+                }
+            } catch(Exception e) {
+                logger.debug(StringUtils.getAllMessage(e));
+            }
+        }
+    }
+
     private String toTypeName(MsgNormal mn) {
         return "CmdType="+mn.getCmdType()+";Command="+mn.getCommand(); 
+    }
+    private String ackName(MsgNormal mn) {
+        PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(mn);
+        return "FromUser={"+pUdk+"};MsgId="+mn.getReMsgId();
     }
 }

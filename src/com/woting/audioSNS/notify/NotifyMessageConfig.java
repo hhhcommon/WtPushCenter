@@ -29,8 +29,20 @@ public class NotifyMessageConfig implements Config {
     public void set_Delay(int _Delay) {
         this._Delay = _Delay;
     }
-//    "dealThread":"1",
-//    "delay":"10*60*1000", //上次发送后，5分钟
-//    "expireLimit":"10", //发送的最大次数
-//    "expireTime":"5*24*60*60*1000", //过期时间，多长时间后未收到回执，这个消息被抛弃掉,-1是永远不过期
+
+    private int _ExpireLimit=10;
+    public int get_ExpireLimit() {
+        return _ExpireLimit;
+    }
+    public void set_ExpireLimit(int _ExpireLimit) {
+        this._ExpireLimit = _ExpireLimit;
+    }
+
+    private long _ExpireTime=5*24*60*60*1000;//5天
+    public long get_ExpireTime() {
+        return _ExpireTime;
+    }
+    public void set_ExpireTime(long _ExpireTime) {
+        this._ExpireTime = _ExpireTime;
+    }
 }

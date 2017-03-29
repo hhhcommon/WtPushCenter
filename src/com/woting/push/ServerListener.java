@@ -21,6 +21,7 @@ import com.woting.audioSNS.ctrlremsg.monitor.DealCtrReMsg;
 import com.woting.audioSNS.intercom.IntercomConfig;
 import com.woting.audioSNS.intercom.monitor.DealIntercomMsg;
 import com.woting.audioSNS.notify.NotifyMessageConfig;
+import com.woting.audioSNS.notify.monitor.CleanNotifyMsg;
 import com.woting.audioSNS.notify.monitor.DealNotifyMsg;
 import com.woting.audioSNS.sync.SyncMessageConfig;
 import com.woting.audioSNS.sync.monitor.DealSyncMsg;
@@ -82,11 +83,11 @@ public class ServerListener {
     private static int _RUN_STATUS=0;//运行状态，0未启动，1正在启动，2启动成功；3准备停止；4停止
 
     private AbstractLoopMoniter<PushConfig> tcpCtlServer=null; //tcp控制信道监控服务
-    private NettyServer nettyServer=null; //tcp控制信道监控服务
     private List<DealIntercomMsg> dealIntercomList=null; //处理对讲消息线程的记录列表
     private List<DealCallingMsg> dealCallingList=null; //处理电话消息线程的记录列表
     private CleanCalling cleanCalling=null; //电话数据清理线程
     private List<DealNotifyMsg> dealNotifyList=null; //处理通知消息线程的记录列表
+    private Timer cleanNotifyMsg=null; //通知消息清理线程
     private List<DealSyncMsg> dealSyncList=null; //处理同步消息线程的记录列表
     private List<DealCtrReMsg> dealCtrReMsgList=null; //处理控制回复线程的记录列表
     private Timer cleanCtrAffirmMsg=null; //控制回复清理线程
@@ -288,6 +289,9 @@ public class ServerListener {
             dn.start();
             dealNotifyList.add(dn);
         }
+        //4.1-启动{通知消息清理}线程
+        cleanNotifyMsg=new Timer("通知消息清理线程", true);
+        cleanNotifyMsg.scheduleAtFixedRate(new CleanNotifyMsg(), 0, nmc.get_Delay());
         //5-启动{同步消息处理}线程
         SyncMessageConfig smc=((CacheEle<SyncMessageConfig>)SystemCache.getCache(PushConstants.SYNC_CONF)).getContent();
         dealSyncList=new ArrayList<DealSyncMsg>();
@@ -323,7 +327,7 @@ public class ServerListener {
             tcpCtlServer.start();
         } else if (socketType==2) {
             SocketHandleConfig sc=((CacheEle<SocketHandleConfig>)SystemCache.getCache(PushConstants.SOCKETHANDLE_CONF)).getContent();
-            nettyServer=new NettyServer(pc, sc, acc);
+            NettyServer nettyServer=new NettyServer(pc, sc, acc, nmc);
             try {
                 nettyServer.begin();
             } catch (Exception e) {
@@ -390,6 +394,8 @@ public class ServerListener {
         if (dealNotifyList!=null&&!dealNotifyList.isEmpty()) {
             for (DealNotifyMsg dn: dealNotifyList) dn.stopServer();
         }
+        //4.1-停止{通知消息清理任务}线程
+        if (cleanNotifyMsg!=null) cleanNotifyMsg.cancel();
         //5-停止{同步消息处理}线程
         if (dealSyncList!=null&&!dealSyncList.isEmpty()) {
             for (DealSyncMsg ds: dealSyncList) ds.stopServer();

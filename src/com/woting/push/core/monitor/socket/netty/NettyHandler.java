@@ -127,7 +127,7 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
             if (((IdleStateEvent)evt).state()==IdleState.READER_IDLE) {//处理心跳
                 dealHealth(ctx);
             }
-            if (((IdleStateEvent)evt).state()==IdleState.WRITER_IDLE) {//处理音频重发数据
+            if (((IdleStateEvent)evt).state()==IdleState.WRITER_IDLE) {//处理控制消息重发
                 new ResendNeedCtrAffirmMsg(ctx).start();
             }
         }

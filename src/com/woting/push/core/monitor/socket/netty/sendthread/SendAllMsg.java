@@ -1,5 +1,6 @@
 package com.woting.push.core.monitor.socket.netty.sendthread;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -109,7 +110,7 @@ public class SendAllMsg extends Thread {
                         ctx.writeAndFlush(m);
                         //若需要控制确认，插入已发送列表
                         if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, m);
-                        notifyMem.putNotifyMsgHadSended(pUdk, mn);
+                        notifyMem.setNotifyMsgHadSended(pUdk, mn);
                     } catch(Exception e) {}
                 }
             } while (m!=null);
@@ -127,6 +128,12 @@ public class SendAllMsg extends Thread {
             globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, _msg);
         }
         //发送已发送过的通知消息
-        notifyMem.getNeedSendNotifyMsg(pUdk);
+        List<MsgNormal> notifyMsgList=notifyMem.getNeedSendNotifyMsg(pUdk);
+        if (notifyMsgList!=null&&!notifyMsgList.isEmpty()) {
+            for (MsgNormal mn: notifyMsgList) {
+                ctx.writeAndFlush(mn);
+                globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, mn);
+            }
+        }
     }
 }
