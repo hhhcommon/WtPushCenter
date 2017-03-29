@@ -1,15 +1,23 @@
 package com.woting.audioSNS.notify.mem;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import com.spiritdata.framework.core.cache.CacheEle;
 import com.spiritdata.framework.core.cache.SystemCache;
+import com.spiritdata.framework.util.JsonUtils;
 import com.woting.audioSNS.notify.NotifyMessageConfig;
 import com.woting.audioSNS.notify.model.OneNotifyMsg;
+import com.woting.audioSNS.notify.persis.NotifySaveService;
 import com.woting.push.PushConstants;
 import com.woting.push.core.message.MsgNormal;
+import com.woting.push.ext.SpringShell;
 import com.woting.push.user.PushUserUDKey;
 
 /**
@@ -17,6 +25,8 @@ import com.woting.push.user.PushUserUDKey;
  * @author wanghui
  */
 public class NotifyMemory {
+    private NotifySaveService notifySaveService;
+
     //java的占位单例模式===begin
     private static class InstanceHolder {
         public static NotifyMemory instance=new NotifyMemory();
@@ -26,17 +36,27 @@ public class NotifyMemory {
     }
     //java的占位单例模式===end
 
-
-    private ConcurrentHashMap<String, ArrayList<OneNotifyMsg>> userNotifyMap;
+    private ConcurrentHashMap<String, List<OneNotifyMsg>> userNotifyMap;
     private NotifyMessageConfig nmc;
+    protected BlockingQueue<Map<String, Object>> toDBQueue=null;
+
+    public static void loadNotifyMsgFromDB() {
+        NotifyMemory notifyMem=NotifyMemory.getInstance();
+        notifyMem._loadNotifyMsgFromDB();
+    }
+    protected void _loadNotifyMsgFromDB() {
+        if (notifySaveService!=null) notifySaveService.fillNotifyFromDB(userNotifyMap);
+    }
 
     /*
      * 初始化，创建两个主要的对象
      */
     @SuppressWarnings("unchecked")
     private NotifyMemory() {
-        userNotifyMap=new ConcurrentHashMap<String, ArrayList<OneNotifyMsg>>();
+        userNotifyMap=new ConcurrentHashMap<String, List<OneNotifyMsg>>();
         nmc=((CacheEle<NotifyMessageConfig>)SystemCache.getCache(PushConstants.NOTIFY_CONF)).getContent();
+        toDBQueue=new LinkedBlockingQueue<Map<String, Object>>();
+        notifySaveService=(NotifySaveService)SpringShell.getBean("notifySaveService");
     }
 
     /**
@@ -47,8 +67,10 @@ public class NotifyMemory {
      */
     public boolean setNotifyMsgHadSended(PushUserUDKey pUdk, MsgNormal notifyMsg) {
         String userId=pUdk.getUserId();
+        Map<String, Object> toDBMap=new HashMap<String, Object>();
+        int toDbType=0;//0插入1是更新
         boolean ret=false;
-        ArrayList<OneNotifyMsg> msgList=userNotifyMap.get(userId);
+        List<OneNotifyMsg> msgList=userNotifyMap.get(userId);
         OneNotifyMsg oneNm=null;
         if (msgList==null) {
             msgList=new ArrayList<OneNotifyMsg>();
@@ -56,12 +78,14 @@ public class NotifyMemory {
             oneNm.setFirstSendTime(System.currentTimeMillis());
             msgList.add(oneNm);
             userNotifyMap.put(userId, msgList);
-            return true;
+            ret=true;
         } else {
             boolean exist=false;
             for (OneNotifyMsg _oneNm: msgList) {
                 if (_oneNm.equalMsg(notifyMsg)) {
                     ret=_oneNm.adjustSendUdk(pUdk);
+                    toDBMap.put("sendInfoJson", JsonUtils.objToJson(_oneNm.getSendedMap()));
+                    toDbType=1;
                     exist=true;
                     break;
                 }
@@ -70,15 +94,28 @@ public class NotifyMemory {
                 oneNm=new OneNotifyMsg(userId, notifyMsg);
                 oneNm.setFirstSendTime(System.currentTimeMillis());
                 msgList.add(oneNm);
-                return true;
+                ret=true;
             }
+        }
+        try {
+            toDBMap.put("msgId", notifyMsg.getMsgId());
+            toDBMap.put("toUserId", pUdk.getUserId());
+            if (toDbType==0) {
+                toDBMap.put("TYPE", "insert");
+                toDBMap.put("msgJson", JsonUtils.objToJson(notifyMsg));
+                toDBMap.put("sendTime", System.currentTimeMillis());
+            } else {
+                toDBMap.put("TYPE", "update");
+            }
+            putSaveDataQueue(toDBMap);
+        } catch(Exception e) {
         }
         return ret;
     }
 
     public List<MsgNormal> getNeedSendNotifyMsg(PushUserUDKey pUdk) {
         String userId=pUdk.getUserId();
-        ArrayList<OneNotifyMsg> msgList=userNotifyMap.get(userId);
+        List<OneNotifyMsg> msgList=userNotifyMap.get(userId);
         List<MsgNormal> retList=new ArrayList<MsgNormal>();
         if (msgList==null) return null;
         for (int i=msgList.size()-1; i>=0; i--) {
@@ -97,11 +134,20 @@ public class NotifyMemory {
         if (m.getReMsgId()==null) return;
         PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(m);
         if (pUdk==null) return;
-        ArrayList<OneNotifyMsg> msgList=userNotifyMap.get(pUdk.getUserId());
+        List<OneNotifyMsg> msgList=userNotifyMap.get(pUdk.getUserId());
         if (msgList!=null&&msgList.size()>0) {
             for (OneNotifyMsg oneNm: msgList) {
                 if (m.getReMsgId().equals(oneNm.getNotifyMsg().getMsgId())) {
                     oneNm.setPUDKeyHasRecived(pUdk);
+                    try {
+                        Map<String, Object> toDBMap=new HashMap<String, Object>();
+                        toDBMap.put("TYPE", "update");
+                        toDBMap.put("msgId", m.getReMsgId());
+                        toDBMap.put("toUserId", oneNm.getNotifyMsg().getUserId());
+                        toDBMap.put("sendInfoJson", JsonUtils.objToJson(oneNm.getSendedMap()));
+                        putSaveDataQueue(toDBMap);
+                    } catch(Exception e) {
+                    }
                     break;
                 }
             }
@@ -109,7 +155,7 @@ public class NotifyMemory {
     }
 
     public void cleanNotifyMsg() {
-        ArrayList<OneNotifyMsg> msgList=null;
+        List<OneNotifyMsg> msgList=null;
         List<String> tobeDelUserIdList=new ArrayList<String>();
         OneNotifyMsg oneNm=null;
         if (userNotifyMap!=null&&!userNotifyMap.isEmpty()) {
@@ -132,13 +178,13 @@ public class NotifyMemory {
 
     /**
      * 根据回执消息，处理业务回复
-     * @param sourceMsg
+     * @param m
      */
     public List<PushUserUDKey> setBizReUdkANDGetNeedSendAckPudkList(MsgNormal m) {
         PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(m);
         OneNotifyMsg oneNm=null;
         if (userNotifyMap!=null&&!userNotifyMap.isEmpty()) {
-            ArrayList<OneNotifyMsg> msgList=userNotifyMap.get(pUdk.getUserId());
+            List<OneNotifyMsg> msgList=userNotifyMap.get(pUdk.getUserId());
             if (msgList!=null&&!msgList.isEmpty()) {
                 for (int i=msgList.size()-1; i>=0; i--) {
                     oneNm=msgList.get(i);
@@ -148,6 +194,16 @@ public class NotifyMemory {
                     }
                     if (oneNm.getNotifyMsg().getMsgId().equals(m.getReMsgId())) {
                         oneNm.setBizReUdk(pUdk);
+                        try {
+                            Map<String, Object> toDBMap=new HashMap<String, Object>();
+                            toDBMap.put("TYPE", "update");
+                            toDBMap.put("msgId", m.getReMsgId());
+                            toDBMap.put("toUserId", m.getUserId());
+                            toDBMap.put("bizReUdk", pUdk.toString());
+                            toDBMap.put("sendInfoJson", JsonUtils.objToJson(oneNm.getSendedMap()));
+                            putSaveDataQueue(toDBMap);
+                        } catch(Exception e) {
+                        }
                         //TODO
                         //按业务回复处理必要的业务：目前没有，先不做
                         msgList.remove(i);
@@ -157,5 +213,23 @@ public class NotifyMemory {
             }
         }
         return null;
+    }
+
+    /**
+     * 从队列中获得需要处理的数据
+     * @throws InterruptedException 
+     */
+    public Map<String, Object> takeSaveDataQueue() throws InterruptedException {
+        return this.toDBQueue.take();
+    }
+
+    /**
+     * 存储要持久化到数据库的数据到队列
+     * @param saveData 要持久化到数据库的数据
+     * @throws InterruptedException 
+     */
+    public void putSaveDataQueue(Map<String, Object> saveData) throws InterruptedException {
+        saveData.put("lastModifyTime", new Timestamp(System.currentTimeMillis()));
+        this.toDBQueue.put(saveData);
     }
 }

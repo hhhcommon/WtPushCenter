@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!-- 通知消息 -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="NOTIFYMSG">
+  <!-- 新增数据 -->
+  <insert id="insert" parameterType="java.util.Map">
+    insert into pm_NotifyMsg
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id!=null">id,</if>
+      <if test="msgId!=null">msgId,</if>
+      <if test="toUserId!=null">toUserId,</if>
+      <if test="msgJson!=null">msgJson,</if>
+      <if test="sendTime!=null">sendTime,</if>
+      <if test="sendInfoJson!=null">sendInfoJson,</if>
+      <if test="lmTime!=null">lmTime,</if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id!=null">#{id,jdbcType=VARCHAR},</if>
+      <if test="msgId!=null">#{msgId,jdbcType=VARCHAR},</if>
+      <if test="toUserId!=null">#{toUserId,jdbcType=VARCHAR},</if>
+      <if test="msgJson!=null">#{msgJson,jdbcType=VARCHAR},</if>
+      <if test="sendTime!=null"> and sendTime=#{sendTime,jdbcType=TIMESTAMP}</if>
+      <if test="sendInfoJson!=null">#{sendInfoJson,jdbcType=VARCHAR},</if>
+      <if test="lmTime!=null"> and lmTime=#{lmTime,jdbcType=TIMESTAMP}</if>
+    </trim>
+  </insert>
+  <!-- 修改 根据主键-->
+  <update id="update" parameterType="java.util.Map">
+    update pm_NotifyMsg
+    <set>
+      <if test="sendInfoJson!=null">sendInfoJson=#{sendInfoJson,jdbcType=VARCHAR},</if>
+      <if test="bizReUdkJson!=null">bizReUdkJson=#{bizReUdkJson,jdbcType=VARCHAR},</if>
+      <if test="lmTime!=null">lmTime=#{lmTime,jdbcType=TIMESTAMP},</if>
+    </set>
+    where msgId=#{msgId,jdbcType=VARCHAR} and toUserId=#{toUserId,jdbcType=VARCHAR}
+  </update>
+  
+  <!-- 所有未处理的通知消息 -->
+  <select id="getNoDealList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+    select * from pm_NotifyMsg where bizReUdkJson is null or length(trim(bizReUdkJson))<4
+    order by toUserId, sendTime desc
+  </select>
+</mapper>

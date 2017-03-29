@@ -104,6 +104,15 @@ public abstract class ConfigLoadUtils {
         try {
             nmc.set_DealThreadCount((int)fel.eval(jc.getString("notify.dealThread")));
         } catch(Exception e) {}
+        try {
+            nmc.set_Delay((int)fel.eval(jc.getString("notify.delay")));
+        } catch(Exception e) {}
+        try {
+            nmc.set_ExpireLimit((int)fel.eval(jc.getString("notify.expireLimit")));
+        } catch(Exception e) {}
+        try {
+            nmc.set_ExpireTime((int)fel.eval(jc.getString("notify.expireTime")));
+        } catch(Exception e) {}
         return nmc;
     }
 

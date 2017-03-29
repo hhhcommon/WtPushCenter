@@ -21,8 +21,10 @@ import com.woting.audioSNS.ctrlremsg.monitor.DealCtrReMsg;
 import com.woting.audioSNS.intercom.IntercomConfig;
 import com.woting.audioSNS.intercom.monitor.DealIntercomMsg;
 import com.woting.audioSNS.notify.NotifyMessageConfig;
+import com.woting.audioSNS.notify.mem.NotifyMemory;
 import com.woting.audioSNS.notify.monitor.CleanNotifyMsg;
 import com.woting.audioSNS.notify.monitor.DealNotifyMsg;
+import com.woting.audioSNS.notify.monitor.SaveToDB;
 import com.woting.audioSNS.sync.SyncMessageConfig;
 import com.woting.audioSNS.sync.monitor.DealSyncMsg;
 import com.woting.push.config.ConfigLoadUtils;
@@ -88,6 +90,7 @@ public class ServerListener {
     private CleanCalling cleanCalling=null; //电话数据清理线程
     private List<DealNotifyMsg> dealNotifyList=null; //处理通知消息线程的记录列表
     private Timer cleanNotifyMsg=null; //通知消息清理线程
+    private SaveToDB notifySaveToDB=null;
     private List<DealSyncMsg> dealSyncList=null; //处理同步消息线程的记录列表
     private List<DealCtrReMsg> dealCtrReMsgList=null; //处理控制回复线程的记录列表
     private Timer cleanCtrAffirmMsg=null; //控制回复清理线程
@@ -179,7 +182,8 @@ public class ServerListener {
             logger.info("加载系统缓存数据，用时[{}]毫秒", System.currentTimeMillis()-_begin);
             //初始化管理内存
             _begin=System.currentTimeMillis();
-            PushGlobalMemory.getInstance();
+            PushGlobalMemory.loadGroupFromDB();//加载用户组
+            NotifyMemory.loadNotifyMsgFromDB();//加载未发送的通知消息
             logger.info("初始化管理内存，用时[{}]毫秒", System.currentTimeMillis()-_begin);
             logger.info("系统数据加载结束，共用时[{}]毫秒", System.currentTimeMillis()-segmentBeginTime);
 
@@ -292,6 +296,10 @@ public class ServerListener {
         //4.1-启动{通知消息清理}线程
         cleanNotifyMsg=new Timer("通知消息清理线程", true);
         cleanNotifyMsg.scheduleAtFixedRate(new CleanNotifyMsg(), 0, nmc.get_Delay());
+        //4.2-启动存入数据库线程
+        notifySaveToDB=new SaveToDB(nmc);
+        notifySaveToDB.setDaemon(true);
+        notifySaveToDB.start();
         //5-启动{同步消息处理}线程
         SyncMessageConfig smc=((CacheEle<SyncMessageConfig>)SystemCache.getCache(PushConstants.SYNC_CONF)).getContent();
         dealSyncList=new ArrayList<DealSyncMsg>();
@@ -396,6 +404,8 @@ public class ServerListener {
         }
         //4.1-停止{通知消息清理任务}线程
         if (cleanNotifyMsg!=null) cleanNotifyMsg.cancel();
+        //4.2-启动存入数据库线程
+        notifySaveToDB.stopServer();
         //5-停止{同步消息处理}线程
         if (dealSyncList!=null&&!dealSyncList.isEmpty()) {
             for (DealSyncMsg ds: dealSyncList) ds.stopServer();

@@ -1,10 +1,12 @@
 package com.woting.audioSNS.notify.model;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.spiritdata.framework.util.JsonUtils;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.notify.NotifyMessageConfig;
 import com.woting.push.core.message.MsgNormal;
@@ -115,13 +117,28 @@ public class OneNotifyMsg  implements Serializable {
         }
     }
 
+    public Map<PushUserUDKey, SendInfo> getSendedMap() {
+        return sendedMap;
+    }
     /**
      * 得到需要回复的pUdk的list
      * @param pUdk
      * @return
      */
     public List<PushUserUDKey> getNeedSendAckPUdkList(PushUserUDKey pUdk) {
-        // TODO Auto-generated method stub
-        return null;
+        List<PushUserUDKey> ret=new ArrayList<PushUserUDKey>();
+        for (PushUserUDKey _pUdk: sendedMap.keySet()) {
+            if (!_pUdk.equals(pUdk)) ret.add(_pUdk);
+        }
+        return ret.isEmpty()?null:ret;
+    }
+
+    public void setUserId(String userId) {
+        this.userId=userId;
+    }
+
+    @SuppressWarnings("unchecked")
+    public void setSendMapFromJson(String tmpStr) {
+        this.sendedMap=(Map<PushUserUDKey, SendInfo>)JsonUtils.jsonToObj(tmpStr, Map.class);
     }
 }

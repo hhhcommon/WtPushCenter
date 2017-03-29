@@ -59,8 +59,16 @@ public class PushGlobalMemory {
     }
     //java的占位单例模式===end
 
+    /**
+     * 初始化数据：从数据库中加载用户组信息
+     */
+    public static void loadGroupFromDB() {
+        PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
+        globalMem.uANDgMem.loadFromDB();
+    }
+
     /*
-     * 初始化，创建两个主要的对象
+     * 初始化，创建主要对象
      */
     private PushGlobalMemory() {
         sessionService=(SessionService)SpringShell.getBean("sessionService");
@@ -98,8 +106,6 @@ public class PushGlobalMemory {
         receiveMem=new ReceiveMemory();
         sendMem=new SendMemory();
         uANDgMem=new UserAndGroupMemory();
-
-        uANDgMem.loadFromDB();
     }
 
     //==========配置信息

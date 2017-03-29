@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<!-- 推送消息相关设置 -->
+<configuration>
+  <!-- SQL配置:通知消息 -->
+  <mappers>
+    <mapper resource="com/woting/audioSNS/notify/persis/sql/NotifyMsg.mapper.xml"/>
+  </mappers>
+</configuration>
