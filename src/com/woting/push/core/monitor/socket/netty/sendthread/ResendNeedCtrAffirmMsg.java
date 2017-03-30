@@ -33,7 +33,7 @@ public class ResendNeedCtrAffirmMsg extends Thread {
             Message _msg=(Message)_m.get("message");
             if (_msg==null) continue;
             ctx.writeAndFlush(_msg);
-            globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, _msg);
+            if (_msg.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, _msg);
         }
     }
 }

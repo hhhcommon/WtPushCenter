@@ -38,7 +38,9 @@
   
   <!-- 所有未处理的通知消息 -->
   <select id="getNoDealList"  parameterType="java.util.Map" resultType="java.util.HashMap">
+  <![CDATA[
     select * from pm_NotifyMsg where bizReUdkJson is null or length(trim(bizReUdkJson))<4
     order by toUserId, sendTime desc
+  ]]>
   </select>
 </mapper>

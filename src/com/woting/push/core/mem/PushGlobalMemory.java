@@ -8,9 +8,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.spiritdata.framework.core.cache.SystemCache;
+import com.spiritdata.framework.util.JsonUtils;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.ctrlremsg.AffirmCtlConfig;
 import com.woting.audioSNS.intercom.model.OneMeet;
+import com.woting.audioSNS.notify.mem.NotifyMemory;
 import com.woting.passport.UGA.model.Group;
 import com.woting.passport.UGA.persis.pojo.GroupPo;
 import com.woting.passport.UGA.persis.pojo.UserPo;
@@ -566,6 +568,13 @@ public class PushGlobalMemory {
          * @throws InterruptedException 
          */
         public void putNotifyMsg(String userId, MsgNormal msg) throws InterruptedException {
+            Map<String, Object> toDBMap=new HashMap<String, Object>();
+            toDBMap.put("TYPE", "insert");
+            toDBMap.put("msgId", msg.getMsgId());
+            toDBMap.put("toUserId", userId);
+            toDBMap.put("msgJson", JsonUtils.objToJson(msg));
+            NotifyMemory.getInstance().putSaveDataQueue(toDBMap);
+
             if (msg==null||userId==null||userId.trim().length()==0) return;
             LinkedBlockingQueue<Message> _userQueue=notifyMsg.get(userId);
             if (_userQueue==null) {

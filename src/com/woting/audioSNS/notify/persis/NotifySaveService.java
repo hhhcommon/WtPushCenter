@@ -1,5 +1,6 @@
 package com.woting.audioSNS.notify.persis;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,7 @@ import com.spiritdata.framework.core.model.Page;
 import com.spiritdata.framework.util.JsonUtils;
 import com.spiritdata.framework.util.SequenceUUID;
 import com.woting.audioSNS.notify.model.OneNotifyMsg;
+import com.woting.push.core.message.MessageUtils;
 import com.woting.push.core.message.MsgNormal;
 
 @Service
@@ -55,7 +57,7 @@ public class NotifySaveService {
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     private void fillData(Object[] array, Map<String, List<OneNotifyMsg>> userNotifyMap) {
         Map<String, Object> oneData=null;
         String userId=null, thisUserId=null, tmpStr=null;
@@ -72,10 +74,14 @@ public class NotifySaveService {
                 }
             }
             tmpStr=oneData.get("msgJson")+"";
-            MsgNormal nmn=(MsgNormal)JsonUtils.jsonToObj(tmpStr, MsgNormal.class);
+            Map nmM=(Map)JsonUtils.jsonToObj(tmpStr, Map.class);
+            MsgNormal nmn=MessageUtils.buildNoramlMsg(nmM);
+
             OneNotifyMsg onm=new OneNotifyMsg(thisUserId, nmn);
             onm.setBizReUdk(null);
-            onm.setFirstSendTime((Long)oneData.get("sendTime"));
+            Timestamp tp=null;
+            try { tp=(Timestamp)oneData.get("sendTime"); } catch(Exception e) {};
+            if (tp!=null) onm.setFirstSendTime(tp.getTime());
             onm.setUserId(thisUserId);
             tmpStr=oneData.get("sendInfoJson")+"";
             onm.setSendMapFromJson(tmpStr);

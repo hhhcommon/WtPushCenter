@@ -132,7 +132,7 @@ public class SendAllMsg extends Thread {
         if (notifyMsgList!=null&&!notifyMsgList.isEmpty()) {
             for (MsgNormal mn: notifyMsgList) {
                 ctx.writeAndFlush(mn);
-                globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, mn);
+                if (mn.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, mn);
             }
         }
     }

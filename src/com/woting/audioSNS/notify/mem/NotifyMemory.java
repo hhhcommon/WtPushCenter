@@ -68,45 +68,34 @@ public class NotifyMemory {
     public boolean setNotifyMsgHadSended(PushUserUDKey pUdk, MsgNormal notifyMsg) {
         String userId=pUdk.getUserId();
         Map<String, Object> toDBMap=new HashMap<String, Object>();
-        int toDbType=0;//0插入1是更新
         boolean ret=false;
         List<OneNotifyMsg> msgList=userNotifyMap.get(userId);
         OneNotifyMsg oneNm=null;
         if (msgList==null) {
             msgList=new ArrayList<OneNotifyMsg>();
             oneNm=new OneNotifyMsg(userId, notifyMsg);
-            oneNm.setFirstSendTime(System.currentTimeMillis());
             msgList.add(oneNm);
             userNotifyMap.put(userId, msgList);
-            ret=true;
         } else {
             boolean exist=false;
             for (OneNotifyMsg _oneNm: msgList) {
                 if (_oneNm.equalMsg(notifyMsg)) {
-                    ret=_oneNm.adjustSendUdk(pUdk);
-                    toDBMap.put("sendInfoJson", JsonUtils.objToJson(_oneNm.getSendedMap()));
-                    toDbType=1;
+                    oneNm=_oneNm;
                     exist=true;
                     break;
                 }
             }
             if (!exist) {
                 oneNm=new OneNotifyMsg(userId, notifyMsg);
-                oneNm.setFirstSendTime(System.currentTimeMillis());
                 msgList.add(oneNm);
-                ret=true;
             }
         }
+        ret=oneNm.adjustSendUdk(pUdk);
         try {
+            toDBMap.put("TYPE", "update");
             toDBMap.put("msgId", notifyMsg.getMsgId());
             toDBMap.put("toUserId", pUdk.getUserId());
-            if (toDbType==0) {
-                toDBMap.put("TYPE", "insert");
-                toDBMap.put("msgJson", JsonUtils.objToJson(notifyMsg));
-                toDBMap.put("sendTime", System.currentTimeMillis());
-            } else {
-                toDBMap.put("TYPE", "update");
-            }
+            toDBMap.put("sendInfoJson", JsonUtils.objToJson(oneNm.getSendedMap()));
             putSaveDataQueue(toDBMap);
         } catch(Exception e) {
         }

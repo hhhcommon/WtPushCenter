@@ -21,6 +21,16 @@ public class PushUserUDKey extends UserDeviceKey implements Serializable {
         this.setPCDType(udk.getPCDType());
         this.setUserId(udk.getUserId());
     }
+    public PushUserUDKey(String keyStr) {
+        super();
+        String[] sp=keyStr.split("=");
+        if (sp.length==3) {
+            this.setDeviceId(sp[0]);
+            this.setPCDType(0);
+            try {this.setPCDType(Integer.parseInt(sp[1]));} catch(Exception e) {};
+            this.setUserId(sp[2]);
+        }
+    }
 
     /**
      * 判断此Key是否有效

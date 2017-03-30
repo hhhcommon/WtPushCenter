@@ -2,8 +2,10 @@ package com.woting.push.core.message;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
+import java.util.Map;
 
 import com.spiritdata.framework.util.SequenceUUID;
+import com.woting.push.core.message.content.MapContent;
 
 /**
  * 消息处理中，对字节数组和消息内容的转换方法和公共判断方法的集合
@@ -219,5 +221,45 @@ public abstract class MessageUtils {
         retMsg.setPCDType(msg.getPCDType());
 
         return retMsg;
+    }
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public static MsgNormal buildNoramlMsg(Map<String, Object> mm) {
+        MsgNormal mn=new MsgNormal();
+        Integer tempI=0;
+        Long tempL=0l;
+        try {tempI=Integer.parseInt(mm.get("msgType")+"");} catch(Exception e) {};
+        mn.setMsgType(tempI);
+        try {tempI=Integer.parseInt(mm.get("affirm")+"");} catch(Exception e) {};
+        mn.setAffirm(tempI);
+        try {tempL=Long.parseLong(mm.get("sendTime")+"");} catch(Exception e) {};
+        mn.setSendTime(tempL);
+        try {tempI=Integer.parseInt(mm.get("fromType")+"");} catch(Exception e) {};
+        mn.setFromType(tempI);
+        try {tempI=Integer.parseInt(mm.get("toType")+"");} catch(Exception e) {};
+        mn.setToType(tempI);
+        try {tempI=Integer.parseInt(mm.get("bizType")+"");} catch(Exception e) {};
+        mn.setBizType(tempI);
+        try {tempI=Integer.parseInt(mm.get("cmdType")+"");} catch(Exception e) {};
+        mn.setCmdType(tempI);
+        try {tempI=Integer.parseInt(mm.get("command")+"");} catch(Exception e) {};
+        mn.setCommand(tempI);
+        try {tempI=Integer.parseInt(mm.get("returnType")+"");} catch(Exception e) {};
+        mn.setReturnType(tempI);
+        mn.setMsgId(mm.get("msgType")==null?null:(""+mm.get("msgType")));
+        mn.setReMsgId(mm.get("reMsgType")==null?null:(""+mm.get("reMsgType")));
+        mn.setUserId(mm.get("userId")==null?null:(""+mm.get("userId")));
+        mn.setDeviceId(mm.get("deviceId")==null?null:(""+mm.get("deviceId")));
+        try {tempI=Integer.parseInt(mm.get("pcdtype")+"");} catch(Exception e) {};
+        mn.setPCDType(tempI);
+
+        if (mm.get("msgContent")!=null) {
+            if (((Map)mm.get("msgContent")).get("contentMap")!=null) {
+                Map<String, Object> m=(Map)(((Map)mm.get("msgContent")).get("contentMap"));
+                MapContent mc=new MapContent(m);
+                mn.setMsgContent(mc);
+            }
+        }
+
+        return mn;
     }
 }
