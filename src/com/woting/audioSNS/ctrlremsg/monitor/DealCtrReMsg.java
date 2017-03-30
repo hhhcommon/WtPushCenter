@@ -22,7 +22,7 @@ public class DealCtrReMsg extends AbstractLoopMoniter<AffirmCtlConfig> {
         Message m=globalMem.receiveMem.takeTypeMsg("0");
         if (m==null||!(m instanceof MsgNormal)) return;
         //删除需要的已处理消息
-        globalMem.sendMem.delCtrAffirmMsg((MsgNormal)m, conf);
+        globalMem.sendMem.delCtrAffirmMsg((MsgNormal)m);
         notifyMem.matchCtrAffirmReMsg((MsgNormal)m);
     }
 

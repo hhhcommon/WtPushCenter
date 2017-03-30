@@ -1,10 +1,9 @@
 package com.woting.push.core.monitor.socket.netty.sendthread;
 
-import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.List;
 
 import com.woting.push.core.mem.PushGlobalMemory;
-import com.woting.push.core.message.Message;
+import com.woting.push.core.message.MsgNormal;
 import com.woting.push.core.monitor.socket.netty.NettyHandler;
 import com.woting.push.user.PushUserUDKey;
 
@@ -26,14 +25,9 @@ public class ResendNeedCtrAffirmMsg extends Thread {
     public void run() {//发送控制消息-到设备
         if (ctx==null||pUdk==null) return;
 
-        LinkedBlockingQueue<Map<String, Object>> mmq=globalMem.sendMem.getSendedNeedCtlAffirmMsg(pUdk, ctx);
-        while (mmq!=null&&!mmq.isEmpty()) {
-            Map<String, Object> _m=mmq.poll();
-            if (_m==null||_m.isEmpty()) continue;
-            Message _msg=(Message)_m.get("message");
-            if (_msg==null) continue;
-            ctx.writeAndFlush(_msg);
-            if (_msg.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, _msg);
+        List<MsgNormal> mList=globalMem.sendMem.getSendedNeedCtlAffirmMsg(pUdk, ctx);
+        if (mList!=null&&!mList.isEmpty()) {
+            for (int i=0; i<mList.size(); i++) ctx.writeAndFlush(mList.get(i));
         }
     }
 }

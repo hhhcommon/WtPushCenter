@@ -1,9 +1,6 @@
 package com.woting.push.core.monitor.socket.netty.sendthread;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
-
 import com.woting.audioSNS.notify.mem.NotifyMemory;
 import com.woting.push.config.MediaConfig;
 import com.woting.push.config.PushConfig;
@@ -103,14 +100,9 @@ public class SendAllMsg extends Thread {
             }
         }
         //获得**需要重复发送的消息**
-        LinkedBlockingQueue<Map<String, Object>> mmq=globalMem.sendMem.getSendedNeedCtlAffirmMsg(pUdk, ctx);
-        while (mmq!=null&&!mmq.isEmpty()) {
-            Map<String, Object> _m=mmq.poll();
-            if (_m==null||_m.isEmpty()) continue;
-            Message _msg=(Message)_m.get("message");
-            if (_msg==null) continue;
-            ctx.writeAndFlush(_msg);
-            globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, _msg);
+        List<MsgNormal> mList=globalMem.sendMem.getSendedNeedCtlAffirmMsg(pUdk, ctx);
+        if (mList!=null&&!mList.isEmpty()) {
+            for (int i=0; i<mList.size(); i++) ctx.writeAndFlush(mList.get(i));
         }
     }
 }

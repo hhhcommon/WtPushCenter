@@ -93,7 +93,7 @@ public class PushGlobalMemory {
         //LCKMAP_pkuANDhadmsgtobesend=new ConcurrentHashMap<PushUserUDKey, Object>();
         send2DeviceMsgCTL=new ConcurrentHashMap<PushUserUDKey, LinkedBlockingQueue<Message>>();
         send2DeviceMsgMDA=new ConcurrentHashMap<PushUserUDKey, LinkedBlockingQueue<Message>>();
-        sendedNeedCtlAffirmMsg=new ConcurrentHashMap<PushUserUDKey, LinkedBlockingQueue<Map<String, Object>>>();
+        sendedNeedCtlAffirmMsg=new ConcurrentHashMap<PushUserUDKey, List<Map<String, Object>>>();
 
 //        notifyMsg=new ConcurrentHashMap<String, LinkedBlockingQueue<Message>>();
 
@@ -162,7 +162,7 @@ public class PushGlobalMemory {
      * Value  一般消息队列
      * </pre>
      */
-    private ConcurrentHashMap<PushUserUDKey, LinkedBlockingQueue<Map<String, Object>>> sendedNeedCtlAffirmMsg;
+    private ConcurrentHashMap<PushUserUDKey, List<Map<String, Object>>> sendedNeedCtlAffirmMsg;
 
 //    //通知消息队列
 //    /**
@@ -628,14 +628,14 @@ public class PushGlobalMemory {
             if ((msg instanceof MsgMedia)&&(acc.get_M_Type()==0)) return ;
             if ((msg instanceof MsgNormal)&&(acc.get_N_Type()==0)) return ;
 
-            LinkedBlockingQueue<Map<String, Object>> mq=sendedNeedCtlAffirmMsg.get(pUdk);
-            if (mq==null) {
-                mq=new LinkedBlockingQueue<Map<String, Object>>();
-                sendedNeedCtlAffirmMsg.put(pUdk, mq);
+            List<Map<String, Object>> mList=sendedNeedCtlAffirmMsg.get(pUdk);
+            if (mList==null) {
+                mList=new ArrayList<Map<String, Object>>();
+                sendedNeedCtlAffirmMsg.put(pUdk, mList);
             }
             //看看有无重复
             boolean canAdd=true;
-            for (Map<String, Object> _m: mq) {
+            for (Map<String, Object> _m: mList) {
                 if (_m!=null) {
                     MsgNormal _msg=(MsgNormal)_m.get("message");
                     if (_msg.getMsgId().equals(((MsgNormal)msg).getMsgId())) {
@@ -650,9 +650,8 @@ public class PushGlobalMemory {
                 m.put("message", msg);
                 m.put("sendSum", 1);
                 m.put("flag", 1); //正在传输
-                mq.add(m);//加入内存
+                mList.add(m);//加入内存
             }
-
         }
 //        private void addNeedCtlAffirmMsgMedia(LinkedBlockingQueue<Map<String, Object>> mq, MsgMedia msg) {
 //            //看看有无重复
@@ -682,25 +681,60 @@ public class PushGlobalMemory {
          * @param sh
          * @return 可重发的消息队列
          */
-        public LinkedBlockingQueue<Map<String, Object>> getSendedNeedCtlAffirmMsg(PushUserUDKey pUdk, Object sh) {
+        public List<MsgNormal> getSendedNeedCtlAffirmMsg(PushUserUDKey pUdk, Object sh) {
             if (pUdk==null||sh==null) return null;
             if (!matchUserSocket(pUdk, sh)) return null;
+            List<Map<String, Object>> mList=sendedNeedCtlAffirmMsg.get(pUdk);
+            if (mList==null||mList.isEmpty()) return null;
 
-            LinkedBlockingQueue<Map<String, Object>> _mq=sendedNeedCtlAffirmMsg.get(pUdk);
-            if (_mq==null||_mq.isEmpty()) return null;
-
-            LinkedBlockingQueue<Map<String, Object>> mq=new LinkedBlockingQueue<Map<String, Object>>();
-            int _size=_mq.size();
-            for (int i=0; i<_size; i++) {
-                Map<String, Object> _m=_mq.poll();
+            List<MsgNormal> ret=new ArrayList<MsgNormal>();
+            for (int i=0; i<mList.size(); i++) {
+                Map<String, Object> _m=mList.get(i);
                 if (_m==null||_m.isEmpty()) continue;
-                dealReMsg(_m, acc.get_N_Type(), acc.get_N_ExpireTime(), acc.get_N_ExpireLimit(), mq);
+                if (dealReMsg(_m, acc.get_N_Type(), acc.get_N_ExpireTime(), acc.get_N_ExpireLimit())) {
+                    ret.add((MsgNormal)_m.get("message"));
+                }
             }
-
-            if ((mq==null||mq.isEmpty())) return null;
-            return mq;
+            if (ret==null||ret.isEmpty()) return null;
+            return ret;
         }
-        private void dealReMsg(Map<String, Object> m, int type, int expTime, int expLimit, LinkedBlockingQueue<Map<String, Object>> mq) {
+
+        /**
+         * 删除控制确认消息对应的传输消息
+         * @param m 控制回复消息
+         */
+        public void delCtrAffirmMsg(MsgNormal m) {
+            PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(m);
+            List<Map<String, Object>> mList=sendedNeedCtlAffirmMsg.get(pUdk);
+            if (mList==null||mList.isEmpty()) return ;
+
+            int i=0;
+            boolean find=false;
+            for (; i<mList.size(); i++) {
+                if (m.getReMsgId().equals(((MsgNormal)mList.get(i).get("message")).getMsgId())) {
+                    find=true;
+                    break;
+                }
+            }
+            if (find) mList.remove(i);
+        }
+
+        /**
+         * 清除控制消息队列
+         */
+        public void cleanCtrAffirmMsg() {
+            for (PushUserUDKey pUdk: sendedNeedCtlAffirmMsg.keySet()) {
+                List<Map<String, Object>> mList=sendedNeedCtlAffirmMsg.get(pUdk);
+                if (mList!=null&&!mList.isEmpty()) {
+                    for (int i=mList.size()-1; i>=0; i--) {
+                        if (!dealReMsg(mList.get(i), acc.get_N_Type(), acc.get_N_ExpireTime(), acc.get_N_ExpireLimit())) {
+                            mList.remove(i);
+                        }
+                    }
+                }
+            }
+        }
+        private boolean dealReMsg(Map<String, Object> m, int type, int expTime, int expLimit) {
             int tmpI=0;
             long tmpL=0l;
             boolean canAdd=false;
@@ -746,150 +780,7 @@ public class PushGlobalMemory {
                 }
                 if (tmpI==2||tmpI==3) canAdd=true;
             }
-            if (canAdd) {
-                m.put("sendSum", tmpI+1);
-                mq.add(m);
-            }
-        }
-        /**
-         * 删除控制确认消息对应的传输消息
-         * @param m
-         */
-        public void delCtrAffirmMsg(MsgNormal m, AffirmCtlConfig conf) {
-            PushUserUDKey pUdk=PushUserUDKey.buildFromMsg(m);
-            LinkedBlockingQueue<Map<String, Object>> mq=sendedNeedCtlAffirmMsg.get(pUdk);
-            if (mq==null||mq.isEmpty()) return ;
-
-            int mType=acc.get_N_Type();
-            int expireLimit=acc.get_N_ExpireLimit();
-            int expireTime=acc.get_N_ExpireTime();
-            int tmpI=0;
-            long tmpL=0l;
-
-            Map<String, Object> _ctrM=mq.peek();
-            while (_ctrM!=null) {
-                boolean canDel=false;
-                if (mType==1) {
-                    try {
-                        tmpI=(Integer)_ctrM.get("sendSum");
-                    } catch(Exception e) {
-                        tmpI=0;
-                    }
-                    //由于超过过期发送次数，不发了
-                    if (tmpI>expireLimit) {
-                        _ctrM.put("flag", 2);
-                        canDel=true;
-                    }
-                } else if (mType==2) {
-                    try {
-                        tmpL=(Long)_ctrM.get("firstSendTime");
-                    } catch(Exception e) {
-                        tmpL=0;
-                    }
-                    //由于超过过期时间，不发了
-                    if (System.currentTimeMillis()-tmpL>expireTime) {
-                        _ctrM.put("flag", 3);
-                        canDel=true;
-                    }
-                } else if (mType==3) {
-                    try {
-                        tmpI=(Integer)_ctrM.get("sendSum");
-                    } catch(Exception e) {
-                        tmpI=1;
-                    }
-                    try {
-                        tmpL=(Long)_ctrM.get("firstSendTime");
-                    } catch(Exception e) {
-                        tmpL=0;
-                    }
-                    //由于超过过期发送次数，不发了
-                    if (tmpI>expireLimit) {
-                        _ctrM.put("flag", 2);
-                        canDel=true;
-                    } else
-                    //由于超过过期时间，不发了
-                    if (System.currentTimeMillis()-tmpL>expireTime) {
-                        _ctrM.put("flag", 3);
-                        canDel=true;
-                    }
-                }
-                if (canDel) mq.remove(_ctrM);
-                _ctrM=mq.peek();
-            }
-        }
-
-        /**
-         * 清除控制消息队列
-         */
-        public void cleanCtrAffirmMsg() {
-            List<PushUserUDKey> tobeMove=new ArrayList<PushUserUDKey>();
-
-            int mType=acc.get_N_Type();
-            int expireLimit=acc.get_N_ExpireLimit();
-            int expireTime=acc.get_N_ExpireTime();
-            int tmpI=0;
-            long tmpL=0l;
-
-            for (PushUserUDKey pUdk: sendedNeedCtlAffirmMsg.keySet()) {
-                LinkedBlockingQueue<Map<String, Object>> q=sendedNeedCtlAffirmMsg.get(pUdk);
-                Map<String, Object> sendedMap=q.poll();
-                int i=q.size();
-                sendedMap=q.poll();
-                while (sendedMap!=null&&(i--)>0) {
-                    boolean canDel=false;
-                    if (mType==1) {
-                        try {
-                            tmpI=(Integer)sendedMap.get("sendSum");
-                        } catch(Exception e) {
-                            tmpI=0;
-                        }
-                        //由于超过过期发送次数，不发了
-                        if (tmpI>expireLimit) {
-                            sendedMap.put("flag", 2);
-                            canDel=true;
-                        }
-                    } else if (mType==2) {
-                        try {
-                            tmpL=(Long)sendedMap.get("firstSendTime");
-                        } catch(Exception e) {
-                            tmpL=0;
-                        }
-                        //由于超过过期时间，不发了
-                        if (System.currentTimeMillis()-tmpL>expireTime) {
-                            sendedMap.put("flag", 3);
-                            canDel=true;
-                        }
-                    } else if (mType==3) {
-                        try {
-                            tmpI=(Integer)sendedMap.get("sendSum");
-                        } catch(Exception e) {
-                            tmpI=1;
-                        }
-                        try {
-                            tmpL=(Long)sendedMap.get("firstSendTime");
-                        } catch(Exception e) {
-                            tmpL=0;
-                        }
-                        //由于超过过期发送次数，不发了
-                        if (tmpI>expireLimit) {
-                            sendedMap.put("flag", 2);
-                            canDel=true;
-                        } else
-                        //由于超过过期时间，不发了
-                        if (System.currentTimeMillis()-tmpL>expireTime) {
-                            sendedMap.put("flag", 3);
-                            canDel=true;
-                        }
-                    }
-                    if (canDel) q.offer(sendedMap);
-                }
-                if (q.size()==0) tobeMove.add(pUdk);
-            }
-            if (tobeMove.size()>0) {
-                for (PushUserUDKey pUdk: tobeMove) {
-                    if (sendedNeedCtlAffirmMsg.get(pUdk).size()==0) sendedNeedCtlAffirmMsg.remove(pUdk);
-                }
-            }
+            return canAdd;
         }
 
         /**
