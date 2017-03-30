@@ -8,6 +8,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.spiritdata.framework.core.cache.CacheEle;
+import com.spiritdata.framework.core.cache.SystemCache;
 import com.spiritdata.framework.util.SequenceUUID;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.notify.NotifyMessageConfig;
@@ -15,6 +17,8 @@ import com.woting.audioSNS.notify.mem.NotifyMemory;
 import com.woting.passport.UGA.model.Group;
 import com.woting.passport.UGA.persis.pojo.UserPo;
 import com.woting.passport.UGA.service.GroupService;
+import com.woting.push.PushConstants;
+import com.woting.push.config.PushConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MsgNormal;
@@ -28,9 +32,12 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
     private NotifyMemory notifyMem=NotifyMemory.getInstance();
     private GroupService groupService;
+    private PushConfig pConf=null;
 
+    @SuppressWarnings("unchecked")
     public DealNotifyMsg(NotifyMessageConfig nmc, int index) {
         super(nmc);
+        pConf=((CacheEle<PushConfig>)SystemCache.getCache(PushConstants.PUSH_CONF)).getContent();
         super.setName("通知消息处理线程"+index);
     }
 
@@ -157,9 +164,12 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
                 nm.setToType(1);
                 nm.setCmdType(sourceMsg.getCmdType());
                 nm.setCommand(sourceMsg.getCommand());
+                nm.setUserId(pConf.get_ServerType());
+                nm.setDeviceId(pConf.get_ServerName());
 
                 //4-发送消息
-                for (String userId: userIdL) globalMem.sendMem.putNotifyMsg(userId, nm);
+                for (String userId: userIdL) notifyMem.putNotifyMsg(userId, nm);
+
             } catch(Exception e) {
                 logger.debug(StringUtils.getAllMessage(e));
             }

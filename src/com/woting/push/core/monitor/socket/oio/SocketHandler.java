@@ -30,6 +30,7 @@ import com.woting.audioSNS.calling.mem.CallingMemory;
 import com.woting.audioSNS.intercom.mem.IntercomMemory;
 import com.woting.audioSNS.mediaflow.mem.TalkMemory;
 import com.woting.audioSNS.mediaflow.monitor.DealMediaMsg;
+import com.woting.audioSNS.notify.mem.NotifyMemory;
 import com.woting.push.PushConstants;
 import com.woting.push.config.MediaConfig;
 import com.woting.push.config.PushConfig;
@@ -84,6 +85,7 @@ public class SocketHandler {
     private IntercomMemory intercomMem=IntercomMemory.getInstance();
     private CallingMemory callingMem=CallingMemory.getInstance();
     private TalkMemory talkMem=TalkMemory.getInstance();
+    private NotifyMemory notifyMem=NotifyMemory.getInstance();
 
     public volatile Object stopLck=new Object();
     private volatile boolean isRunning=true; //是否可以运行
@@ -829,30 +831,43 @@ public class SocketHandler {
                         }
                    }
                     //获得**给此用户的通知消息**（与设备无关）
-                    Message nm=globalMem.sendMem.pollNotifyMsg(_pushUserKey, SocketHandler.this);
-                    if (nm!=null&&!(nm instanceof MsgMedia)) {
-                        if (fos!=null) {
-                            try {
-                                byte[] aa=JsonUtils.objToJson(m).getBytes();
-                                fos.write(aa, 0, aa.length);
-                                fos.write(13);
-                                fos.write(10);
-                                fos.flush();
-                            } catch (IOException e) {}
-                        }
-                        try {
-                            if (m instanceof MsgNormal) {
-                                MsgNormal mn=(MsgNormal)m;
-                                if (mn.getFromType()==0) {
-                                    mn.setUserId(pConf.get_ServerType());
-                                    mn.setDeviceId(pConf.get_ServerName());
-                                }
-                                _sendMsgQueue.put(m.toBytes());
-                                //若需要控制确认，插入已发送列表
-                                if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
+                    List<MsgNormal> notifyMsgList=notifyMem.getNeedSendNotifyMsg(_pushUserKey);
+                    if (notifyMsgList!=null&&!notifyMsgList.isEmpty()) {
+                        for (MsgNormal mn: notifyMsgList) {
+                            if (mn.getFromType()==0) {
+                                mn.setUserId(pConf.get_ServerType());
+                                mn.setDeviceId(pConf.get_ServerName());
                             }
-                        } catch(Exception e) {}
+                            _sendMsgQueue.put(mn.toBytes());
+                            notifyMem.setNotifyMsgHadSended(_pushUserKey, mn);
+                            if (mn.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, mn);
+                        }
                     }
+//
+//                    Message nm=globalMem.sendMem.pollNotifyMsg(_pushUserKey, SocketHandler.this);
+//                    if (nm!=null&&!(nm instanceof MsgMedia)) {
+//                        if (fos!=null) {
+//                            try {
+//                                byte[] aa=JsonUtils.objToJson(m).getBytes();
+//                                fos.write(aa, 0, aa.length);
+//                                fos.write(13);
+//                                fos.write(10);
+//                                fos.flush();
+//                            } catch (IOException e) {}
+//                        }
+//                        try {
+//                            if (m instanceof MsgNormal) {
+//                                MsgNormal mn=(MsgNormal)m;
+//                                if (mn.getFromType()==0) {
+//                                    mn.setUserId(pConf.get_ServerType());
+//                                    mn.setDeviceId(pConf.get_ServerName());
+//                                }
+//                                _sendMsgQueue.put(m.toBytes());
+//                                //若需要控制确认，插入已发送列表
+//                                if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(_pushUserKey, m);
+//                            }
+//                        } catch(Exception e) {}
+//                    }
                     //获得**需要重复发送的消息**
                     LinkedBlockingQueue<Map<String, Object>> mmq=globalMem.sendMem.getSendedNeedCtlAffirmMsg(_pushUserKey, SocketHandler.this);
                     while (mmq!=null&&!mmq.isEmpty()) {

@@ -16,15 +16,21 @@ import com.woting.audioSNS.notify.NotifyMessageConfig;
 import com.woting.audioSNS.notify.model.OneNotifyMsg;
 import com.woting.audioSNS.notify.persis.NotifySaveService;
 import com.woting.push.PushConstants;
+import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.MsgNormal;
+import com.woting.push.core.monitor.socket.netty.event.SendMsgEvent;
+import com.woting.push.core.service.SessionService;
 import com.woting.push.ext.SpringShell;
 import com.woting.push.user.PushUserUDKey;
+
+import io.netty.channel.ChannelHandlerContext;
 
 /**
  * 已至少发送过一次的通知消息
  * @author wanghui
  */
 public class NotifyMemory {
+    private SessionService sessionService=null;
     private NotifySaveService notifySaveService;
 
     //java的占位单例模式===begin
@@ -57,6 +63,7 @@ public class NotifyMemory {
         nmc=((CacheEle<NotifyMessageConfig>)SystemCache.getCache(PushConstants.NOTIFY_CONF)).getContent();
         toDBQueue=new LinkedBlockingQueue<Map<String, Object>>();
         notifySaveService=(NotifySaveService)SpringShell.getBean("notifySaveService");
+        sessionService=(SessionService)SpringShell.getBean("sessionService");
     }
 
     /**
@@ -220,5 +227,45 @@ public class NotifyMemory {
     public void putSaveDataQueue(Map<String, Object> saveData) throws InterruptedException {
         saveData.put("lastModifyTime", new Timestamp(System.currentTimeMillis()));
         this.toDBQueue.put(saveData);
+    }
+
+    public void putNotifyMsg(String userId, MsgNormal msg) throws InterruptedException {
+        if (msg==null||userId==null||userId.trim().length()==0) return;
+
+        Map<String, Object> toDBMap=new HashMap<String, Object>();
+        toDBMap.put("TYPE", "insert");
+        toDBMap.put("msgId", msg.getMsgId());
+        toDBMap.put("toUserId", userId);
+        toDBMap.put("msgJson", JsonUtils.objToJson(msg));
+        putSaveDataQueue(toDBMap);
+
+        OneNotifyMsg oneNm=null;
+        List<OneNotifyMsg> msgList=userNotifyMap.get(userId);
+        if (msgList==null) {
+            msgList=new ArrayList<OneNotifyMsg>();
+            oneNm=new OneNotifyMsg(userId, msg);
+            msgList.add(oneNm);
+            userNotifyMap.put(userId, msgList);
+        } else {
+            boolean exist=false;
+            for (OneNotifyMsg _oneNm: msgList) {
+                if (_oneNm.equalMsg(msg)) {
+                    oneNm=_oneNm;
+                    exist=true;
+                    break;
+                }
+            }
+            if (!exist) {
+                oneNm=new OneNotifyMsg(userId, msg);
+                msgList.add(oneNm);
+            }
+        }
+        List<PushUserUDKey> usersKey=(List<PushUserUDKey>)sessionService.getActivedUserUDKs(userId);
+        if (usersKey!=null&&!usersKey.isEmpty()) {
+            for (PushUserUDKey udk: usersKey) {
+                ChannelHandlerContext ctx=(ChannelHandlerContext)(PushGlobalMemory.getInstance().getSocketByPushUser(udk));
+                if (ctx!=null) ctx.fireUserEventTriggered(SendMsgEvent.NOTIFYMSG_TOBESEND_EVENT);
+            }
+        }
     }
 }

@@ -22,6 +22,7 @@ import com.woting.push.core.service.SessionService;
 import com.woting.audioSNS.calling.CallingConfig;
 import com.woting.audioSNS.calling.mem.CallingMemory;
 import com.woting.audioSNS.calling.model.OneCall;
+import com.woting.audioSNS.notify.mem.NotifyMemory;
 import com.woting.passport.UGA.persis.pojo.UserPo;
 import com.woting.push.user.PushUserUDKey;
 
@@ -34,6 +35,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
 
     private PushGlobalMemory globalMem=PushGlobalMemory.getInstance();
     private CallingMemory callingMem=CallingMemory.getInstance();
+    private NotifyMemory notifyMem=NotifyMemory.getInstance();
 
     private OneCall callData=null;//所控制的通话数据
     private volatile Object shutdownLock=new Object();
@@ -194,7 +196,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             }
         } else {//以通知的形式发给被叫者
             dataMap.put("DialType", "2");
-            globalMem.sendMem.putNotifyMsg(callederId, toCallederMsg);
+            notifyMem.putNotifyMsg(callederId, toCallederMsg);
         }
         //记录到已发送列表
         callData.addSendedMsg(toCallederMsg);

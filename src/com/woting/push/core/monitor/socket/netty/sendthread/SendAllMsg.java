@@ -91,31 +91,16 @@ public class SendAllMsg extends Thread {
                     } catch(Exception e) {}
                 }
             } while (m!=null);
-
-            do {//通知消息（控制消息-到用户）
-                m=null;
-                try {
-                    m=globalMem.sendMem.pollNotifyMsg(pUdk, ctx);
-                } catch (InterruptedException e1) {
-                    e1.printStackTrace();
-                }
-                if (m!=null&&!(m instanceof MsgMedia)) {
-                    ctlCount++;
-                    try {//传消息
-                        MsgNormal mn=(MsgNormal)m;
-                        if (mn.getFromType()==0) {
-                            mn.setUserId(pConf.get_ServerType());
-                            mn.setDeviceId(pConf.get_ServerName());
-                        }
-                        ctx.writeAndFlush(m);
-                        //若需要控制确认，插入已发送列表
-                        if (m.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, m);
-                        notifyMem.setNotifyMsgHadSended(pUdk, mn);
-                    } catch(Exception e) {}
-                }
-            } while (m!=null);
-
             existMsg=((ctlCount+mdaCount)>0);
+        }
+        //发送通知消息
+        List<MsgNormal> notifyMsgList=notifyMem.getNeedSendNotifyMsg(pUdk);
+        if (notifyMsgList!=null&&!notifyMsgList.isEmpty()) {
+            for (MsgNormal mn: notifyMsgList) {
+                ctx.writeAndFlush(mn);
+                notifyMem.setNotifyMsgHadSended(pUdk, mn);
+                if (mn.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, mn);
+            }
         }
         //获得**需要重复发送的消息**
         LinkedBlockingQueue<Map<String, Object>> mmq=globalMem.sendMem.getSendedNeedCtlAffirmMsg(pUdk, ctx);
@@ -126,14 +111,6 @@ public class SendAllMsg extends Thread {
             if (_msg==null) continue;
             ctx.writeAndFlush(_msg);
             globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, _msg);
-        }
-        //发送已发送过的通知消息
-        List<MsgNormal> notifyMsgList=notifyMem.getNeedSendNotifyMsg(pUdk);
-        if (notifyMsgList!=null&&!notifyMsgList.isEmpty()) {
-            for (MsgNormal mn: notifyMsgList) {
-                ctx.writeAndFlush(mn);
-                if (mn.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, mn);
-            }
         }
     }
 }

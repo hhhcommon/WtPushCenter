@@ -15,7 +15,11 @@ import com.woting.push.PushConstants;
 import com.woting.push.core.message.MsgNormal;
 import com.woting.push.user.PushUserUDKey;
 
-public class OneNotifyMsg  implements Serializable {
+/**
+ * 一条通知消息的记录结构
+ * @author wanghui
+ */
+public class OneNotifyMsg implements Serializable {
     private static final long serialVersionUID=-2633864824531924446L;
 
     private NotifyMessageConfig nmc=null;//通知消息配置

@@ -8,11 +8,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.spiritdata.framework.core.cache.SystemCache;
-import com.spiritdata.framework.util.JsonUtils;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.ctrlremsg.AffirmCtlConfig;
 import com.woting.audioSNS.intercom.model.OneMeet;
-import com.woting.audioSNS.notify.mem.NotifyMemory;
 import com.woting.passport.UGA.model.Group;
 import com.woting.passport.UGA.persis.pojo.GroupPo;
 import com.woting.passport.UGA.persis.pojo.UserPo;
@@ -97,7 +95,7 @@ public class PushGlobalMemory {
         send2DeviceMsgMDA=new ConcurrentHashMap<PushUserUDKey, LinkedBlockingQueue<Message>>();
         sendedNeedCtlAffirmMsg=new ConcurrentHashMap<PushUserUDKey, LinkedBlockingQueue<Map<String, Object>>>();
 
-        notifyMsg=new ConcurrentHashMap<String, LinkedBlockingQueue<Message>>();
+//        notifyMsg=new ConcurrentHashMap<String, LinkedBlockingQueue<Message>>();
 
         REF_deviceANDsocket=new HashMap<String, Object>();
         REF_userdtypeANDsocket=new HashMap<String, Object>();
@@ -166,15 +164,15 @@ public class PushGlobalMemory {
      */
     private ConcurrentHashMap<PushUserUDKey, LinkedBlockingQueue<Map<String, Object>>> sendedNeedCtlAffirmMsg;
 
-    //通知消息队列
-    /**
-     * 给用户发送的通知消息队列——发送的通知消息
-     * <pre>
-     * Key    用户Id
-     * Value  消息队列
-     * </pre>
-     */
-    private ConcurrentHashMap<String, LinkedBlockingQueue<Message>> notifyMsg;
+//    //通知消息队列
+//    /**
+//     * 给用户发送的通知消息队列——发送的通知消息
+//     * <pre>
+//     * Key    用户Id
+//     * Value  消息队列
+//     * </pre>
+//     */
+//    private ConcurrentHashMap<String, LinkedBlockingQueue<Message>> notifyMsg;
 
     //    private Object LOCK_unionKey=new Object(); //同一Key锁
     private Map<String, Object> REF_deviceANDsocket;   //设备和Socket处理线程的对应表； Key——设备标识：DeviceId=PCDType；Value——Socket处理线程
@@ -557,67 +555,67 @@ public class PushGlobalMemory {
             return m;
         }
 
-        //通知类消息操作
-        /**
-         * [发送消息队列-直接对应（用户）](通知消息)
-         * 把消息(msg)加入所对应用的通知消息传送队列<br/>
-         * 若消息已经存在于传送队列中，就不加入了。
-         * @param pUDkey 用户Key
-         * @param msg 消息
-         * @return 加入成功返回true(若消息已经存在，也放回true)，否则返回false
-         * @throws InterruptedException 
-         */
-        public void putNotifyMsg(String userId, MsgNormal msg) throws InterruptedException {
-            Map<String, Object> toDBMap=new HashMap<String, Object>();
-            toDBMap.put("TYPE", "insert");
-            toDBMap.put("msgId", msg.getMsgId());
-            toDBMap.put("toUserId", userId);
-            toDBMap.put("msgJson", JsonUtils.objToJson(msg));
-            NotifyMemory.getInstance().putSaveDataQueue(toDBMap);
+//        //通知类消息操作
+//        /**
+//         * [发送消息队列-直接对应（用户）](通知消息)
+//         * 把消息(msg)加入所对应用的通知消息传送队列<br/>
+//         * 若消息已经存在于传送队列中，就不加入了。
+//         * @param pUDkey 用户Key
+//         * @param msg 消息
+//         * @return 加入成功返回true(若消息已经存在，也放回true)，否则返回false
+//         * @throws InterruptedException 
+//         */
+//        public void putNotifyMsg(String userId, MsgNormal msg) throws InterruptedException {
+//            Map<String, Object> toDBMap=new HashMap<String, Object>();
+//            toDBMap.put("TYPE", "insert");
+//            toDBMap.put("msgId", msg.getMsgId());
+//            toDBMap.put("toUserId", userId);
+//            toDBMap.put("msgJson", JsonUtils.objToJson(msg));
+//            NotifyMemory.getInstance().putSaveDataQueue(toDBMap);
+//
+//            if (msg==null||userId==null||userId.trim().length()==0) return;
+//            LinkedBlockingQueue<Message> _userQueue=notifyMsg.get(userId);
+//            if (_userQueue==null) {
+//                _userQueue=new LinkedBlockingQueue<Message>();
+//                notifyMsg.put(userId, _userQueue);
+//            }
+//            List<Message> removeMsg=new ArrayList<Message>();
+//            for (Message m: _userQueue) {
+//                if (msg.equals(m)) removeMsg.add(m);
+//            }
+//            for (Message m: removeMsg) {
+//                _userQueue.remove(m);
+//            }
+//            if (msg.getSendTime()==0) msg.setSendTime(System.currentTimeMillis());
+//            _userQueue.put(msg);
+//
+//            List<PushUserUDKey> usersKey=(List<PushUserUDKey>)sessionService.getActivedUserUDKs(userId);
+//            if (usersKey!=null&&!usersKey.isEmpty()) {
+//                for (PushUserUDKey udk: usersKey) {
+//                    ChannelHandlerContext ctx=(ChannelHandlerContext)getSocketByPushUser(udk);
+//                    if (ctx!=null) {
+//                        if (msg instanceof MsgNormal) ctx.fireUserEventTriggered(SendMsgEvent.NOTIFYMSG_TOBESEND_EVENT);
+//                    }
+//                }
+//            }
+//        }
 
-            if (msg==null||userId==null||userId.trim().length()==0) return;
-            LinkedBlockingQueue<Message> _userQueue=notifyMsg.get(userId);
-            if (_userQueue==null) {
-                _userQueue=new LinkedBlockingQueue<Message>();
-                notifyMsg.put(userId, _userQueue);
-            }
-            List<Message> removeMsg=new ArrayList<Message>();
-            for (Message m: _userQueue) {
-                if (msg.equals(m)) removeMsg.add(m);
-            }
-            for (Message m: removeMsg) {
-                _userQueue.remove(m);
-            }
-            if (msg.getSendTime()==0) msg.setSendTime(System.currentTimeMillis());
-            _userQueue.put(msg);
-
-            List<PushUserUDKey> usersKey=(List<PushUserUDKey>)sessionService.getActivedUserUDKs(userId);
-            if (usersKey!=null&&!usersKey.isEmpty()) {
-                for (PushUserUDKey udk: usersKey) {
-                    ChannelHandlerContext ctx=(ChannelHandlerContext)getSocketByPushUser(udk);
-                    if (ctx!=null) {
-                        if (msg instanceof MsgNormal) ctx.fireUserEventTriggered(SendMsgEvent.NOTIFYMSG_TOBESEND_EVENT);
-                    }
-                }
-            }
-        }
-
-        /**
-         * 得到通知消息，并从队列头中删除
-         * @param pUdk 用户标识
-         * @param sh Socket处理对象
-         * @return 通知消息
-         * @throws InterruptedException
-         */
-        public Message pollNotifyMsg(PushUserUDKey pUdk, Object sh) throws InterruptedException {
-            if (pUdk==null||sh==null) return null;
-            Message m=null;
-            if (matchUserSocket(pUdk, sh)) {
-                LinkedBlockingQueue<Message> mQueue=notifyMsg.get(pUdk.getUserId());
-                if (mQueue!=null) m=mQueue.poll();
-            }
-            return m;
-        }
+//        /**
+//         * 得到通知消息，并从队列头中删除
+//         * @param pUdk 用户标识
+//         * @param sh Socket处理对象
+//         * @return 通知消息
+//         * @throws InterruptedException
+//         */
+//        public Message pollNotifyMsg(PushUserUDKey pUdk, Object sh) throws InterruptedException {
+//            if (pUdk==null||sh==null) return null;
+//            Message m=null;
+//            if (matchUserSocket(pUdk, sh)) {
+//                LinkedBlockingQueue<Message> mQueue=notifyMsg.get(pUdk.getUserId());
+//                if (mQueue!=null) m=mQueue.poll();
+//            }
+//            return m;
+//        }
 
         //已发送队列处理
         /**
