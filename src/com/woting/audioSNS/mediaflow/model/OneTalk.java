@@ -10,8 +10,8 @@ import com.woting.audioSNS.calling.mem.CallingMemory;
 import com.woting.audioSNS.calling.model.OneCall;
 import com.woting.audioSNS.intercom.mem.IntercomMemory;
 import com.woting.audioSNS.intercom.model.OneMeet;
+import com.woting.audioSNS.mediaflow.MediaConfig;
 import com.woting.push.PushConstants;
-import com.woting.push.config.MediaConfig;
 import com.woting.push.user.PushUserUDKey;
 
 /**

@@ -7,7 +7,7 @@
   //以下三项为Socket处理参数
   "pushserver":{
     "socketType":"2",
-    "ctlTcpPort":"16789",     //控制端配置
+    "ctlTcpPort":"26789",     //控制端配置
     "cleanInterval":"60*1000" //清理内存间隔时间
   },
   "socketenviron": {//socket监控环境参数——对所有服务都有效的环境信息

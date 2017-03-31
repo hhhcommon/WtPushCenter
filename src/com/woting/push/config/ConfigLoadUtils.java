@@ -9,6 +9,7 @@ import com.woting.audioSNS.notify.NotifyMessageConfig;
 import com.woting.audioSNS.sync.SyncMessageConfig;
 import com.woting.push.core.SocketHandleConfig;
 import com.woting.audioSNS.intercom.IntercomConfig;
+import com.woting.audioSNS.mediaflow.MediaConfig;
 
 public abstract class ConfigLoadUtils {
     private final static FelEngine fel=new FelEngineImpl();

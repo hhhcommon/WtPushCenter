@@ -11,13 +11,13 @@ import com.spiritdata.framework.core.cache.SystemCache;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.ctrlremsg.AffirmCtlConfig;
 import com.woting.audioSNS.intercom.model.OneMeet;
+import com.woting.audioSNS.mediaflow.MediaConfig;
 import com.woting.passport.UGA.model.Group;
 import com.woting.passport.UGA.persis.pojo.GroupPo;
 import com.woting.passport.UGA.persis.pojo.UserPo;
 import com.woting.passport.UGA.service.GroupService;
 import com.woting.passport.UGA.service.UserService;
 import com.woting.push.PushConstants;
-import com.woting.push.config.MediaConfig;
 import com.woting.push.config.PushConfig;
 import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MsgMedia;
@@ -681,7 +681,7 @@ public class PushGlobalMemory {
          * @param sh
          * @return 可重发的消息队列
          */
-        public List<MsgNormal> getSendedNeedCtlAffirmMsg(PushUserUDKey pUdk, Object sh) {
+        public List<MsgNormal> getSendedNeedCtlAffirmMsgANDSend(PushUserUDKey pUdk, Object sh) {
             if (pUdk==null||sh==null) return null;
             if (!matchUserSocket(pUdk, sh)) return null;
             List<Map<String, Object>> mList=sendedNeedCtlAffirmMsg.get(pUdk);
@@ -693,6 +693,7 @@ public class PushGlobalMemory {
                 if (_m==null||_m.isEmpty()) continue;
                 if (dealReMsg(_m, acc.get_N_Type(), acc.get_N_ExpireTime(), acc.get_N_ExpireLimit())) {
                     ret.add((MsgNormal)_m.get("message"));
+                    _m.put("sendSum", Integer.parseInt(""+_m.get("sendSum"))+1);
                 }
             }
             if (ret==null||ret.isEmpty()) return null;
@@ -723,13 +724,22 @@ public class PushGlobalMemory {
          * 清除控制消息队列
          */
         public void cleanCtrAffirmMsg() {
-            for (PushUserUDKey pUdk: sendedNeedCtlAffirmMsg.keySet()) {
-                List<Map<String, Object>> mList=sendedNeedCtlAffirmMsg.get(pUdk);
-                if (mList!=null&&!mList.isEmpty()) {
-                    for (int i=mList.size()-1; i>=0; i--) {
-                        if (!dealReMsg(mList.get(i), acc.get_N_Type(), acc.get_N_ExpireTime(), acc.get_N_ExpireLimit())) {
-                            mList.remove(i);
+            List<PushUserUDKey> toBeDelList=new ArrayList<PushUserUDKey>();
+            if (!sendedNeedCtlAffirmMsg.isEmpty())  {
+                for (PushUserUDKey pUdk: sendedNeedCtlAffirmMsg.keySet()) {
+                    List<Map<String, Object>> mList=sendedNeedCtlAffirmMsg.get(pUdk);
+                    if (mList!=null&&!mList.isEmpty()) {
+                        for (int i=mList.size()-1; i>=0; i--) {
+                            if (!dealReMsg(mList.get(i), acc.get_N_Type(), acc.get_N_ExpireTime(), acc.get_N_ExpireLimit())) {
+                                mList.remove(i);
+                            }
                         }
+                        if (mList.isEmpty()) toBeDelList.add(pUdk);
+                    }
+                }
+                if (!toBeDelList.isEmpty()) {
+                    for (PushUserUDKey pUdk: toBeDelList) {
+                        sendedNeedCtlAffirmMsg.remove(pUdk);
                     }
                 }
             }
@@ -745,7 +755,7 @@ public class PushGlobalMemory {
                     tmpI=1;
                 }
                 //由于超过过期发送次数，不发了
-                if (tmpI>expLimit) m.put("flag", 2);
+                if (tmpI>=expLimit) m.put("flag", 2);
                 else canAdd=true;;
             } else if (type==2) {
                 try {
@@ -768,7 +778,7 @@ public class PushGlobalMemory {
                     tmpL=0;
                 }
                 //由于超过过期发送次数，不发了
-                if (tmpI>expLimit) m.put("flag", 2);
+                if (tmpI>=expLimit) m.put("flag", 2);
                 else
                 //由于超过过期时间，不发了
                 if (System.currentTimeMillis()-tmpL>expLimit) m.put("flag", 3);

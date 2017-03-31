@@ -15,10 +15,10 @@ import com.spiritdata.framework.util.SequenceUUID;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.calling.mem.CallingMemory;
 import com.woting.audioSNS.intercom.mem.IntercomMemory;
+import com.woting.audioSNS.mediaflow.MediaConfig;
 import com.woting.audioSNS.mediaflow.mem.TalkMemory;
 import com.woting.audioSNS.mediaflow.monitor.DealMediaMsg;
 import com.woting.push.PushConstants;
-import com.woting.push.config.MediaConfig;
 import com.woting.push.config.PushConfig;
 import com.woting.push.core.SocketHandleConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
@@ -118,6 +118,8 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
     @Override  
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         logger.info(cause.getMessage());
+        ctx.disconnect();
+        ctx.channel().close();
         ctx.close();
     }
 

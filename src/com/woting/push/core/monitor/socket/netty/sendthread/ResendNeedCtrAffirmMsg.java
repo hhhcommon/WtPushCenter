@@ -25,7 +25,7 @@ public class ResendNeedCtrAffirmMsg extends Thread {
     public void run() {//发送控制消息-到设备
         if (ctx==null||pUdk==null) return;
 
-        List<MsgNormal> mList=globalMem.sendMem.getSendedNeedCtlAffirmMsg(pUdk, ctx);
+        List<MsgNormal> mList=globalMem.sendMem.getSendedNeedCtlAffirmMsgANDSend(pUdk, ctx);
         if (mList!=null&&!mList.isEmpty()) {
             for (int i=0; i<mList.size(); i++) ctx.writeAndFlush(mList.get(i));
         }

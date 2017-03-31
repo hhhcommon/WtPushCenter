@@ -1,6 +1,6 @@
 package com.woting.push.core.monitor.socket.netty.sendthread;
 
-import com.woting.push.config.MediaConfig;
+import com.woting.audioSNS.mediaflow.MediaConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.Message;
 import com.woting.push.core.message.MsgMedia;

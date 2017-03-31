@@ -1,4 +1,4 @@
-package com.woting.push.config;
+package com.woting.audioSNS.mediaflow;
 
 import com.woting.push.core.config.Config;
 

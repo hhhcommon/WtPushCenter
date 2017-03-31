@@ -1,8 +1,9 @@
 package com.woting.push.core.monitor.socket.netty.sendthread;
 
 import java.util.List;
+
+import com.woting.audioSNS.mediaflow.MediaConfig;
 import com.woting.audioSNS.notify.mem.NotifyMemory;
-import com.woting.push.config.MediaConfig;
 import com.woting.push.config.PushConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.Message;
@@ -90,6 +91,11 @@ public class SendAllMsg extends Thread {
             } while (m!=null);
             existMsg=((ctlCount+mdaCount)>0);
         }
+        //获得**需要重复发送的消息**
+        List<MsgNormal> mList=globalMem.sendMem.getSendedNeedCtlAffirmMsgANDSend(pUdk, ctx);
+        if (mList!=null&&!mList.isEmpty()) {
+            for (int i=0; i<mList.size(); i++) ctx.writeAndFlush(mList.get(i));
+        }
         //发送通知消息
         List<MsgNormal> notifyMsgList=notifyMem.getNeedSendNotifyMsg(pUdk);
         if (notifyMsgList!=null&&!notifyMsgList.isEmpty()) {
@@ -98,11 +104,6 @@ public class SendAllMsg extends Thread {
                 notifyMem.setNotifyMsgHadSended(pUdk, mn);
                 if (mn.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, mn);
             }
-        }
-        //获得**需要重复发送的消息**
-        List<MsgNormal> mList=globalMem.sendMem.getSendedNeedCtlAffirmMsg(pUdk, ctx);
-        if (mList!=null&&!mList.isEmpty()) {
-            for (int i=0; i<mList.size(); i++) ctx.writeAndFlush(mList.get(i));
         }
     }
 }

@@ -28,11 +28,11 @@ import com.spiritdata.framework.util.SequenceUUID;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.calling.mem.CallingMemory;
 import com.woting.audioSNS.intercom.mem.IntercomMemory;
+import com.woting.audioSNS.mediaflow.MediaConfig;
 import com.woting.audioSNS.mediaflow.mem.TalkMemory;
 import com.woting.audioSNS.mediaflow.monitor.DealMediaMsg;
 import com.woting.audioSNS.notify.mem.NotifyMemory;
 import com.woting.push.PushConstants;
-import com.woting.push.config.MediaConfig;
 import com.woting.push.config.PushConfig;
 import com.woting.push.core.SocketHandleConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
@@ -869,7 +869,7 @@ public class SocketHandler {
 //                        } catch(Exception e) {}
 //                    }
                     //获得**需要重复发送的消息**
-                    List<MsgNormal> mList=globalMem.sendMem.getSendedNeedCtlAffirmMsg(_pushUserKey, SocketHandler.this);
+                    List<MsgNormal> mList=globalMem.sendMem.getSendedNeedCtlAffirmMsgANDSend(_pushUserKey, SocketHandler.this);
                     if (mList!=null&&!mList.isEmpty()) {
                         for (int i=0; i<mList.size(); i++) {
                             m=mList.get(i);
