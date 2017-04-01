@@ -18,12 +18,15 @@ import com.woting.audioSNS.notify.persis.NotifySaveService;
 import com.woting.push.PushConstants;
 import com.woting.push.core.mem.PushGlobalMemory;
 import com.woting.push.core.message.MsgNormal;
+import com.woting.push.core.monitor.socket.netty.NettyHandler;
 import com.woting.push.core.monitor.socket.netty.event.SendMsgEvent;
 import com.woting.push.core.service.SessionService;
 import com.woting.push.ext.SpringShell;
 import com.woting.push.user.PushUserUDKey;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
 
 /**
  * 已至少发送过一次的通知消息
@@ -120,6 +123,19 @@ public class NotifyMemory {
             if (mn!=null) retList.add(mn);
         }
         return retList.isEmpty()?null:retList;
+    }
+
+    public MsgNormal getNeedSendNotifyMsg(PushUserUDKey pUdk, String msgId) {
+        String userId=pUdk.getUserId();
+        List<OneNotifyMsg> msgList=userNotifyMap.get(userId);
+        List<MsgNormal> retList=new ArrayList<MsgNormal>();
+        if (msgList==null) return null;
+        for (int i=msgList.size()-1; i>=0; i--) {
+            OneNotifyMsg oneNm=msgList.get(i);
+            MsgNormal mn=oneNm.getNeedSendMsg(pUdk);
+            if (mn!=null&&mn.getMsgId().equals(msgId)) retList.add(mn);
+        }
+        return null;
     }
 
     /**
@@ -264,6 +280,8 @@ public class NotifyMemory {
         if (usersKey!=null&&!usersKey.isEmpty()) {
             for (PushUserUDKey udk: usersKey) {
                 ChannelHandlerContext ctx=(ChannelHandlerContext)(PushGlobalMemory.getInstance().getSocketByPushUser(udk));
+                Attribute<String> c_cnmId=ctx.channel().attr(NettyHandler.CHANNEL_CURNMID);
+                c_cnmId.set(msg.getMsgId());
                 if (ctx!=null) ctx.fireUserEventTriggered(SendMsgEvent.NOTIFYMSG_TOBESEND_EVENT);
             }
         }

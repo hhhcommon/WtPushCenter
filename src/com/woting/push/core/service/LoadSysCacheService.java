@@ -52,16 +52,16 @@ public class LoadSysCacheService {
             ps2=conn.prepareStatement("insert into wt_MobileUsed values(?, ?, ?, ?, ?, current_timestamp())");
             int i=0;
             for (; i<=200000; i++) {
-                ps.setString(1, "TEST"+(1000000+i));
-                ps.setString(2, "TEST"+(1000000+i));
-                ps.setString(3, "TEST"+(1000000+i));
-                ps.setString(4, "TEST"+(1000000+i));
+                ps.setString(1, "TEST"+(10000000+i));
+                ps.setString(2, "TEST"+(10000000+i));
+                ps.setString(3, "TEST"+(10000000+i));
+                ps.setString(4, "TEST"+(10000000+i));
                 ps.setString(5, "aaaaaa");
                 ps.execute();
                 ps2.setString(1, ""+(1000000+i));
-                ps2.setString(2, "IMEI"+(1000000+i));
+                ps2.setString(2, "IMEI"+(10000000+i));
                 ps2.setInt(3, 1);
-                ps2.setString(4, "TEST"+(1000000+i));
+                ps2.setString(4, "TEST"+(10000000+i));
                 ps2.setInt(5, 1);
                 ps2.execute();
                 if (i%500==0) {

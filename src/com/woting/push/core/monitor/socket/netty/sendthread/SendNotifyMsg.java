@@ -22,6 +22,7 @@ public class SendNotifyMsg extends Thread {
 
     private PushConfig pConf;           //推送配置
     private PushUserUDKey pUdk;         //用户标识
+    private String msgId;         //用户标识
     private ChannelHandlerContext ctx;  //连接上下文
 
     public SendNotifyMsg(PushConfig pConf, ChannelHandlerContext ctx) {
@@ -29,23 +30,22 @@ public class SendNotifyMsg extends Thread {
         this.ctx=ctx;
         try {
             this.pUdk=ctx.channel().attr(NettyHandler.CHANNEL_PUDKEY).get();
+            this.msgId=ctx.channel().attr(NettyHandler.CHANNEL_CURNMID).get();
         } catch(Exception e) {}
     }
 
     @Override
     public void run() {
         if (ctx==null||pUdk==null) return;
-        List<MsgNormal> notifyMsgList=notifyMem.getNeedSendNotifyMsg(pUdk);
-        if (notifyMsgList!=null&&!notifyMsgList.isEmpty()) {
-            for (MsgNormal mn: notifyMsgList) {
-                if (mn.getFromType()==0) {
-                    mn.setUserId(pConf.get_ServerType());
-                    mn.setDeviceId(pConf.get_ServerName());
-                }
-                ctx.writeAndFlush(mn);
-                notifyMem.setNotifyMsgHadSended(pUdk, mn);
-                if (mn.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, mn);
+        MsgNormal nmn=notifyMem.getNeedSendNotifyMsg(pUdk, msgId);
+        if (nmn!=null) {
+            if (nmn.getFromType()==0) {
+                nmn.setUserId(pConf.get_ServerType());
+                nmn.setDeviceId(pConf.get_ServerName());
             }
+            ctx.writeAndFlush(nmn);
+            notifyMem.setNotifyMsgHadSended(pUdk, nmn);
+            if (nmn.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, nmn);
         }
     }
 }

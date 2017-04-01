@@ -325,6 +325,7 @@ public class ServerListener {
         //1-启动{TCP_控制信道}socket监控
         PushConfig pc=((CacheEle<PushConfig>)SystemCache.getCache(PushConstants.PUSH_CONF)).getContent();
         socketType=pc.get_SocketServerType();
+//        socketType=2
         if (socketType==0) {
             tcpCtlServer=new OioServer(pc);
             tcpCtlServer.setDaemon(true);

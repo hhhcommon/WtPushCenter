@@ -57,6 +57,7 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
     private SocketHandleConfig sc=((CacheEle<SocketHandleConfig>)SystemCache.getCache(PushConstants.SOCKETHANDLE_CONF)).getContent();
 
     public static final AttributeKey<PushUserUDKey> CHANNEL_PUDKEY=AttributeKey.valueOf("ChannelPudKey"); //用户设备绑定
+    public static final AttributeKey<String> CHANNEL_CURNMID=AttributeKey.valueOf("CurrentNotifyMsgId"); //当前需要发送的通知消息Id
     public static final AttributeKey<String> CHANNEL_DEVKEY=AttributeKey.valueOf("ChannelDevKey"); //仅设备绑定
 
     @Override

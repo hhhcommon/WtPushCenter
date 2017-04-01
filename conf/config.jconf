@@ -6,7 +6,7 @@
   },
   //以下三项为Socket处理参数
   "pushserver":{
-    "socketType":"2",
+    "socketType":"2",   //0-Oio;1-Nio;2-Netty
     "ctlTcpPort":"26789",     //控制端配置
     "cleanInterval":"60*1000" //清理内存间隔时间
   },
