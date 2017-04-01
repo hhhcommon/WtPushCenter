@@ -187,6 +187,10 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
                 List<PushUserUDKey> sendAckPUDkeyList=notifyMem.setBizReUdkANDGetNeedSendAckPudkList(sourceMsg);
                 if (sendAckPUDkeyList!=null) {
                     for (PushUserUDKey pUdk: sendAckPUDkeyList) {
+                        sourceMsg.setFromType(0);
+                        sourceMsg.setToType(sourceMsg.getFromType());
+                        sourceMsg.setUserId(pConf.get_ServerType());
+                        sourceMsg.setDeviceId(pConf.get_ServerName());
                         globalMem.sendMem.putDeviceMsg(pUdk, sourceMsg);
                     }
                 }

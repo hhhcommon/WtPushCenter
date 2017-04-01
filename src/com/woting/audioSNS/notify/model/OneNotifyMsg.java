@@ -86,14 +86,18 @@ public class OneNotifyMsg implements Serializable {
         else si.increaseNum();
         return true;
     }
-
+    public boolean isRecieved(PushUserUDKey pUdk) {
+        SendInfo si=sendedMap.get(pUdk);
+        if (si==null) return false;
+        return si.isRecieved();
+    }
     public void setPUDKeyHasRecived(PushUserUDKey pUdk) {
         SendInfo si=sendedMap.get(pUdk);
         if (si==null) {
             si=new SendInfo();
             sendedMap.put(pUdk, si);
         }
-        si.setRecieved();
+        si.sendNum=-1;
     }
     public void setBizReUdk(PushUserUDKey pUdk) {
         this.bizReUdk=pUdk;
@@ -124,9 +128,6 @@ public class OneNotifyMsg implements Serializable {
         public int getSendSum() {
             return sendNum;
         }
-        public void setRecieved() {
-            sendNum=-1;
-        }
         public boolean isRecieved() {
             return sendNum==-1;
         }
@@ -154,6 +155,7 @@ public class OneNotifyMsg implements Serializable {
 
     @SuppressWarnings("unchecked")
     public void setSendMapFromJson(String tmpStr) {
+        if (StringUtils.isNullOrEmptyOrSpace(tmpStr)) return ;
         Map<PushUserUDKey, SendInfo> _sendedMap=new HashMap<PushUserUDKey, SendInfo>();
         Map<String, Object> m=(Map<String, Object>)JsonUtils.jsonToObj(tmpStr, Map.class);
         for (String k: m.keySet()) {

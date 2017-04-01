@@ -245,8 +245,8 @@ public abstract class MessageUtils {
         mn.setCommand(tempI);
         try {tempI=Integer.parseInt(mm.get("returnType")+"");} catch(Exception e) {};
         mn.setReturnType(tempI);
-        mn.setMsgId(mm.get("msgType")==null?null:(""+mm.get("msgType")));
-        mn.setReMsgId(mm.get("reMsgType")==null?null:(""+mm.get("reMsgType")));
+        mn.setMsgId(mm.get("msgId")==null?null:(""+mm.get("msgId")));
+        mn.setReMsgId(mm.get("reMsgId")==null?null:(""+mm.get("reMsgId")));
         mn.setUserId(mm.get("userId")==null?null:(""+mm.get("userId")));
         mn.setDeviceId(mm.get("deviceId")==null?null:(""+mm.get("deviceId")));
         try {tempI=Integer.parseInt(mm.get("pcdtype")+"");} catch(Exception e) {};

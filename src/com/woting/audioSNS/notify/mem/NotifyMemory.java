@@ -26,7 +26,6 @@ import com.woting.push.user.PushUserUDKey;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.Attribute;
-import io.netty.util.AttributeKey;
 
 /**
  * 已至少发送过一次的通知消息
@@ -150,15 +149,17 @@ public class NotifyMemory {
         if (msgList!=null&&msgList.size()>0) {
             for (OneNotifyMsg oneNm: msgList) {
                 if (m.getReMsgId().equals(oneNm.getNotifyMsg().getMsgId())) {
-                    oneNm.setPUDKeyHasRecived(pUdk);
-                    try {
-                        Map<String, Object> toDBMap=new HashMap<String, Object>();
-                        toDBMap.put("TYPE", "update");
-                        toDBMap.put("msgId", m.getReMsgId());
-                        toDBMap.put("toUserId", oneNm.getNotifyMsg().getUserId());
-                        toDBMap.put("sendInfoJson", JsonUtils.objToJson(oneNm.getSendedMap()));
-                        putSaveDataQueue(toDBMap);
-                    } catch(Exception e) {
+                    if (!oneNm.isRecieved(pUdk)) {
+                        oneNm.setPUDKeyHasRecived(pUdk);
+                        try {
+                            Map<String, Object> toDBMap=new HashMap<String, Object>();
+                            toDBMap.put("TYPE", "update");
+                            toDBMap.put("msgId", m.getReMsgId());
+                            toDBMap.put("toUserId", m.getUserId());
+                            toDBMap.put("sendInfoJson", JsonUtils.objToJson(oneNm.getSendedMap()));
+                            putSaveDataQueue(toDBMap);
+                        } catch(Exception e) {
+                        }
                     }
                     break;
                 }
@@ -211,7 +212,7 @@ public class NotifyMemory {
                             toDBMap.put("TYPE", "update");
                             toDBMap.put("msgId", m.getReMsgId());
                             toDBMap.put("toUserId", m.getUserId());
-                            toDBMap.put("bizReUdk", pUdk.toString());
+                            toDBMap.put("bizReUdkJson", pUdk.toString());
                             toDBMap.put("sendInfoJson", JsonUtils.objToJson(oneNm.getSendedMap()));
                             putSaveDataQueue(toDBMap);
                         } catch(Exception e) {
@@ -223,6 +224,7 @@ public class NotifyMemory {
                     }
                 }
             }
+            if (msgList.isEmpty()) userNotifyMap.remove(pUdk.getUserId());
         }
         return null;
     }

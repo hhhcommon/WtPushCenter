@@ -83,7 +83,7 @@ public class NotifySaveService {
             try { tp=(Timestamp)oneData.get("sendTime"); } catch(Exception e) {};
             if (tp!=null) onm.setFirstSendTime(tp.getTime());
             onm.setUserId(thisUserId);
-            tmpStr=oneData.get("sendInfoJson")+"";
+            tmpStr=oneData.get("sendInfoJson")==null?null:oneData.get("sendInfoJson")+"";
             onm.setSendMapFromJson(tmpStr);
             userNotifyList.add(onm);
         }

@@ -204,7 +204,7 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
     private void dealNormalCTLMsg(ChannelHandlerContext ctx, PushUserUDKey pUdk, MsgNormal mn) throws InterruptedException {
         Attribute<PushUserUDKey> c_PUDK=ctx.channel().attr(CHANNEL_PUDKEY);
         if (mn.isAck()) {//若是应答消息，这个先不做处理
-            
+            globalMem.receiveMem.putTypeMsg(""+((MsgNormal)mn).getBizType(), mn);
         } else {
             if (pUdk.equals(c_PUDK.get())) {
                 if (mn.isCtlAffirm()) { //若需要控制回复

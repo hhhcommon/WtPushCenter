@@ -1,7 +1,5 @@
 package com.woting.push.core.monitor.socket.netty.sendthread;
 
-import java.util.List;
-
 import com.woting.audioSNS.notify.mem.NotifyMemory;
 import com.woting.push.config.PushConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
@@ -22,7 +20,7 @@ public class SendNotifyMsg extends Thread {
 
     private PushConfig pConf;           //推送配置
     private PushUserUDKey pUdk;         //用户标识
-    private String msgId;         //用户标识
+    private String msgId;               //要发送的消息的Id
     private ChannelHandlerContext ctx;  //连接上下文
 
     public SendNotifyMsg(PushConfig pConf, ChannelHandlerContext ctx) {
