@@ -54,6 +54,7 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
             List<Map<String, Object>> clm=callingMem.getActiveCallingList(pUdk.getUserId());
             if (clm!=null&&!clm.isEmpty()) {
                 retMsg.setFromType(0);
+                retMsg.setAffirm(0);
                 retMsg.setToType(1);
                 retMsg.setCmdType(3);
                 retMsg.setCommand(0);

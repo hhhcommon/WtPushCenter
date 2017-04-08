@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 
 import com.spiritdata.framework.core.cache.CacheEle;
 import com.spiritdata.framework.core.cache.SystemCache;
-import com.spiritdata.framework.util.SequenceUUID;
 import com.spiritdata.framework.util.StringUtils;
 import com.woting.audioSNS.notify.NotifyMessageConfig;
 import com.woting.audioSNS.notify.mem.NotifyMemory;
@@ -153,11 +152,13 @@ public class DealNotifyMsg extends AbstractLoopMoniter<NotifyMessageConfig> {
                 for (String k: m.keySet()) {
                     if (!k.startsWith("_")) newMsgContentMap.put(k, m.get(k));
                 }
+                
                 MsgNormal nm=new MsgNormal();
                 MapContent newMc=new MapContent(newMsgContentMap);
                 nm.setMsgContent(newMc);
                 nm.setBizType(4);
-                nm.setMsgId(SequenceUUID.getUUIDSubSegment(4));
+                nm.setMsgId(sourceMsg.getMsgId());
+                nm.setSendTime(sourceMsg.getSendTime());
                 nm.setMsgType(0);
                 nm.setAffirm(affirmType);
                 nm.setFromType(0);

@@ -127,12 +127,11 @@ public class NotifyMemory {
     public MsgNormal getNeedSendNotifyMsg(PushUserUDKey pUdk, String msgId) {
         String userId=pUdk.getUserId();
         List<OneNotifyMsg> msgList=userNotifyMap.get(userId);
-        List<MsgNormal> retList=new ArrayList<MsgNormal>();
         if (msgList==null) return null;
         for (int i=msgList.size()-1; i>=0; i--) {
             OneNotifyMsg oneNm=msgList.get(i);
             MsgNormal mn=oneNm.getNeedSendMsg(pUdk);
-            if (mn!=null&&mn.getMsgId().equals(msgId)) retList.add(mn);
+            if (mn!=null&&mn.getMsgId().equals(msgId)) return mn;
         }
         return null;
     }

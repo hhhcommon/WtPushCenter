@@ -119,6 +119,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         MsgNormal retMsg=MessageUtils.buildRetMsg(m);
         retMsg.setFromType(0);
         retMsg.setToType(1);
+        retMsg.setAffirm(0);
         retMsg.setCommand(9);
         Map<String, Object> dataMap=new HashMap<String, Object>();
         dataMap.put("GroupId", groupId);
@@ -142,6 +143,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             hasSpeaker.setMsgType(0);
             hasSpeaker.setCmdType(2);
             hasSpeaker.setCommand(0x0B);
+            hasSpeaker.setAffirm(0);
             dataMap=new HashMap<String, Object>();
             dataMap.put("GroupId", groupId);
             dataMap.put("SpeakerId", meetData.getSpeaker().getUserId());
@@ -156,6 +158,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             MsgNormal bMsg=MessageUtils.clone(retMsg);
             bMsg.setReMsgId(null);
             bMsg.setMsgType(0);
+            bMsg.setAffirm(0);
             bMsg.setCommand(0x10);
             dataMap=new HashMap<String, Object>();
             dataMap.put("GroupId", groupId);
@@ -206,6 +209,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         MsgNormal retMsg=MessageUtils.buildRetMsg(m);
         retMsg.setFromType(0);
         retMsg.setToType(1);
+        retMsg.setAffirm(0);
         retMsg.setCommand(0x0A);
         Map<String, Object> dataMap=new HashMap<String, Object>();
         dataMap.put("GroupId", groupId);
@@ -229,6 +233,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
                 MsgNormal bMsg=MessageUtils.clone(retMsg);
                 bMsg.setReMsgId(null);
                 bMsg.setMsgType(0);
+                bMsg.setAffirm(0);
                 bMsg.setCommand(0x10);
                 dataMap=new HashMap<String, Object>();
                 dataMap.put("GroupId", groupId);
@@ -281,6 +286,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         retMsg.setFromType(0);
         retMsg.setToType(1);
         retMsg.setCommand(9);
+        retMsg.setAffirm(0);
         Map<String, Object> dataMap=new HashMap<String, Object>();
         dataMap.put("GroupId", groupId);
         MapContent mc=new MapContent(dataMap);
@@ -310,6 +316,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             MsgNormal bMsg=MessageUtils.clone(retMsg);
             bMsg.setReMsgId(null);
             bMsg.setMsgType(0);
+            bMsg.setAffirm(0);
             bMsg.setCommand(0x10);
             dataMap=new HashMap<String, Object>();
             dataMap.put("GroupId", groupId);
@@ -344,6 +351,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
         MsgNormal retMsg=MessageUtils.buildRetMsg(m);
         retMsg.setFromType(0);
         retMsg.setToType(1);
+        retMsg.setAffirm(0);
         retMsg.setCommand(0x0A);
         Map<String, Object> dataMap=new HashMap<String, Object>();
         dataMap.put("GroupId", groupId);
@@ -370,6 +378,7 @@ public class IntercomHandler extends AbstractLoopMoniter<IntercomConfig> {
             MsgNormal bMsg=MessageUtils.clone(retMsg);
             bMsg.setReMsgId(null);
             bMsg.setMsgType(0);
+            bMsg.setAffirm(0);
             bMsg.setCommand(0x20);
             dataMap=new HashMap<String, Object>();
             dataMap.put("GroupId", groupId);

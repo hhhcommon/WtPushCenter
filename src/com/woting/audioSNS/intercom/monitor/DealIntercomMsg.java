@@ -48,6 +48,7 @@ public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
             List<Map<String, Object>> glm=intercomMem.getActiveGroupList(pUdk.getUserId());
             if (glm!=null&&!glm.isEmpty()) {
                 retMsg.setFromType(0);
+                retMsg.setAffirm(0);
                 retMsg.setToType(1);
                 retMsg.setCmdType(3);
                 retMsg.setCommand(0);
