@@ -15,6 +15,7 @@
     <result  column="pId"             property="PId"             jdbcType="VARCHAR"/>
     <result  column="sort"            property="sort"            jdbcType="INTEGER"/>
     <result  column="createUserId"    property="createUserId"    jdbcType="VARCHAR"/>
+    <result  column="groupMasterId"   property="groupMasterId"   jdbcType="VARCHAR"/>
     <result  column="adminUserIds"    property="adminUserIds"    jdbcType="INTEGER"/>
     <result  column="descn"           property="descn"           jdbcType="VARCHAR"/>
     <result  column="cTime"           property="CTime"           jdbcType="TIMESTAMP"/>
@@ -35,10 +36,10 @@
 
   <!-- 所有列 -->
   <sql id="Base_Column_List">
-    id, groupNum, groupName, groupSignature, groupPwd, groupImg, groupType, pId, sort, createUserId, adminUserIds, descn, cTime, lmTime
+    id, groupNum, groupName, groupSignature, groupPwd, groupImg, groupType, pId, sort, createUserId, groupMasterId, adminUserIds, descn, cTime, lmTime
   </sql>
   <sql id="Base_Column_ListA">
-    a.id, a.groupNum, a.groupName, a.groupSignature, a.groupPwd, a.groupImg, a.groupType, a.pId, a.sort, a.createUserId, a.adminUserIds, a.descn, a.cTime, a.lmTime, b.groupCount
+    a.id, a.groupNum, a.groupName, a.groupSignature, a.groupPwd, a.groupImg, a.groupType, a.pId, a.sort, a.createUserId, a.groupMasterId, a.adminUserIds, a.descn, a.cTime, a.lmTime, b.groupCount
   </sql>
 
   <!-- 条件子句 -->
@@ -55,6 +56,7 @@
         <if test="pId!=null"> and pId=#{pId,jdbcType=VARCHAR}</if>
         <if test="sort!=null and sort!=0"> and sort=#{sort,jdbcType=INTEGER}</if>
         <if test="createUserId!=null"> and createUserId=#{createUserId,jdbcType=VARCHAR}</if>
+        <if test="groupMasterId!=null"> and groupMasterId=#{groupMasterId,jdbcType=VARCHAR}</if>
         <if test="adminUserIds!=null"> and adminUserIds=#{adminUserIds,jdbcType=VARCHAR}</if>
         <if test="descn!=null"> and descn=#{descn,jdbcType=VARCHAR}</if>
         <if test="CTime!=null"> and cTime=#{CTime,jdbcType=TIMESTAMP}</if>
@@ -75,6 +77,7 @@
       <if test="pId!=null"> and a.pId=#{pId,jdbcType=VARCHAR}</if>
       <if test="sort!=null and sort!=0"> and a.sort=#{sort,jdbcType=INTEGER}</if>
       <if test="createUserId!=null"> and a.createUserId=#{createUserId,jdbcType=VARCHAR}</if>
+      <if test="groupMasterId!=null"> and a.groupMasterId=#{groupMasterId,jdbcType=VARCHAR}</if>
       <if test="adminUserIds!=null"> and a.adminUserIds=#{adminUserIds,jdbcType=VARCHAR}</if>
       <if test="descn!=null"> and a.descn=#{descn,jdbcType=VARCHAR}</if>
       <if test="CTime!=null"> and a.cTime=#{CTime,jdbcType=TIMESTAMP}</if>

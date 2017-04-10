@@ -6,16 +6,23 @@
   <!-- 对象定义:用户信息 -->
   <resultMap id="userMap" type="WtUser">
     <id      column="id"             property="userId"         jdbcType="VARCHAR"/>
-    <result  column="loginName"      property="loginName"      jdbcType="VARCHAR"/>
     <result  column="userName"       property="userName"       jdbcType="VARCHAR"/>
     <result  column="userNum"        property="userNum"        jdbcType="VARCHAR"/>
+    <result  column="loginName"      property="loginName"      jdbcType="VARCHAR"/>
+    <result  column="nickName"       property="nickName"       jdbcType="VARCHAR"/>
+    <result  column="userSign"       property="userSign"       jdbcType="VARCHAR"/>
     <result  column="password"       property="password"       jdbcType="VARCHAR"/>
     <result  column="mainPhoneNum"   property="mainPhoneNum"   jdbcType="VARCHAR"/>
+    <result  column="phoneNumIsPub"  property="phoneNumIsPub"  jdbcType="INTEGER"/>
     <result  column="mailAddress"    property="mailAddress"    jdbcType="VARCHAR"/>
+    <result  column="birthday"       property="birthday"       jdbcType="TIMESTAMP"/>
+    <result  column="starSign"       property="starSign"       jdbcType="VARCHAR"/>
     <result  column="userType"       property="userType"       jdbcType="INTEGER"/>
+    <result  column="userClass"      property="userClass"      jdbcType="INTEGER"/>
     <result  column="userState"      property="userState"      jdbcType="INTEGER"/>
     <result  column="portraitBig"    property="portraitBig"    jdbcType="VARCHAR"/>
     <result  column="portraitMini"   property="portraitMini"   jdbcType="VARCHAR"/>
+    <result  column="homepage"       property="homepage"       jdbcType="VARCHAR"/>
     <result  column="descn"          property="descn"          jdbcType="VARCHAR"/>
     <result  column="cTime"          property="CTime"          jdbcType="TIMESTAMP"/>
     <result  column="lmTime"         property="lmTime"         jdbcType="TIMESTAMP"/>
@@ -23,10 +30,10 @@
 
   <!-- 所有列 -->
   <sql id="Base_Column_List">
-    id, loginName, userName, userNum, password, mainPhoneNum, mailAddress, userType, userState, portraitBig, portraitMini, descn, cTime, lmTime
+    id, loginName, userName, userNum, password, mainPhoneNum, phoneNumIsPub, mailAddress, userType, userState, portraitBig, portraitMini, descn, cTime, lmTime
   </sql>
   <sql id="Base_Column_List_A">
-    a.id, a.loginName, a.userName, a.userNum, a.password, a.mainPhoneNum, a.mailAddress, a.userType, a.userState, a.portraitBig, a.portraitMini, a.descn, a.cTime, a.lmTime
+    a.id, a.loginName, a.userName, a.userNum, a.password, a.mainPhoneNum, a.phoneNumIsPub, a.mailAddress, a.userType, a.userState, a.portraitBig, a.portraitMini, a.descn, a.cTime, a.lmTime
   </sql>
 
   <!-- 条件子句 -->
@@ -34,16 +41,23 @@
     <where>
       <trim prefix="(" suffix=")" prefixOverrides="and">
         <if test="userId!=null"> and id=#{userId,jdbcType=VARCHAR}</if>
-        <if test="loginName!=null"> and loginName=#{loginName,jdbcType=VARCHAR}</if>
         <if test="userName!=null"> and userName=#{userName,jdbcType=VARCHAR}</if>
         <if test="userNum!=null"> and userNum=#{userNum,jdbcType=VARCHAR}</if>
+        <if test="loginName!=null"> and loginName=#{loginName,jdbcType=VARCHAR}</if>
+        <if test="nickName!=null"> and nickName=#{nickName,jdbcType=VARCHAR}</if>
+        <if test="userSign!=null"> and userSign=#{userSign,jdbcType=VARCHAR}</if>
         <if test="password!=null"> and password=#{password,jdbcType=VARCHAR}</if>
         <if test="mainPhoneNum!=null"> and mainPhoneNum=#{mainPhoneNum,jdbcType=VARCHAR}</if>
+        <if test="phoneNumIsPub!=null"> and phoneNumIsPub=#{phoneNumIsPub,jdbcType=INTEGER}</if>
         <if test="mailAddress!=null"> and mailAddress=#{mailAddress,jdbcType=VARCHAR}</if>
-        <if test="userType!=null and userType!=0"> and userType=#{userType,jdbcType=INTEGER}</if>
+        <if test="birthday!=null"> and birthday=#{birthday,jdbcType=TIMESTAMP}</if>
+        <if test="starSign!=null"> and starSign=#{starSign,jdbcType=VARCHAR}</if>
+        <if test="userType!=null"> and userType=#{userType,jdbcType=INTEGER}</if>
+        <if test="userClass!=null"> and userClass=#{userClass,jdbcType=INTEGER}</if>
         <if test="userState!=null"> and userState=#{userState,jdbcType=INTEGER}</if>
         <if test="portraitBig!=null"> and portraitBig=#{portraitBig,jdbcType=VARCHAR}</if>
         <if test="portraitMini!=null"> and portraitMini=#{portraitMini,jdbcType=VARCHAR}</if>
+        <if test="homepage!=null"> and homepage=#{homepage,jdbcType=INTEGER}</if>
         <if test="descn!=null"> and descn=#{descn,jdbcType=VARCHAR}</if>
         <if test="CTime!=null"> and cTime=#{CTime,jdbcType=TIMESTAMP}</if>
         <if test="lmTime!=null"> and lmTime=#{lmTime,jdbcType=TIMESTAMP}</if>
@@ -75,14 +89,19 @@
   </select>
   <!-- 获得陌生人列表 -->
   <select id="getStrangers" resultMap="userMap" parameterType="java.util.Map">
+  select * from (
     select <include refid="Base_Column_List_A"/> from plat_User a
     left join (select distinct aUserId from vWt_Friend_Rel) b on a.id=b.aUserId
-    where a.id!='${userId}' and (
-      a.loginName like '%${searchStr}%'
-      or a.userNum like '%${searchStr}%'
-      or a.mailAddress like '%${searchStr}%'
-      or a.mainPhoneNum like '%${searchStr}%'
+    where a.id!='${userId}' and b.aUserId is null and (
+         a.loginName like '%${searchStr}%'
+      or a.userNum   like '%${searchStr}%'
+      or a.userName  like '%${searchStr}%'
+      or a.nickName  like '%${searchStr}%'
+      or a.userSign  like '%${searchStr}%'
+      or (a.phoneNumIsPub=1 and a.mainPhoneNum like '%${searchStr}%')
     )
+  ) c
+  order by c.nickName, c.userName, c.loginName
   </select>
   <select id="getMembers" resultMap="userMap" parameterType="java.lang.String">
     select * from plat_User where id in (${value})
@@ -107,67 +126,6 @@
   <select id="getUserByPhoneNum" resultMap="userMap" parameterType="java.lang.String">
     select <include refid="Base_Column_List"/> from plat_User where mainPhoneNum=#{mainPhoneNum,jdbcType=VARCHAR}
   </select>
-
-  <!-- 新增数据 -->
-  <insert id="insertUser" parameterType="java.util.Map"> insert into plat_User
-    <trim prefix="(" suffix=")" suffixOverrides=",">
-      <if test="userId!=null">id,</if>
-      <if test="loginName!=null">loginName,</if>
-      <if test="userName!=null">userName,</if>
-      <if test="userNum!=null">userNum,</if>
-      <if test="password!=null">password,</if>
-      <if test="mainPhoneNum!=null">mainPhoneNum,</if>
-      <if test="mailAddress!=null">mailAddress,</if>
-      <if test="userType!=null and userType!=0">userType,</if>
-      <if test="userState!=null">userState,</if>
-      <if test="portraitBig!=null">portraitBig,</if>
-      <if test="portraitMini!=null">portraitMini,</if>
-      <if test="descn!=null">descn,</if>
-      <if test="CTime!=null">cTime,</if>
-    </trim>
-    <trim prefix="values (" suffix=")" suffixOverrides=",">
-      <if test="userId!=null">#{userId,jdbcType=VARCHAR},</if>
-      <if test="loginName!=null">#{loginName,jdbcType=VARCHAR},</if>
-      <if test="userName!=null">#{userName,jdbcType=VARCHAR},</if>
-      <if test="userNum!=null">#{userNum,jdbcType=VARCHAR},</if>
-      <if test="password!=null">#{password,jdbcType=VARCHAR},</if>
-      <if test="mainPhoneNum!=null">#{mainPhoneNum,jdbcType=VARCHAR},</if>
-      <if test="mailAddress!=null">#{mailAddress,jdbcType=VARCHAR},</if>
-      <if test="userType!=null and userType!=0">#{userType,jdbcType=INTEGER},</if>
-      <if test="userState!=null">#{userState,jdbcType=INTEGER},</if>
-      <if test="portraitBig!=null">#{portraitBig,jdbcType=VARCHAR},</if>
-      <if test="portraitMini!=null">#{portraitMini,jdbcType=VARCHAR},</if>
-      <if test="descn!=null">#{descn,jdbcType=VARCHAR},</if>
-      <if test="CTime!=null">#{CTime,jdbcType=TIMESTAMP},</if>
-    </trim>
-  </insert>
-
-  <!-- 修改 根据主键-->
-  <update id="update" parameterType="java.util.Map">update plat_User
-    <set>
-      <if test="loginName!=null">loginName=#{loginName,jdbcType=VARCHAR},</if>
-      <if test="userName!=null">userName=#{userName,jdbcType=VARCHAR},</if>
-      <if test="userNum!=null">userNum=#{userNum,jdbcType=VARCHAR},</if>
-      <if test="password!=null">password=#{password,jdbcType=VARCHAR},</if>
-      <if test="mainPhoneNum!=null">mainPhoneNum=#{mainPhoneNum,jdbcType=VARCHAR},</if>
-      <if test="mailAddress!=null">mailAddress=#{mailAddress,jdbcType=VARCHAR},</if>
-      <if test="userType!=null and userType!=0">userType=#{userType,jdbcType=INTEGER},</if>
-      <if test="userState!=null">userState=#{userState,jdbcType=INTEGER},</if>
-      <if test="portraitBig!=null">portraitBig=#{portraitBig,jdbcType=VARCHAR},</if>
-      <if test="portraitMini!=null">portraitMini=#{portraitMini,jdbcType=VARCHAR},</if>
-      <if test="descn!=null">descn=#{descn,jdbcType=VARCHAR},</if>
-      <if test="CTime!=null">cTime=#{CTime,jdbcType=TIMESTAMP},</if>
-    </set>
-    where id=#{userId,jdbcType=VARCHAR}
-  </update>
-
-  <!-- 删除数据 -->
-  <delete id="delete" parameterType="java.lang.String">
-    delete from plat_User where id=#{userId,jdbcType=VARCHAR}
-  </delete>
-  <delete id="deleteByEntity" parameterType="java.util.Map">
-    delete from plat_User <if test="_parameter!=null"><include refid="WhereClauseByEntiey"/></if>
-  </delete>
 
   <!-- 得到组内用户列表-->
   <select id="getListUserInGroup" resultMap="userMap" parameterType="java.lang.String">

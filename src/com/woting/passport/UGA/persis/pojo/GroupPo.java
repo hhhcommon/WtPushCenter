@@ -20,6 +20,7 @@ public class GroupPo extends BaseObject {
     private String pId; //上级用户组Id
     private int sort; //用户组排序0
     private String createUserId; //创建者id
+    private String groupMasterId; //群主id
     private String adminUserIds;  //管理者id，可以有多个管理者，第一个为主管理者
     private String descn; //用户描述
     private Timestamp CTime; //记录创建时间
@@ -116,17 +117,24 @@ public class GroupPo extends BaseObject {
     public void setGroupCount(int groupCount) {
         this.groupCount=groupCount;
     }
+    public String getGroupMasterId() {
+        return groupMasterId;
+    }
+    public void setGroupMasterId(String groupMasterId) {
+        this.groupMasterId = groupMasterId;
+    }
 
     public Map<String, Object> toHashMap4View() {
         Map<String, Object> retM=new HashMap<String, Object>();
 
         retM.put("GroupId", this.groupId);
         if (!StringUtils.isNullOrEmptyOrSpace(this.groupNum)) retM.put("GroupNum", this.groupNum);
-        retM.put("GroupType", this.groupType);
-        if (!StringUtils.isNullOrEmptyOrSpace(this.groupImg)) retM.put("GroupImg", this.groupImg);
         if (!StringUtils.isNullOrEmptyOrSpace(this.groupName)) retM.put("GroupName", this.groupName);
         if (!StringUtils.isNullOrEmptyOrSpace(this.groupSignature)) retM.put("GroupSignature", this.groupSignature);
+        if (!StringUtils.isNullOrEmptyOrSpace(this.groupImg)) retM.put("GroupImg", this.groupImg);
+        retM.put("GroupType", this.groupType);
         if (!StringUtils.isNullOrEmptyOrSpace(this.createUserId)) retM.put("GroupCreator", this.createUserId);
+        if (!StringUtils.isNullOrEmptyOrSpace(this.groupMasterId)) retM.put("GroupMasterId", this.groupMasterId);
         if (!StringUtils.isNullOrEmptyOrSpace(this.adminUserIds)) retM.put("GroupManager", this.adminUserIds);
         retM.put("GroupCount", this.groupCount);
         if (!StringUtils.isNullOrEmptyOrSpace(this.descn)) retM.put("GroupOriDescn", this.descn);
