@@ -53,8 +53,8 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
         if (sourceMsg.getCmdType()==3&&sourceMsg.getCommand()==0) {
             List<Map<String, Object>> clm=callingMem.getActiveCallingList(pUdk.getUserId());
             if (clm!=null&&!clm.isEmpty()) {
+                retMsg.setAffirm(conf.get_CtrAffirmType());
                 retMsg.setFromType(0);
-                retMsg.setAffirm(0);
                 retMsg.setToType(1);
                 retMsg.setCmdType(3);
                 retMsg.setCommand(0);
@@ -101,8 +101,8 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
                 //加入内存
                 int addFlag=callingMem.addOneCall(oneCall);
                 if (addFlag!=1) {//返回错误信息
-                    retMsg.setCmdType(3);
-                    retMsg.setCommand(0x30);
+                    retMsg.setAffirm(conf.get_CtrAffirmType());
+                    retMsg.setCommand(9);
                     Map<String, Object> dataMap=new HashMap<String, Object>();
                     dataMap.put("CallId", callId);
                     dataMap.put("CallerId", callerId);
@@ -118,8 +118,8 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
                     callHandler.start();
                 }
             } else { //告诉呼叫已经存在了，不能发起呼叫
-                retMsg.setCmdType(3);
-                retMsg.setCommand(0x30);
+                retMsg.setAffirm(conf.get_CtrAffirmType());
+                retMsg.setCommand(9);
                 Map<String, Object> dataMap=new HashMap<String, Object>();
                 dataMap.put("CallId", callId);
                 dataMap.put("CallerId", callerId);
@@ -132,13 +132,13 @@ public class DealCallingMsg extends AbstractLoopMoniter<CallingConfig> {
         } else {//其他消息，放到具体的独立处理线程中处理
             //查找是否有对应的内存数据，如果没有，则说明通话已经结束，告诉传来者
             if (oneCall==null) {
+                retMsg.setAffirm(conf.get_CtrAffirmType());
                 retMsg.setCmdType(3);
                 retMsg.setCommand(0x30);
                 retMsg.setReturnType(0x20);
                 Map<String, Object> dataMap=new HashMap<String, Object>();
                 dataMap.put("CallId", callId);
                 dataMap.put("OldMCode", sourceMsg.getBizType()+""+sourceMsg.getCmdType()+sourceMsg.getCommand());
-//                dataMap.put("ServerMsg", "服务器处理进程不存在");
                 MapContent mc=new MapContent(dataMap);
                 retMsg.setMsgContent(mc);
                 globalMem.sendMem.putDeviceMsg(pUdk, retMsg);

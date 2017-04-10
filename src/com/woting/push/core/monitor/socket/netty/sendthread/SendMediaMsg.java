@@ -44,6 +44,7 @@ public class SendMediaMsg extends Thread {
                 try {//传消息
                     if (m instanceof MsgMedia) {
                         MsgMedia mm=(MsgMedia)m;
+                        mm.setAffirm(mConf.get_CtrAffirmType());
                         if (System.currentTimeMillis()-mm.getSendTime()<(mm.getMediaType()==1?mConf.get_AudioExpiredTime():mConf.get_VedioExpiredTime())) {
                             ctx.writeAndFlush(m);
                         }

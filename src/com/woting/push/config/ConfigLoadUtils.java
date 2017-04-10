@@ -66,6 +66,9 @@ public abstract class ConfigLoadUtils {
             ic.set_DealThreadCount((int)fel.eval(jc.getString("intercom.dealThread")));
         } catch(Exception e) {}
         try {
+            ic.set_CtrAffirmType((int)fel.eval(jc.getString("intercom.ctrAffirmType")));
+        } catch(Exception e) {}
+        try {
             ic.set_ExpireTime((int)fel.eval(jc.getString("intercom.expireTime")));
         } catch(Exception e) {}
         try {
@@ -78,6 +81,9 @@ public abstract class ConfigLoadUtils {
         CallingConfig cc=new CallingConfig();
         try {
             cc.set_DealThreadCount((int)fel.eval(jc.getString("calling.dealThread")));
+        } catch(Exception e) {}
+        try {
+            cc.set_CtrAffirmType((int)fel.eval(jc.getString("calling.ctrAffirmType")));
         } catch(Exception e) {}
         try {
             cc.set_ExpireOnline((int)fel.eval(jc.getString("calling.expireOnline")));
@@ -162,6 +168,9 @@ public abstract class ConfigLoadUtils {
 
     public static MediaConfig getMediaConfig(JsonConfig jc) {
         MediaConfig mc=new MediaConfig();
+        try {
+            mc.set_CtrAffirmType((int)fel.eval(jc.getString("mediaMessage.ctrAffirmType")));
+        } catch(Exception e) {}
         try {
             mc.set_AudioPackT((int)fel.eval(jc.getString("mediaMessage.audio.packT")));
         } catch(Exception e) {}

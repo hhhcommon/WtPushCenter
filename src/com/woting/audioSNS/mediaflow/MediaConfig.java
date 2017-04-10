@@ -8,6 +8,10 @@ import com.woting.push.core.config.Config;
  */
 public class MediaConfig implements Config {
     /**
+     * 控制回复的类型
+     */
+    private int _CtrAffirmType=0;
+    /**
      * 音频包时长
      */
     private int _AudioPackT=40;
@@ -108,6 +112,12 @@ public class MediaConfig implements Config {
     }
     public void set_VedioExpiredTime(int _VedioExpiredTime) {
         this._VedioExpiredTime=_VedioExpiredTime;
+    }
+    public int get_CtrAffirmType() {
+        return _CtrAffirmType;
+    }
+    public void set_CtrAffirmType(int _CtrAffirmType) {
+        this._CtrAffirmType = _CtrAffirmType;
     }
 
     public long getAudioExpiedTime() {
