@@ -13,6 +13,10 @@ public class CallingConfig implements Config {
      */
     private int _DealThreadCount=2;
     /**
+     * 控制回复的类型
+     */
+    private int _CtrAffirmType=0;
+    /**
      * 检查是否在线的过期时间，毫秒
      */
     private long _ExpireOnline=10*1000;
@@ -78,5 +82,11 @@ public class CallingConfig implements Config {
     }
     public long get_CleanDataExpire() {
         return _CleanDataExpire;
+    }
+    public int get_CtrAffirmType() {
+        return _CtrAffirmType;
+    }
+    public void set_CtrAffirmType(int _CtrAffirmType) {
+        this._CtrAffirmType = _CtrAffirmType;
     }
 }

@@ -122,14 +122,14 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         //返回给呼叫者的消息
         Map<String, Object> dataMap=null;
         MsgNormal toCallerMsg=new MsgNormal();
-        toCallerMsg.setAffirm(0);
+        toCallerMsg.setAffirm(conf.get_CtrAffirmType());
         toCallerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
         toCallerMsg.setReMsgId(m.getMsgId());
         toCallerMsg.setToType(1);
         toCallerMsg.setMsgType(1);
-        toCallerMsg.setBizType(0x02);
+        toCallerMsg.setBizType(2);
         toCallerMsg.setCmdType(1);
-        toCallerMsg.setCommand(0x09);
+        toCallerMsg.setCommand(9);
         toCallerMsg.setPCDType(0);
         dataMap=new HashMap<String, Object>();
         dataMap.put("CallId", callId);
@@ -169,7 +169,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         MsgNormal toCallederMsg=new MsgNormal();
         toCallederMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
         toCallederMsg.setMsgType(0);
-        toCallederMsg.setAffirm(0);
+        toCallederMsg.setAffirm(conf.get_CtrAffirmType());
         toCallederMsg.setBizType(2);
         toCallederMsg.setCmdType(1);
         toCallederMsg.setCommand(0x10);
@@ -212,9 +212,10 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             //发送给呼叫者的消息
             MsgNormal toCallerMsg=new MsgNormal();
             toCallerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
+            toCallerMsg.setAffirm(conf.get_CtrAffirmType());
             toCallerMsg.setToType(1);
+            toCallerMsg.setPCDType(0);
             toCallerMsg.setMsgType(0);
-            toCallerMsg.setAffirm(0);
             toCallerMsg.setBizType(2);
             toCallerMsg.setCmdType(1);
             toCallerMsg.setCommand(0x40);
@@ -225,7 +226,6 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             dataMap.put("OnLineType", "1");
             MapContent mc=new MapContent(dataMap);
             toCallerMsg.setMsgContent(mc);
-            toCallerMsg.setPCDType(0);
             globalMem.sendMem.putDeviceMsg(callData.getCallerKey(), toCallerMsg);
             callData.addSendedMsg(toCallerMsg);//记录到已发送列表
 
@@ -253,7 +253,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             toCallerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
             toCallerMsg.setToType(1);
             toCallerMsg.setMsgType(0);
-            toCallerMsg.setAffirm(0);
+            toCallerMsg.setAffirm(conf.get_CtrAffirmType());
             toCallerMsg.setBizType(2);
             toCallerMsg.setCmdType(1);
             toCallerMsg.setCommand(0x20);
@@ -274,7 +274,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                     toOtherCallederMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
                     toOtherCallederMsg.setToType(1);
                     toOtherCallederMsg.setMsgType(0);
-                    toOtherCallederMsg.setAffirm(0);
+                    toOtherCallederMsg.setAffirm(conf.get_CtrAffirmType());
                     toOtherCallederMsg.setBizType(2);
                     toOtherCallederMsg.setCmdType(1);
                     toOtherCallederMsg.setCommand(0x20);
@@ -311,7 +311,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             otherMsg.setReMsgId(m.getMsgId());
             otherMsg.setToType(1);
             otherMsg.setMsgType(1);
-            otherMsg.setAffirm(0);
+            otherMsg.setAffirm(conf.get_CtrAffirmType());
             otherMsg.setBizType(2);
             otherMsg.setCmdType(1);
             otherMsg.setCommand(0x30);
@@ -338,7 +338,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         toSpeakerMsg.setToType(1);
         toSpeakerMsg.setReMsgId(m.getMsgId());
         toSpeakerMsg.setMsgType(1);
-        toSpeakerMsg.setAffirm(0);
+        toSpeakerMsg.setAffirm(conf.get_CtrAffirmType());
         toSpeakerMsg.setBizType(2);
         toSpeakerMsg.setCmdType(2);
         toSpeakerMsg.setCommand(9);
@@ -395,7 +395,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         toSpeakerMsg.setToType(1);
         toSpeakerMsg.setReMsgId(m.getMsgId());
         toSpeakerMsg.setMsgType(1);
-        toSpeakerMsg.setAffirm(0);
+        toSpeakerMsg.setAffirm(conf.get_CtrAffirmType());
         toSpeakerMsg.setBizType(2);
         toSpeakerMsg.setCmdType(2);
         toSpeakerMsg.setCommand(0x0A);
@@ -452,7 +452,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         toCallerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
         toCallerMsg.setToType(1);
         toCallerMsg.setMsgType(0);
-        toCallerMsg.setAffirm(0);
+        toCallerMsg.setAffirm(conf.get_CtrAffirmType());
         toCallerMsg.setBizType(2);
         toCallerMsg.setCmdType(1);
         toCallerMsg.setCommand(0x40);
@@ -475,7 +475,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         toCallerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
         toCallerMsg.setToType(1);
         toCallerMsg.setMsgType(0);
-        toCallerMsg.setAffirm(0);
+        toCallerMsg.setAffirm(conf.get_CtrAffirmType());
         toCallerMsg.setBizType(2);
         toCallerMsg.setCmdType(1);
         toCallerMsg.setCommand(0x20);
@@ -497,7 +497,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             toCallederMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
             toCallederMsg.setToType(1);
             toCallederMsg.setMsgType(0);
-            toCallederMsg.setAffirm(0);
+            toCallederMsg.setAffirm(conf.get_CtrAffirmType());
             toCallederMsg.setBizType(2);
             toCallederMsg.setCmdType(1);
             toCallederMsg.setCommand(0x30);
@@ -518,7 +518,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                     toCallederMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
                     toCallederMsg.setToType(1);
                     toCallederMsg.setMsgType(0);
-                    toCallederMsg.setAffirm(0);
+                    toCallederMsg.setAffirm(conf.get_CtrAffirmType());
                     toCallederMsg.setBizType(2);
                     toCallederMsg.setCmdType(1);
                     toCallederMsg.setCommand(0x30);
@@ -544,7 +544,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
         toCallerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
         toCallerMsg.setToType(1);
         toCallerMsg.setMsgType(0);
-        toCallerMsg.setAffirm(0);
+        toCallerMsg.setAffirm(conf.get_CtrAffirmType());
         toCallerMsg.setBizType(2);
         toCallerMsg.setCmdType(1);
         toCallerMsg.setCommand(0x30);
@@ -567,7 +567,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
             toCallederMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
             toCallederMsg.setToType(1);
             toCallederMsg.setMsgType(0);
-            toCallederMsg.setAffirm(0);
+            toCallederMsg.setAffirm(conf.get_CtrAffirmType());
             toCallederMsg.setBizType(2);
             toCallederMsg.setCmdType(1);
             toCallederMsg.setCommand(0x30);
@@ -588,7 +588,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                     toCallederMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
                     toCallederMsg.setToType(1);
                     toCallederMsg.setMsgType(0);
-                    toCallederMsg.setAffirm(0);
+                    toCallederMsg.setAffirm(conf.get_CtrAffirmType());
                     toCallederMsg.setBizType(2);
                     toCallederMsg.setCmdType(1);
                     toCallederMsg.setCommand(0x30);
@@ -620,7 +620,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
                 toCallerMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
                 toCallerMsg.setToType(1);
                 toCallerMsg.setMsgType(0);
-                toCallerMsg.setAffirm(0);
+                toCallerMsg.setAffirm(conf.get_CtrAffirmType());
                 toCallerMsg.setBizType(2);
                 toCallerMsg.setCmdType(1);
                 toCallerMsg.setCommand(0x20);
@@ -643,7 +643,7 @@ public class CallHandler extends AbstractLoopMoniter<CallingConfig> {
 //                        toOtherCallederMsg.setFromType(1);
 //                        toOtherCallederMsg.setToType(0);
 //                        toOtherCallederMsg.setMsgType(0);
-//                        toOtherCallederMsg.setAffirm(0);
+//                        toOtherCallederMsg.setAffirm(conf.get_CtrAffirmType());
 //                        toOtherCallederMsg.setBizType(2);
 //                        toOtherCallederMsg.setCmdType(1);
 //                        toOtherCallederMsg.setCommand(0x20);

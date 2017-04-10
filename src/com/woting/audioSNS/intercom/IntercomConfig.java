@@ -8,6 +8,10 @@ public class IntercomConfig implements Config {
      */
     private int _DealThreadCount=2;
     /**
+     * 控制回复的类型
+     */
+    private int _CtrAffirmType=0;
+    /**
      * 检查是否在线的过期时间，毫秒
      */
     private long _ExpireTime=120*60*1000;
@@ -33,5 +37,11 @@ public class IntercomConfig implements Config {
     }
     public void set_ExpireSpeakerTime(long _ExpireSpeakerTime) {
         this._ExpireSpeakerTime=_ExpireSpeakerTime;
+    }
+    public int get_CtrAffirmType() {
+        return _CtrAffirmType;
+    }
+    public void set_CtrAffirmType(int _CtrAffirmType) {
+        this._CtrAffirmType = _CtrAffirmType;
     }
 }

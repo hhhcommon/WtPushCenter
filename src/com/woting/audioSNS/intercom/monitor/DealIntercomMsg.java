@@ -47,8 +47,8 @@ public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
         if (sourceMsg.getCmdType()==3&&sourceMsg.getCommand()==0) {
             List<Map<String, Object>> glm=intercomMem.getActiveGroupList(pUdk.getUserId());
             if (glm!=null&&!glm.isEmpty()) {
+                retMsg.setAffirm(conf.get_CtrAffirmType());
                 retMsg.setFromType(0);
-                retMsg.setAffirm(0);
                 retMsg.setToType(1);
                 retMsg.setCmdType(3);
                 retMsg.setCommand(0);
@@ -85,6 +85,7 @@ public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
                 //创建组对象
                 Group g=globalMem.uANDgMem.getGroupById(groupId);
                 if (g==null) {
+                    retMsg.setAffirm(conf.get_CtrAffirmType());
                     retMsg.setCommand(9);
                     retMsg.setReturnType(0x20);
                     Map<String, Object> dataMap=new HashMap<String, Object>();
@@ -98,6 +99,7 @@ public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
                 //加入内存
                 int addFlag=intercomMem.addOneMeet(om);
                 if (addFlag!=1) {
+                    retMsg.setAffirm(conf.get_CtrAffirmType());
                     retMsg.setCommand(9);
                     retMsg.setReturnType(addFlag==0?0x81:0x82);
                     Map<String, Object> dataMap=new HashMap<String, Object>();
@@ -120,6 +122,7 @@ public class DealIntercomMsg extends AbstractLoopMoniter<IntercomConfig> {
                 roService=null;
             }
         } else { //不是进入组，则抛弃这个消息，并返回结果
+            retMsg.setAffirm(conf.get_CtrAffirmType());
             retMsg.setCmdType(3);
             retMsg.setCommand(0x30);
             retMsg.setReturnType(0x20);
