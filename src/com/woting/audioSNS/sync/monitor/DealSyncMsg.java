@@ -77,9 +77,9 @@ public class DealSyncMsg extends AbstractLoopMoniter<SyncMessageConfig> {
                             }
                         } else
                         if (sourceMsg.getCommand()==5) { //删除组内成员
-                            Map<String, Object> um=(Map<String, Object>)mc.get("UserInfo");
-                            if (um!=null&&!StringUtils.isNullOrEmptyOrSpace((String)um.get("userId"))) {
-                                globalMem.uANDgMem.delUserFromGroup(groupId, (String)um.get("userId"));
+                            String userIds=mc.get("UserIds")+"";
+                            if (!StringUtils.isNullOrEmptyOrSpace(userIds)) {
+                                globalMem.uANDgMem.delUserFromGroup(groupId, userIds);
                             }
                         }
                     }
@@ -98,8 +98,8 @@ public class DealSyncMsg extends AbstractLoopMoniter<SyncMessageConfig> {
     private String toTypeName(MsgNormal mn) {
         MapContent mc=(MapContent)mn.getMsgContent();
         Map<String, Object> um=((Map<String, Object>)mc.get("UserInfo"));
-        if (mn.getCommand()==2) return "加入组成员::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"]"+(um==null?"":"[UserId="+um.get("userId")+"]");
-        if (mn.getCommand()==3) return "加入组成员::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"]"+(um==null?"":"[UserId="+um.get("userId")+"]");
+        if (mn.getCommand()==2) return "修改组信息::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"]";
+        if (mn.getCommand()==3) return "删除用户组::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"]";
         if (mn.getCommand()==4) return "加入组成员::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"]"+(um==null?"":"[UserId="+um.get("userId")+"]");
         if (mn.getCommand()==5) return "删除组成员::[groupId="+((MapContent)mn.getMsgContent()).get("GroupId")+"][UserId="+mc.get("UserId")+"]";
         return ""; 

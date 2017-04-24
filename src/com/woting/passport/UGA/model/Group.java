@@ -17,28 +17,11 @@ import com.woting.passport.UGA.persis.pojo.UserPo;
 public class Group extends GroupPo implements ModelSwapPo {
     private static final long serialVersionUID=7365795273402631290L;
 
-    private String innerPhoneNum;  //内部电话号吗
-    private String defaultFreqNum;  //默认频段
-
-    public String getDefaultFreqNum() {
-        return defaultFreqNum;
-    }
-    public void setDefaultFreqNum(String defaultFreqNum) {
-        this.defaultFreqNum=defaultFreqNum;
-    }
-    public String getInnerPhoneNum() {
-        if (StringUtils.isNullOrEmptyOrSpace(this.innerPhoneNum)) return "3000";
-        return innerPhoneNum;
-    }
-    public void setInnerPhoneNum(String innerPhoneNum) {
-        this.innerPhoneNum=innerPhoneNum;
-    }
-
     @Override
     public void buildFromPo(Object po) {
         if (po==null) throw new Plat0006CException("Po对象为空，无法从空对象得到概念/逻辑对象！");
         if (!(po instanceof GroupPo)) throw new Plat0006CException("Po对象不是GroupPo的实例，无法从此对象构建用户模型！");
-        GroupPo _po=(GroupPo)po;
+        GroupPo _po = (GroupPo)po;
         this.setGroupId(_po.getGroupId());
         this.setGroupNum(_po.getGroupNum());
         this.setGroupName(_po.getGroupName());
@@ -51,13 +34,16 @@ public class Group extends GroupPo implements ModelSwapPo {
         this.setCreateUserId(_po.getCreateUserId());
         this.setGroupMasterId(_po.getGroupMasterId());
         this.setAdminUserIds(_po.getAdminUserIds());
+        this.setDefaultFreq(_po.getDefaultFreq());
         this.setDescn(_po.getDescn());
         this.setCTime(_po.getCTime());
         this.setLmTime(_po.getLmTime());
+        this.setGroupAlias(_po.getGroupAlias());
+        this.setGroupDescn(_po.getGroupDescn());
     }
     @Override
     public Object convert2Po() {
-        GroupPo ret=new GroupPo();
+        GroupPo ret = new GroupPo();
         if (StringUtils.isNullOrEmptyOrSpace(this.getGroupId())) ret.setGroupId(SequenceUUID.getUUIDSubSegment(4));
         else ret.setGroupId(this.getGroupId());
         ret.setGroupNum(this.getGroupNum());
@@ -71,9 +57,12 @@ public class Group extends GroupPo implements ModelSwapPo {
         ret.setCreateUserId(this.getCreateUserId());
         ret.setGroupMasterId(this.getGroupMasterId());
         ret.setAdminUserIds(this.getAdminUserIds());
+        ret.setDefaultFreq(this.getDefaultFreq());
         ret.setDescn(this.getDescn());
         ret.setCTime(this.getCTime());
         ret.setLmTime(this.getLmTime());
+        ret.setGroupAlias(this.getGroupAlias());
+        ret.setGroupDescn(this.getGroupDescn());
         return ret;
     }
 

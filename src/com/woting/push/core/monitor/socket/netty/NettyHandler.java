@@ -97,19 +97,6 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-//    @Override
-//    public void channelRegistered(ChannelHandlerContext ctx) {
-//        System.out.println("monitor channel status===channelRegistered");
-//    }
-//    @Override
-//    public void channelActive(ChannelHandlerContext ctx) {
-//        System.out.println("monitor channel status===channelActive");
-//    }
-//    @Override channelInactive
-//    public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
-//        System.out.println("monitor channel status===channelUnregistered");
-//    }
-
     @Override
     public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
         logger.info("频道注销::"+ctx.toString());
@@ -283,28 +270,29 @@ public class NettyHandler extends ChannelInboundHandlerAdapter {
                   &&_oldUk.getPCDType()==pUdk.getPCDType() //新旧Socket对应设备类型相同
                   &&_oldUk.getUserId().equals(pUdk.getUserId()) //新旧Socket对应用户相同
                   &&!_oldUk.getDeviceId().equals(pUdk.getDeviceId())
-                  &&sessionService.needKickOut(_oldUk) //旧账号在登录状态
+                  &&sessionService.needKickOut(_oldUk) //旧账号已被踢出
                 ) {//踢出
-                    globalMem.kickOut(pUdk, _oldSh);
-                    MsgNormal kickOutMsg=new MsgNormal();
-                    kickOutMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-                    kickOutMsg.setMsgType(0);
-                    kickOutMsg.setAffirm(0);
-                    kickOutMsg.setFromType(0);
-                    kickOutMsg.setToType(1);
-                    kickOutMsg.setBizType(0x04);
-                    kickOutMsg.setCmdType(3);
-                    kickOutMsg.setCommand(1);
-                    kickOutMsg.setUserId(pConf.get_ServerType());
-                    kickOutMsg.setDeviceId(pConf.get_ServerName());
-                    kickOutMsg.setSendTime(System.currentTimeMillis());
-                    Map<String, Object> dataMap=new HashMap<String, Object>();
-                    dataMap.put("UserId", pUdk.getUserId());
-                    dataMap.put("PCDType", pUdk.getPCDType());
-                    dataMap.put("DeviceId", pUdk.getDeviceId());
-                    MapContent mc=new MapContent(dataMap);
-                    kickOutMsg.setMsgContent(mc);
-                    _oldSh.writeAndFlush(kickOutMsg);
+                    if (globalMem.kickOut(pUdk, _oldSh)) {
+                        MsgNormal kickOutMsg=new MsgNormal();
+                        kickOutMsg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
+                        kickOutMsg.setMsgType(0);
+                        kickOutMsg.setAffirm(0);
+                        kickOutMsg.setFromType(0);
+                        kickOutMsg.setToType(1);
+                        kickOutMsg.setBizType(0x04);
+                        kickOutMsg.setCmdType(3);
+                        kickOutMsg.setCommand(1);
+                        kickOutMsg.setUserId(pConf.get_ServerType());
+                        kickOutMsg.setDeviceId(pConf.get_ServerName());
+                        kickOutMsg.setSendTime(System.currentTimeMillis());
+                        Map<String, Object> dataMap=new HashMap<String, Object>();
+                        dataMap.put("UserId", pUdk.getUserId());
+                        dataMap.put("PCDType", pUdk.getPCDType());
+                        dataMap.put("DeviceId", pUdk.getDeviceId());
+                        MapContent mc=new MapContent(dataMap);
+                        kickOutMsg.setMsgContent(mc);
+                        _oldSh.writeAndFlush(kickOutMsg);
+                    }
                 }
                 globalMem.bindPushUserANDSocket(pUdk, ctx);//绑定信息
 

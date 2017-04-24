@@ -27,15 +27,15 @@ public class MobileUsedService {
     }
 
     /**
-     * 根据手机串号，获取最后使用情况
+     * 获取设备上的登录用户
      * @param imei 手机串号
      * @param PCDType 设备类型
      */
-    public MobileUsedPo getUsedInfo(String imei, int PCDType) {
+    public MobileUsedPo getUserUsedInDevice(String imei, int PCDType) {
         Map<String, String> paraM=new HashMap<String, String>();
         paraM.put("imei", imei);
         paraM.put("PCDType", PCDType+"");
-        return muDao.getInfoObject("getUsedInfo", paraM);
+        return muDao.getInfoObject("getUserUsedInDevice", paraM);
     }
 
     /**

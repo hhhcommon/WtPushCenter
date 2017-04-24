@@ -51,8 +51,11 @@
   <select id="getInfoById" resultMap="BaseResultMap" parameterType="java.lang.String">
     select <include refid="Base_Column_List"/> from wt_MobileUsed where id=#{id,jdbcType=VARCHAR}
   </select>
-  <select id="getUsedInfo" resultMap="BaseResultMap" parameterType="java.util.Map">
-    select <include refid="Base_Column_List"/> from wt_MobileUsed where imei=#{imei,jdbcType=VARCHAR} and pcdType=#{PCDType,jdbcType=INTEGER} 
+  <select id="getUserUsedInDevice" resultMap="BaseResultMap" parameterType="java.util.Map">
+    select <include refid="Base_Column_List"/> from wt_MobileUsed
+    where imei=#{imei,jdbcType=VARCHAR} and pcdType=#{PCDType,jdbcType=INTEGER} and status=1
+    order by lmTime desc
+    limit 1
   </select>
   <select id="getUsedInfoByPUdk" resultMap="BaseResultMap" parameterType="java.util.Map">
     select <include refid="Base_Column_List"/> from wt_MobileUsed where imei=#{imei,jdbcType=VARCHAR} and pcdType=#{PCDType,jdbcType=INTEGER} and userId=#{userId,jdbcType=VARCHAR} 

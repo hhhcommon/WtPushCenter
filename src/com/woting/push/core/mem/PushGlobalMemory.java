@@ -175,11 +175,11 @@ public class PushGlobalMemory {
 //    private ConcurrentHashMap<String, LinkedBlockingQueue<Message>> notifyMsg;
 
     //    private Object LOCK_unionKey=new Object(); //同一Key锁
-    private Map<String, Object> REF_deviceANDsocket;   //设备和Socket处理线程的对应表； Key——设备标识：DeviceId=PCDType；Value——Socket处理线程
-    private Map<String, Object> REF_userdtypeANDsocket;//用户设备和Socket处理线程的对应表； Key——设备标识：UserId=PCDType；Value——Socket处理线程
-    private Map<String, PushUserUDKey> REF_userdtypeANDudk;   //用户设备和Key的对应表； Key——设备标识：UserId=PCDType；Value——PushUserUDKey
-    private Map<PushUserUDKey, Object> REF_udkANDsocket;
-    private Map<Object, PushUserUDKey> REF_socketANDudk;
+    private Map<String, Object> REF_deviceANDsocket;        //设备和Socket处理线程的对应表； Key——设备标识：DeviceId=PCDType；Value——Socket处理线程
+    private Map<String, Object> REF_userdtypeANDsocket;     //用户设备和Socket处理线程的对应表； Key——设备标识：UserId=PCDType；Value——Socket处理线程
+    private Map<String, PushUserUDKey> REF_userdtypeANDudk; //用户设备和Key的对应表； Key——设备标识：UserId=PCDType；Value——PushUserUDKey
+    private Map<PushUserUDKey, Object> REF_udkANDsocket;    //用户Key 和 sokect处理 之间的关系
+    private Map<Object, PushUserUDKey> REF_socketANDudk;    //Socket处理 和 用户Key 之间的关系
 
     /**
      * 绑定用户和Socket
@@ -194,7 +194,7 @@ public class PushGlobalMemory {
     }
     /**
      * 绑定设备和Socket
-     * @param pUk 用户key
+     * @param pUdk 用户key
      * @param sh SocketHandler处理线程
      * @param force 是否强制绑定
      * @return 若绑定成功返回true，否则返回false(若所给sh与系统记录的不一致，则不进行绑定，返回false，除非force==true)
@@ -258,48 +258,7 @@ public class PushGlobalMemory {
      * @param sh SocketHandler处理线程
      */
     public void bindPushUserANDSocket(PushUserUDKey pUdk, Object sh) {
-//      synchronized(LOCK_unionKey) {
-//      }
         if (pUdk==null||sh==null) return;
-//        synchronized(LOCK_usersocketMap) {
-//        }
-
-        //        SocketHandler oldSh=REF_udkANDsocket.get(pUdk);
-//        if (oldSh!=null) {
-//            if (!oldSh.equals(sh)) {
-//                synchronized(oldSh.stopLck) {
-//                    List<Message> ml=new ArrayList<Message>();
-//                    ml.add(buildKickOutMsg(pUdk));
-//                    
-//                    oldSh.stopServer(ml);
-//                    try {
-//                        oldSh.stopLck.wait();
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            }
-//        }
-//
-//        //剔除相同用户同一设备登录
-//        PushUserUDKey _pUdk=REF_userdtypeANDudk.get(pUdk.getUserId()+"="+pUdk.getPCDType());
-//        if (_pUdk!=null&&!_pUdk.equals(pUdk)) {
-//            oldSh=REF_udkANDsocket.get(_pUdk);
-//            if (oldSh!=null) {
-//                if (oldSh.equals(sh)) {
-//                    synchronized(oldSh.stopLck) {
-//                        List<Message> ml=new ArrayList<Message>();
-//                        ml.add(buildKickOutMsg(_pUdk));
-//                        oldSh.stopServer(ml);
-//                        try {
-//                            oldSh.stopLck.wait();
-//                        } catch (InterruptedException e) {
-//                            e.printStackTrace();
-//                        }
-//                    }
-//                }
-//            }
-//        }
         REF_udkANDsocket.put(pUdk, sh);
         REF_socketANDudk.put(sh, pUdk);
         if (!StringUtils.isNullOrEmptyOrSpace(pUdk.getUserId())) {
@@ -308,13 +267,11 @@ public class PushGlobalMemory {
         }
     }
     /**
-     * 剔出用户
+     * 剔出用户，把用户和Socket的连接断开
      * @param pUdk 新用户Key
      * @param sh 旧用户对应的Socket处理
      */
     public boolean kickOut(PushUserUDKey pUdk, Object oldSh) {
-//      synchronized(LOCK_unionKey) {
-//      }
         if (pUdk==null||oldSh==null) return false;
         PushUserUDKey oldUdk=null;
         if (oldSh instanceof SocketHandler) {
@@ -326,20 +283,15 @@ public class PushGlobalMemory {
         if (oldUdk==null) return false;
         if (!oldUdk.getUserId().equals(pUdk.getUserId())||oldUdk.getPCDType()!=pUdk.getPCDType()) return false;
 
-        PushUserUDKey _oldUdk=REF_socketANDudk.get(oldSh);
-        REF_udkANDsocket.remove(oldUdk);
-        if (_oldUdk.equals(oldUdk)) REF_socketANDudk.put(oldSh, null);
-        return true;
+        return unbindPushUserANDSocket(pUdk, oldSh);
     }
     /**
      * 删除用户和Socket处理之间的绑定
      * @param pUk 用户key，可为空
      * @param sh  SocketHandler处理线程，可为空
      */
-    public void unbindPushUserANDSocket(PushUserUDKey pUdk, Object sh) {
-//      synchronized(LOCK_unionKey) {
-//      }
-        if (pUdk==null&&sh==null) return;
+    public boolean unbindPushUserANDSocket(PushUserUDKey pUdk, Object sh) {
+        if (pUdk==null&&sh==null) return false;
         PushUserUDKey _pUdk=null;
         Object _sh=null;
 
@@ -360,7 +312,6 @@ public class PushGlobalMemory {
             }
             REF_socketANDudk.remove(sh);
         } else if (sh==null) {
-            REF_udkANDsocket.remove(pUdk);
             _sh=REF_udkANDsocket.get(pUdk);
             if (_sh!=null) REF_socketANDudk.remove(_sh);
             if (!StringUtils.isNullOrEmptyOrSpace(pUdk.getUserId())) {
@@ -373,9 +324,11 @@ public class PushGlobalMemory {
                     REF_userdtypeANDsocket.remove(pUdk.getUserId()+"="+pUdk.getPCDType());
                 }
             }
+            REF_udkANDsocket.remove(pUdk);
         } else {
             REF_udkANDsocket.remove(pUdk);
-            REF_socketANDudk.remove(sh);
+            PushUserUDKey _oldUdk=REF_socketANDudk.get(sh);
+            if (_oldUdk.equals(pUdk)) REF_socketANDudk.remove(sh);
             if (!StringUtils.isNullOrEmptyOrSpace(pUdk.getUserId())) {
                 _pUdk=REF_userdtypeANDudk.get(pUdk.getUserId()+"="+pUdk.getPCDType());
                 if (_pUdk!=null&&_pUdk.equals(pUdk)) {
@@ -387,10 +340,9 @@ public class PushGlobalMemory {
                 }
             }
         }
+        return true;
     }
     public PushUserUDKey getPushUserBySocket(Object sh) {
-//      synchronized(LOCK_unionKey) {
-//      }
         if (sh==null) return null;
         return REF_socketANDudk.get(sh);
     }
@@ -399,8 +351,6 @@ public class PushGlobalMemory {
         return REF_udkANDsocket.get(pUdk);
     }
     public Object getSocketByUser(PushUserUDKey pUdk) {
-//      synchronized(LOCK_unionKey) {
-//      }
         if (pUdk==null) return null;
         return REF_userdtypeANDsocket.get(pUdk.getUserId()+"="+pUdk.getPCDType());
     }
@@ -415,23 +365,6 @@ public class PushGlobalMemory {
         }
         return ret.isEmpty()?null:ret;
     }
-
-//    private Message buildKickOutMsg(PushUserUDKey pUdk) {
-//        MsgNormal msg=new MsgNormal();
-//        msg.setMsgId(SequenceUUID.getUUIDSubSegment(4));
-//        msg.setFromType(1);
-//        msg.setToType(0);
-//        msg.setMsgType(0);
-//        msg.setAffirm(0);
-//        msg.setBizType(0x04);
-//        msg.setCmdType(3);
-//        msg.setCommand(1);
-//        Map<String, Object> dataMap=pUdk.toHashMap();
-//        MapContent mc=new MapContent(dataMap);
-//        msg.setMsgContent(mc);
-//
-//        return msg;
-//    }
 
     public ReceiveMemory receiveMem=null;
     public SendMemory sendMem=null;
@@ -1020,9 +953,9 @@ public class PushGlobalMemory {
          * @param groupId 用户组Id
          * @param userId 用户Id
          */
-        public boolean delUserFromGroup(String groupId, String userId) {
+        public boolean delUserFromGroup(String groupId, String userIds) {
             if (StringUtils.isNullOrEmptyOrSpace(groupId)) return false;
-            if (StringUtils.isNullOrEmptyOrSpace(userId)) return false;
+            if (StringUtils.isNullOrEmptyOrSpace(userIds)) return false;
 
             Group g=getGroupById(groupId);
             if (g==null) return false;
@@ -1032,10 +965,9 @@ public class PushGlobalMemory {
 
             boolean find=false;
             for (int i=upl.size()-1; i>=0; i--) {
-                if (userId.equals(upl.get(i).getUserId())) {
+                if (userIds.indexOf(upl.get(i).getUserId())!=-1) {
                     find=true;
                     upl.remove(i);
-                    break;
                 }
             }
             return find;

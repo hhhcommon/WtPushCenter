@@ -103,12 +103,12 @@ public class SessionService {
             } else {//处理未登录
                 MobileUsedPo mup=null;
                 try {
-                    mup=muService.getUsedInfo(udk.getDeviceId(), udk.getPCDType());
+                    mup=muService.getUserUsedInDevice(udk.getDeviceId(), udk.getPCDType());
                 } catch(Exception e) {
+                    e.printStackTrace();
                 }
-                boolean noLog=false;
-                noLog=(mup==null||mup.getStatus()!=1||mup.getUserId()==null);
-                if (noLog) {//无法登录
+                hadLogon=(mup==null);
+                if (hadLogon) {//无法登录
                     //删除在该设备上的登录信息
                     RedisUserDeviceKey _rUdk=new RedisUserDeviceKey(new UserDeviceKey());
                     _rUdk.setDeviceId(udk.getDeviceId());
@@ -118,7 +118,7 @@ public class SessionService {
                         _rUdk.setUserId(uid);
                         cleanUserLogin(_rUdk, roService);
                     }
-                    if (StringUtils.isNullOrEmptyOrSpace(_userId)) {
+                    if (!StringUtils.isNullOrEmptyOrSpace(_userId)) {
                         _rUdk.setUserId(_userId);
                         cleanUserLogin(_rUdk, roService);
                     }
