@@ -137,6 +137,9 @@ public class UserPo extends UgaUser {
         return phoneNumIsPub;
     }
 
+    public UserPo() {
+        super();
+    }
     public UserPo(Map<String, Object> um) {
         super();
         fromHashMap(um);
