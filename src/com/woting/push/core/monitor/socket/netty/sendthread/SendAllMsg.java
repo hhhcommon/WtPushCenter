@@ -100,6 +100,10 @@ public class SendAllMsg extends Thread {
         List<MsgNormal> notifyMsgList=notifyMem.getNeedSendNotifyMsg(pUdk);
         if (notifyMsgList!=null&&!notifyMsgList.isEmpty()) {
             for (MsgNormal mn: notifyMsgList) {
+                if (mn.getFromType()==0) {
+                    mn.setUserId(pConf.get_ServerType());
+                    mn.setDeviceId(pConf.get_ServerName());
+                }
                 ctx.writeAndFlush(mn);
                 notifyMem.setNotifyMsgHadSended(pUdk, mn);
                 if (mn.isCtlAffirm()) globalMem.sendMem.addSendedNeedCtlAffirmMsg(pUdk, mn);

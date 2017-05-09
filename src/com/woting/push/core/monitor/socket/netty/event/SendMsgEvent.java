@@ -11,8 +11,6 @@ public class SendMsgEvent {
     public static final SendMsgEvent MEDISMSG_TOBESEND_EVENT=new SendMsgEvent(SendMsgType.SEND_MEDIA);
     //有通知消息需要发送的事件
     public static final SendMsgEvent NOTIFYMSG_TOBESEND_EVENT=new SendMsgEvent(SendMsgType.SEND_NOTIFY);
-    //有重发消息需要发送的事件
-    public static final SendMsgEvent RESENDMSG_TOBESEND_EVENT=new SendMsgEvent(SendMsgType.SEND_RESEND);
 
     private final SendMsgType sendMsgType;
 

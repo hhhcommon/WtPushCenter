@@ -3,7 +3,7 @@ package com.woting.push.core.monitor.socket.netty;
 import com.spiritdata.framework.core.cache.SystemCache;
 import com.woting.push.PushConstants;
 import com.woting.push.config.PushConfig;
-import com.woting.push.core.monitor.socket.netty.sendthread.SendNotifyMsg;
+import com.woting.push.core.monitor.socket.netty.sendthread.SendAllNotifyMsg;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -15,7 +15,7 @@ public class NotifyEventHandler extends ChannelDuplexHandler {
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt instanceof IdleStateEvent) {
             if (((IdleStateEvent)evt).state()==IdleState.WRITER_IDLE) {//通知消息重发
-                new SendNotifyMsg((PushConfig)SystemCache.getCache(PushConstants.PUSH_CONF).getContent(), ctx).start();
+                new SendAllNotifyMsg((PushConfig)SystemCache.getCache(PushConstants.PUSH_CONF).getContent(), ctx).start();
             }
         }
     }
