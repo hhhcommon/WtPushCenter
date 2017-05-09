@@ -20,6 +20,8 @@
     <result  column="userType"       property="userType"       jdbcType="INTEGER"/>
     <result  column="userClass"      property="userClass"      jdbcType="INTEGER"/>
     <result  column="userState"      property="userState"      jdbcType="INTEGER"/>
+    <result  column="rUserType"      property="RUserType"      jdbcType="INTEGER"/>
+    <result  column="aUserType"      property="AUserType"      jdbcType="INTEGER"/>
     <result  column="portraitBig"    property="portraitBig"    jdbcType="VARCHAR"/>
     <result  column="portraitMini"   property="portraitMini"   jdbcType="VARCHAR"/>
     <result  column="homepage"       property="homepage"       jdbcType="VARCHAR"/>
@@ -30,10 +32,11 @@
 
   <!-- 所有列 -->
   <sql id="Base_Column_List">
-    id, loginName, userName, userNum, password, mainPhoneNum, phoneNumIsPub, mailAddress, userType, userState, portraitBig, portraitMini, descn, cTime, lmTime
+    id, userName, userNum, loginName, nickName, userSign, password, mainPhoneNum, phoneNumIsPub, mailAddress, birthday, starSign, userType, userClass, userState, rUserType, aUserType, portraitBig, portraitMini, homepage, descn, cTime, lmTime
   </sql>
+  <!-- 所有列 -->
   <sql id="Base_Column_List_A">
-    a.id, a.loginName, a.userName, a.userNum, a.password, a.mainPhoneNum, a.phoneNumIsPub, a.mailAddress, a.userType, a.userState, a.portraitBig, a.portraitMini, a.descn, a.cTime, a.lmTime
+    a.id, a.userName, a.userNum, a.loginName, a.nickName, a.userSign, a.password, a.mainPhoneNum, a.phoneNumIsPub, a.mailAddress, a.birthday, a.starSign, a.userType, a.userClass, a.userState, a.rUserType, a.aUserType, a.portraitBig, a.portraitMini, a.homepage, a.descn, a.cTime, a.lmTime
   </sql>
 
   <!-- 条件子句 -->
@@ -55,6 +58,8 @@
         <if test="userType!=null"> and userType=#{userType,jdbcType=INTEGER}</if>
         <if test="userClass!=null"> and userClass=#{userClass,jdbcType=INTEGER}</if>
         <if test="userState!=null"> and userState=#{userState,jdbcType=INTEGER}</if>
+        <if test="RUserType!=null"> and rUserType=#{RUserType,jdbcType=INTEGER}</if>
+        <if test="AUserType!=null"> and aUserType=#{AUserType,jdbcType=INTEGER}</if>
         <if test="portraitBig!=null"> and portraitBig=#{portraitBig,jdbcType=VARCHAR}</if>
         <if test="portraitMini!=null"> and portraitMini=#{portraitMini,jdbcType=VARCHAR}</if>
         <if test="homepage!=null"> and homepage=#{homepage,jdbcType=INTEGER}</if>

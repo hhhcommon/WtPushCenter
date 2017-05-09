@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
   <property name="APP_NAME" value="PushCenter" />
-  <property name="LOG_HOME" value="/opt/pushcenter/logs"/>
+  <property name="LOG_HOME" value="/opt/pushCenter/logs"/>
   <property name="ENCODER_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS}|a [%thread] %logger{80}%n%d{yyyy-MM-dd HH:mm:ss.SSS}|b [%thread] -- %msg%n" />
   <contextName>${APP_NAME}</contextName>
 

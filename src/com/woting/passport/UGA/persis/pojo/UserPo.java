@@ -21,6 +21,8 @@ public class UserPo extends UgaUser {
     private int userType; //用户分类：对应OwnerType，1xx::系统:100-我们自己的系统(cm/crawl/push等);101-其他系统(wt_Organize表中的Id);2xx::用户:200-后台系统用户;201-前端用户-wt_Member表中的用户Id
     private int userClass; //用户类型，现在还没有用，比如是一般用户还是管理原等
     private int userState;//用户状态，0-2,0代表未激活的用户，1代表已激用户，2代表失效用户,3根据邮箱找密码的用户
+    private int RUserType;//注册用户分类：0一般用户；1认证用户；2专业用户
+    private int AUserType;//管理用户分类：0没有任何管理权限；1一般管理员；2审核管理员
     private String portraitBig;//用户头像大
     private String portraitMini;//用户头像小
     private String homepage; //用户主页
@@ -63,6 +65,18 @@ public class UserPo extends UgaUser {
     }
     public void setUserState(int userState) {
         this.userState = userState;
+    }
+    public int getRUserType() {
+        return RUserType;
+    }
+    public void setRUserType(int rUserType) {
+        RUserType=rUserType;
+    }
+    public int getAUserType() {
+        return AUserType;
+    }
+    public void setAUserType(int aUserType) {
+        AUserType=aUserType;
     }
     public String getPortraitBig() {
         return portraitBig;
