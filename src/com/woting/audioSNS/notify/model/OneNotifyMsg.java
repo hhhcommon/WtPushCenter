@@ -22,12 +22,14 @@ import com.woting.push.user.PushUserUDKey;
 public class OneNotifyMsg implements Serializable {
     private static final long serialVersionUID=-2633864824531924446L;
 
+    private Object lck=new Object();
     private NotifyMessageConfig nmc=null;//通知消息配置
 
     private MsgNormal notifyMsg=null; //通知消息
     private long firstSendTime=0l;    //首次发送的时间
     private PushUserUDKey bizReUdk=null; //业务回复用户
     private String userId=null; //发送给那个用户
+    private int sendAllNum=0; //给该用户发送的总次数
     private Map<PushUserUDKey, SendInfo> sendedMap=null;//已发送到的设备信息
 
     /**
@@ -53,11 +55,12 @@ public class OneNotifyMsg implements Serializable {
     public MsgNormal getNeedSendMsg(PushUserUDKey pUdk) {
         if (!userId.equals(pUdk.getUserId())) return null;
         if (bizReUdk!=null) return null; //若已经有人回复，则本条消息就不用回复了
+        if (sendAllNum>=nmc.get_ExpLmtPerUser()) return null;//超出总次数
         if (System.currentTimeMillis()-firstSendTime>nmc.get_ExpireTime()) return null; //超出过去时间，不返回
 
         SendInfo si=(sendedMap==null?null:sendedMap.get(pUdk));
         if (si==null) return this.notifyMsg; //若没有发送过，则返回这个消息
-        if (si.isRecieved()||si.getSendSum()>nmc.get_ExpireLimit()) return null;
+        if (si.isRecieved()||si.getSendSum()>=nmc.get_ExpLmtPerDevice()) return null;
         if (System.currentTimeMillis()-si.getFirstSendTime()>si.getSendSum()*nmc.get_Delay()) return this.notifyMsg;
         return null;
     }
@@ -81,23 +84,29 @@ public class OneNotifyMsg implements Serializable {
     public boolean adjustSendUdk(PushUserUDKey pUdk) {
         if (pUdk==null||pUdk.getUserId()==null) return false;
         if (!pUdk.getUserId().equals(this.userId)) return false;
-        SendInfo si=sendedMap.get(pUdk);
-        if (si==null) sendedMap.put(pUdk, new SendInfo());
-        else si.increaseNum();
+        synchronized(lck) {
+            SendInfo si=sendedMap.get(pUdk);
+            if (si==null) sendedMap.put(pUdk, new SendInfo());
+            else si.increaseNum();
+        }
         return true;
     }
     public boolean isRecieved(PushUserUDKey pUdk) {
-        SendInfo si=sendedMap.get(pUdk);
-        if (si==null) return false;
-        return si.isRecieved();
+        synchronized(lck) {
+            SendInfo si=sendedMap.get(pUdk);
+            if (si==null) return false;
+            return si.isRecieved();
+        }
     }
     public void setPUDKeyHasRecived(PushUserUDKey pUdk) {
-        SendInfo si=sendedMap.get(pUdk);
-        if (si==null) {
-            si=new SendInfo();
-            sendedMap.put(pUdk, si);
+        synchronized(lck) {
+            SendInfo si=sendedMap.get(pUdk);
+            if (si==null) {
+                si=new SendInfo();
+                sendedMap.put(pUdk, si);
+            }
+            si.sendNum=-1;
         }
-        si.sendNum=-1;
     }
     public void setBizReUdk(PushUserUDKey pUdk) {
         this.bizReUdk=pUdk;
@@ -167,5 +176,13 @@ public class OneNotifyMsg implements Serializable {
             _sendedMap.put(pUdk, si);
         }
         if (!_sendedMap.isEmpty()) this.sendedMap=_sendedMap;
+    }
+
+    public void increamSendAllNum() {
+        this.sendAllNum++;
+    }
+
+    public int getSendAllNum() {
+        return this.sendAllNum;
     }
 }

@@ -27,15 +27,23 @@ public class NotifyMessageConfig implements Config {
         return _Delay;
     }
     public void set_Delay(int _Delay) {
-        this._Delay = _Delay;
+        this._Delay=_Delay;
     }
 
-    private int _ExpireLimit=10;
-    public int get_ExpireLimit() {
-        return _ExpireLimit;
+    private int _ExpLmtPerUser=10;
+    public int get_ExpLmtPerUser() {
+        return _ExpLmtPerUser;
     }
-    public void set_ExpireLimit(int _ExpireLimit) {
-        this._ExpireLimit = _ExpireLimit;
+    public void set_ExpLmtPerUser(int _ExpLmtPerUser) {
+        this._ExpLmtPerUser=_ExpLmtPerUser;
+    }
+
+    private int _ExpLmtPerDevice=3;
+    public int get_ExpLmtPerDevice() {
+        return _ExpLmtPerDevice;
+    }
+    public void set_ExpLmtPerDevice(int _ExpLmtPerDevice) {
+        this._ExpLmtPerDevice=_ExpLmtPerDevice;
     }
 
     private long _ExpireTime=5*24*60*60*1000;//5天
@@ -43,6 +51,6 @@ public class NotifyMessageConfig implements Config {
         return _ExpireTime;
     }
     public void set_ExpireTime(long _ExpireTime) {
-        this._ExpireTime = _ExpireTime;
+        this._ExpireTime=_ExpireTime;
     }
 }

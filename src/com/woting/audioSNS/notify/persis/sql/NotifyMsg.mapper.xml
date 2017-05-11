@@ -12,17 +12,17 @@
       <if test="toUserId!=null">toUserId,</if>
       <if test="msgJson!=null">msgJson,</if>
       <if test="sendTime!=null">sendTime,</if>
+      <if test="sendAllNum!=null and sendAllNum>0">sendAllNum,</if>
       <if test="sendInfoJson!=null">sendInfoJson,</if>
-      <if test="lmTime!=null">lmTime,</if>
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides=",">
       <if test="id!=null">#{id,jdbcType=VARCHAR},</if>
       <if test="msgId!=null">#{msgId,jdbcType=VARCHAR},</if>
       <if test="toUserId!=null">#{toUserId,jdbcType=VARCHAR},</if>
       <if test="msgJson!=null">#{msgJson,jdbcType=VARCHAR},</if>
-      <if test="sendTime!=null"> and sendTime=#{sendTime,jdbcType=TIMESTAMP}</if>
+      <if test="sendTime!=null">#{sendTime,jdbcType=TIMESTAMP},</if>
+      <if test="sendAllNum!=null and sendAllNum>0">#{sendAllNum,jdbcType=INTEGER},</if>
       <if test="sendInfoJson!=null">#{sendInfoJson,jdbcType=VARCHAR},</if>
-      <if test="lmTime!=null"> and lmTime=#{lmTime,jdbcType=TIMESTAMP}</if>
     </trim>
   </insert>
   <!-- 修改 根据主键-->
@@ -32,15 +32,17 @@
       <if test="sendInfoJson!=null">sendInfoJson=#{sendInfoJson,jdbcType=VARCHAR},</if>
       <if test="bizReUdkJson!=null">bizReUdkJson=#{bizReUdkJson,jdbcType=VARCHAR},</if>
       <if test="lmTime!=null">lmTime=#{lmTime,jdbcType=TIMESTAMP},</if>
+      <if test="sendAllNum!=null and sendAllNum>0">sendAllNum=#{sendAllNum,jdbcType=INTEGER},</if>
     </set>
     where msgId=#{msgId,jdbcType=VARCHAR} and toUserId=#{toUserId,jdbcType=VARCHAR}
   </update>
   
   <!-- 所有未处理的通知消息 -->
-  <select id="getNoDealList"  parameterType="java.util.Map" resultType="java.util.HashMap">
-  <![CDATA[
+  <select id="getNoDealList" parameterType="java.lang.Integer" resultType="java.util.HashMap">
+    <![CDATA[
     select * from pm_NotifyMsg where bizReUdkJson is null or length(trim(bizReUdkJson))<4
+    ]]>
+    <if test="value!=null">and sendAllNum<![CDATA[<]]>#{value,jdbcType=INTEGER}</if>
     order by toUserId, sendTime desc
-  ]]>
   </select>
 </mapper>

@@ -53,7 +53,7 @@ public class NotifyMemory {
         notifyMem._loadNotifyMsgFromDB();
     }
     protected void _loadNotifyMsgFromDB() {
-        if (notifySaveService!=null) notifySaveService.fillNotifyFromDB(userNotifyMap);
+        if (notifySaveService!=null) notifySaveService.fillNotifyFromDB(userNotifyMap, nmc.get_ExpLmtPerUser());
     }
 
     /*
@@ -100,10 +100,12 @@ public class NotifyMemory {
             }
         }
         ret=oneNm.adjustSendUdk(pUdk);
+        oneNm.increamSendAllNum();
         try {
             toDBMap.put("TYPE", "update");
             toDBMap.put("msgId", notifyMsg.getMsgId());
             toDBMap.put("toUserId", pUdk.getUserId());
+            toDBMap.put("sendAllNum", oneNm.getSendAllNum());
             toDBMap.put("sendInfoJson", JsonUtils.objToJson(oneNm.getSendedMap()));
             putSaveDataQueue(toDBMap);
         } catch(Exception e) {

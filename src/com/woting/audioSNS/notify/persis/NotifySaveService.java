@@ -42,28 +42,31 @@ public class NotifySaveService {
      * 从数据库中读取未完成的通知消息，并填入参数中
      * @param userNotifyMap 被填入的对象
      */
-    public void fillNotifyFromDB(Map<String, List<OneNotifyMsg>> userNotifyMap) {
+    public void fillNotifyFromDB(Map<String, List<OneNotifyMsg>> userNotifyMap, int expLmtPerUser) {
         if (userNotifyMap==null) return;
 
         int i=1, pageSize=10000;
-        Page<Map<String, Object>> msgPage=notifyMsgDao.pageQueryAutoTranform(null, "getNoDealList", null, i++, pageSize);
+        Page<Map<String, Object>> msgPage=notifyMsgDao.pageQueryAutoTranform(null, "getNoDealList", expLmtPerUser, i++, pageSize);
         boolean hasData=(msgPage!=null&&msgPage.getDataCount()==pageSize);
-        if (msgPage!=null&&!msgPage.getResult().isEmpty()) fillData(msgPage.getResult().toArray(), userNotifyMap);
+        if (msgPage!=null&&!msgPage.getResult().isEmpty()) fillData(msgPage.getResult().toArray(), userNotifyMap, expLmtPerUser);
 
         while (hasData) {
-            msgPage=notifyMsgDao.pageQueryAutoTranform(null, "getNoDealList", null, i++, pageSize);
+            msgPage=notifyMsgDao.pageQueryAutoTranform(null, "getNoDealList", expLmtPerUser, i++, pageSize);
             hasData=(msgPage!=null&&msgPage.getDataCount()==pageSize);
-            if (msgPage!=null&&!msgPage.getResult().isEmpty()) fillData(msgPage.getResult().toArray(), userNotifyMap);
+            if (msgPage!=null&&!msgPage.getResult().isEmpty()) fillData(msgPage.getResult().toArray(), userNotifyMap, expLmtPerUser);
         }
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private void fillData(Object[] array, Map<String, List<OneNotifyMsg>> userNotifyMap) {
+    private void fillData(Object[] array, Map<String, List<OneNotifyMsg>> userNotifyMap, int expLmtPerUser) {
         Map<String, Object> oneData=null;
         String userId=null, thisUserId=null, tmpStr=null;
         List<OneNotifyMsg> userNotifyList=null;
         for (Object _o: array) {
             oneData=(Map<String, Object>)_o;
+            try {
+                if (Integer.parseInt(""+oneData.get("sendAllNum"))>=expLmtPerUser) continue;
+            } catch(Exception e) {}
             thisUserId=(oneData.get("toUserId")==null?"":oneData.get("toUserId")+"");
             if (!thisUserId.equals(userId)) {
                 userId=thisUserId;

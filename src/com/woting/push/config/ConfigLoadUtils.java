@@ -115,7 +115,10 @@ public abstract class ConfigLoadUtils {
             nmc.set_Delay((int)fel.eval(jc.getString("notify.delay")));
         } catch(Exception e) {}
         try {
-            nmc.set_ExpireLimit((int)fel.eval(jc.getString("notify.expireLimit")));
+            nmc.set_ExpLmtPerDevice((int)fel.eval(jc.getString("notify.expLmtPerDevice")));
+        } catch(Exception e) {}
+        try {
+            nmc.set_ExpLmtPerUser((int)fel.eval(jc.getString("notify.expLmtPerUser")));
         } catch(Exception e) {}
         try {
             nmc.set_ExpireTime((int)fel.eval(jc.getString("notify.expireTime")));
