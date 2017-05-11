@@ -31,6 +31,7 @@ import com.woting.push.ext.SpringShell;
 import com.woting.push.user.PushUserUDKey;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.Attribute;
 
 /**
  * 处理全局内存
@@ -338,6 +339,13 @@ public class PushGlobalMemory {
                 if (_sh!=null&&_sh.equals(sh)) {
                     REF_userdtypeANDsocket.remove(pUdk.getUserId()+"="+pUdk.getPCDType());
                 }
+            }
+        }
+        if (pUdk!=null) {//解除绑定关系
+            if (sh instanceof ChannelHandlerContext) {
+                ChannelHandlerContext ctx=(ChannelHandlerContext)sh;
+                Attribute<PushUserUDKey> c_PUDK=ctx.channel().attr(NettyHandler.CHANNEL_PUDKEY);
+                if (c_PUDK!=null) c_PUDK.set(null);
             }
         }
         return true;
