@@ -92,5 +92,12 @@
       "type":"1"  //类型：0无重传机制；1采用次数限制方式；2采用过期时间方式；3采取联合方式，次数和时间谁先到就过期
     },
     "cleanInternal":"60*1000"
+  },
+  "urlReplaceRule":{
+    "##contentimg##":"http://ac.wotingfm.com/contentimg/",
+    "##userimg##":"http://ac.wotingfm.com/userimg/",
+    "##contentmedia##":"http://ac.wotingfm.com/contentmedia/",
+    "http://www.wotingfm.com/dataCenter":"http://ac.wotingfm.com",
+    "http://ac.wotingfm.com/shareH5":"http://www.wotingfm.com/share"
   }
 }

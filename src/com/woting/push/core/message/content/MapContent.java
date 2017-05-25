@@ -4,7 +4,11 @@ import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.util.Map;
 
+import com.spiritdata.framework.core.cache.CacheEle;
+import com.spiritdata.framework.core.cache.SystemCache;
 import com.spiritdata.framework.util.JsonUtils;
+import com.woting.push.PushConstants;
+import com.woting.push.config.UrlConvertConfig;
 import com.woting.push.core.message.MessageContent;
 
 /**
@@ -47,9 +51,20 @@ public class MapContent implements MessageContent, Serializable {
         contentMap=(Map<String, Object>) JsonUtils.jsonToObj(json, Map.class);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public byte[] toBytes() throws UnsupportedEncodingException {
         String jsonStr=JsonUtils.objToJson(contentMap);
+        //这部分代码要去除掉，是临时的
+        try {
+            //TODO del
+            UrlConvertConfig ucc=((CacheEle<UrlConvertConfig>)SystemCache.getCache(PushConstants.URLCONVERT_CONF)).getContent();
+            if (ucc.getConvertRules().get("##userimg##")!=null) {
+                jsonStr=jsonStr.replaceAll("##userimg##", ucc.getConvertRules().get("##userimg##")+"");
+            }
+            //TODO del
+        } catch(Exception e) {
+        }
         return jsonStr.getBytes("utf-8");
     }
 

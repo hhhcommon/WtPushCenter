@@ -29,6 +29,7 @@ import com.woting.audioSNS.notify.monitor.SaveToDB;
 import com.woting.audioSNS.sync.SyncMessageConfig;
 import com.woting.audioSNS.sync.monitor.DealSyncMsg;
 import com.woting.push.config.ConfigLoadUtils;
+import com.woting.push.config.UrlConvertConfig;
 import com.woting.push.config.PushConfig;
 import com.woting.push.core.SocketHandleConfig;
 import com.woting.push.core.mem.PushGlobalMemory;
@@ -235,6 +236,9 @@ public class ServerListener {
 
         MediaConfig mc=ConfigLoadUtils.getMediaConfig(jc);
         SystemCache.setCache(new CacheEle<MediaConfig>(PushConstants.MEDIA_CONF, "媒体包配置", mc));
+
+        UrlConvertConfig ucc=ConfigLoadUtils.getUrlConvertConfig(jc);
+        SystemCache.setCache(new CacheEle<UrlConvertConfig>(PushConstants.URLCONVERT_CONF, "URL转化配置", ucc));
     }
 
     private void begin() {

@@ -14,4 +14,5 @@ public class PushConstants {
     public final static String SYNC_CONF="Sync-Config";//同步消息处理配置
     public final static String AFFCTL_CONF="AffirmCtl-Config";//控制回复配置
     public final static String MEDIA_CONF="Media-Config";//媒体包配置
+    public final static String URLCONVERT_CONF="UrlConvert-Config";//URL转化配置
 }

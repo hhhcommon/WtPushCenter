@@ -1,5 +1,7 @@
 package com.woting.push.config;
 
+import java.util.Map;
+
 import com.greenpineyu.fel.FelEngine;
 import com.greenpineyu.fel.FelEngineImpl;
 import com.spiritdata.framework.jsonconf.JsonConfig;
@@ -205,5 +207,15 @@ public abstract class ConfigLoadUtils {
             mc.set_VedioExpiredTNum((int)fel.eval(jc.getString("mediaMessage.vedio.expired.expiredTNum")));
         } catch(Exception e) {}
         return mc;
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public static UrlConvertConfig getUrlConvertConfig(JsonConfig jc) {
+        UrlConvertConfig ucc=new UrlConvertConfig();
+        try {
+            Object _ucc=jc.getValue("urlReplaceRule");
+            ucc.setConvertRules((Map)_ucc);
+        } catch(Exception e) {e.printStackTrace();}
+        return ucc;
     }
 }
